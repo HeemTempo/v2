@@ -24,8 +24,8 @@ class ReportIssuePage extends StatefulWidget {
 }
 
 class _ReportIssuePageState extends State<ReportIssuePage> {
-  List<String> _attachedFiles = [];       // For showing file names
-  List<File> _selectedFiles = [];         // For uploading actual files
+  List<String> _attachedFiles = []; // For showing file names
+  List<File> _selectedFiles = []; // For uploading actual files
 
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
@@ -36,54 +36,58 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
   double? _currentLongitude;
   File? _selectedFile; // For image/document upload
 
- 
   bool _isSubmitting = false;
   bool _guidelinesExpanded = false;
 
   Future<void> _pickImages() async {
-  try {
-    final ImagePicker picker = ImagePicker();
-    final List<XFile>? pickedFiles = await picker.pickMultiImage(
-      imageQuality: 80,
-    );
+    try {
+      final ImagePicker picker = ImagePicker();
+      final List<XFile>? pickedFiles = await picker.pickMultiImage(
+        imageQuality: 80,
+      );
 
-    if (pickedFiles != null && pickedFiles.isNotEmpty) {
-      setState(() {
-        for (var file in pickedFiles) {
-          _attachedFiles.add(file.name);
-          _selectedFiles.add(File(file.path));
-        }
-      });
+      if (pickedFiles != null && pickedFiles.isNotEmpty) {
+        setState(() {
+          for (var file in pickedFiles) {
+            _attachedFiles.add(file.name);
+            _selectedFiles.add(File(file.path));
+          }
+        });
+      }
+    } catch (e) {
+      print("Image pick error: $e");
     }
-  } catch (e) {
-    print("Image pick error: $e");
   }
-}
-
 
   Future<void> _pickGeneralFiles() async {
-  try {
-    final result = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt'],
-    );
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt'],
+      );
 
-    if (result != null && result.files.isNotEmpty) {
-      setState(() {
-        for (var pickedFile in result.files) {
-          if (pickedFile.path != null) {
-            _attachedFiles.add(pickedFile.name);
-            _selectedFiles.add(File(pickedFile.path!));
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          for (var pickedFile in result.files) {
+            if (pickedFile.path != null) {
+              _attachedFiles.add(pickedFile.name);
+              _selectedFiles.add(File(pickedFile.path!));
+            }
           }
-        }
-      });
+        });
+      }
+    } catch (e) {
+      print("File pick error: $e");
     }
-  } catch (e) {
-    print("File pick error: $e");
   }
-}
 
+  void _removeFile(int index) {
+    setState(() {
+      _attachedFiles.removeAt(index); // Remove file name
+      _selectedFiles.removeAt(index); // Remove actual file
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -212,11 +216,7 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                   selectedFileNames: _attachedFiles,
                   pickImages: _pickImages,
                   pickGeneralFiles: _pickGeneralFiles,
-                  removeFile: (index) {
-                    setState(() {
-                      _attachedFiles.removeAt(index);
-                    });
-                  },
+                  removeFile: _removeFile,
                 ),
 
                 const SizedBox(height: 30),
