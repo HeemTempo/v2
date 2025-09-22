@@ -1498,6 +1498,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connection timed out. Please check your internet and try again.'**
   String get connectionTimeout;
+
+  /// No description provided for @offlineNoCachedToken.
+  ///
+  /// In en, this message translates to:
+  /// **'No offline login available. Please connect to the internet.'**
+  String get offlineNoCachedToken;
+
+  /// No description provided for @offlineLoginSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'You have successfully logged in offline'**
+  String get offlineLoginSuccess;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

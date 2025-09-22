@@ -22,12 +22,18 @@ class _MyBookingsPageState extends State<MyBookingsPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+
+    // Initialize with empty list so FutureBuilder doesn't break
+    _allBookingsFuture = Future.value([]);
+
+    // Load bookings after syncing
     _syncAndLoadBookings();
   }
 
   // Sync offline bookings first, then load all bookings
   Future<void> _syncAndLoadBookings() async {
     await _bookingRepository.syncPendingBookings();
+    // Assign the real Future after syncing
     setState(() {
       _allBookingsFuture = _bookingRepository.getMyBookings();
     });
@@ -81,7 +87,7 @@ class _MyBookingsPageState extends State<MyBookingsPage>
       body: Container(
         color: AppConstants.white,
         child: RefreshIndicator(
-          onRefresh: _syncAndLoadBookings, // Pull to refresh also triggers sync
+          onRefresh: _syncAndLoadBookings, // Pull to refresh triggers sync
           child: TabBarView(
             controller: _tabController,
             children: [

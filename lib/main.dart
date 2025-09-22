@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:openspace_mobile_app/api/graphql/graphql_service.dart';
+import 'package:openspace_mobile_app/core/network/connectivity_service.dart';
 import 'package:openspace_mobile_app/core/sync/sync_service.dart';
 import 'package:openspace_mobile_app/providers/locale_provider.dart';
 import 'package:openspace_mobile_app/providers/theme_provider.dart';
@@ -55,6 +56,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
+         ChangeNotifierProvider(create: (_) => ConnectivityService()),
         
         Provider<ValueNotifier<GraphQLClient>>(
             create: (_) => ValueNotifier(client)),

@@ -715,4 +715,10 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get connectionTimeout => 'Muunganisho umekwisha muda. Tafadhali angalia intaneti yako na ujaribu tena.';
+
+  @override
+  String get offlineNoCachedToken => 'Hakuna uwezo wa kuingia bila mtandao. Tafadhali ungana na intaneti.';
+
+  @override
+  String get offlineLoginSuccess => 'Umefanikiwa kuingia bila mtandao';
 }

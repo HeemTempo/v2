@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:openspace_mobile_app/core/network/connectivity_service.dart';
 import 'package:quickalert/quickalert.dart';
 import 'package:provider/provider.dart';
 import '../service/auth_service.dart';
@@ -37,8 +38,11 @@ class _SignInScreenState extends State<SignInScreen> {
     super.dispose();
   }
 
-  void _showAlert(QuickAlertType type, String message,
-      {VoidCallback? onConfirmed}) {
+  void _showAlert(
+    QuickAlertType type,
+    String message, {
+    VoidCallback? onConfirmed,
+  }) {
     if (!mounted) return;
     QuickAlert.show(
       context: context,
@@ -54,54 +58,66 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   void _signIn() async {
-    final loc = AppLocalizations.of(context)!;
+  final loc = AppLocalizations.of(context)!;
 
-    if (!_formKey.currentState!.validate()) return;
+  if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+  setState(() => _isLoading = true);
 
-    try {
-      final response = await _authService.login(
+  final connectivityService =
+      Provider.of<ConnectivityService>(context, listen: false);
+
+  try {
+    User user;
+
+    if (!connectivityService.isOnline) {
+      // Attempt offline login silently
+      user = await _authService.loginOffline(connectivityService) ??
+          (throw Exception('Offline login failed: no cached token.'));
+    } else {
+      // Online login
+      user = await _authService.login(
         _usernameController.text.trim(),
         _passwordController.text.trim(),
       );
-
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
-      if (response != null && response['success'] == true) {
-        final userProvider =
-            Provider.of<UserProvider>(context, listen: false);
-        userProvider.setUser(User.fromLoginJson(response));
-
-        _showAlert(
-          QuickAlertType.success,
-          response['message'] ?? loc.loginSuccess,
-          onConfirmed: () {
-            if (mounted) {
-              Navigator.pushReplacementNamed(context, '/home');
-            }
-          },
-        );
-      } else {
-        _showAlert(
-          QuickAlertType.error,
-          response?['message'] ?? loc.loginFailed,
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      final errorMessage = e.toString().replaceFirst('Exception: ', '');
-
-      _showAlert(
-        QuickAlertType.error,
-        errorMessage.contains('timeout')
-            ? loc.connectionTimeout
-            : loc.loginFailed,
-      );
     }
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    // Set user in provider
+    final userProvider =
+        Provider.of<UserProvider>(context, listen: false);
+    userProvider.setUser(user);
+
+    // Show success alert
+    _showAlert(
+      QuickAlertType.success,
+      connectivityService.isOnline
+          ? loc.loginSuccess
+          : loc.offlineLoginSuccess,
+      onConfirmed: () {
+        if (mounted) Navigator.pushReplacementNamed(context, '/home');
+      },
+    );
+  } catch (e) {
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    final errorMessage = e.toString().replaceFirst('Exception: ', '');
+
+    _showAlert(
+      QuickAlertType.error,
+      errorMessage.contains('timeout')
+          ? loc.connectionTimeout
+          : errorMessage.contains('Offline login failed')
+              ? loc.offlineNoCachedToken
+              : loc.loginFailed,
+    );
   }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +135,8 @@ class _SignInScreenState extends State<SignInScreen> {
                   child: Card(
                     elevation: 8.0,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16.0)),
+                      borderRadius: BorderRadius.circular(16.0),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(24.0),
                       child: Form(
@@ -132,13 +149,17 @@ class _SignInScreenState extends State<SignInScreen> {
                             Text(
                               loc.welcomeBack,
                               style: const TextStyle(
-                                  fontSize: 24, fontWeight: FontWeight.bold),
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               loc.signInSubtitle,
                               style: const TextStyle(
-                                  fontSize: 16, color: AppConstants.grey),
+                                fontSize: 16,
+                                color: AppConstants.grey,
+                              ),
                             ),
                             const SizedBox(height: 24),
                             TextFormField(
@@ -147,12 +168,14 @@ class _SignInScreenState extends State<SignInScreen> {
                                 labelText: loc.usernameLabel,
                                 hintText: loc.usernameHint,
                                 border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8.0)),
+                                  borderRadius: BorderRadius.circular(8.0),
+                                ),
                               ),
-                              validator: (value) =>
-                                  value == null || value.isEmpty
-                                      ? loc.usernameRequired
-                                      : null,
+                              validator:
+                                  (value) =>
+                                      value == null || value.isEmpty
+                                          ? loc.usernameRequired
+                                          : null,
                             ),
                             const SizedBox(height: 16),
                             TextFormField(
@@ -162,11 +185,14 @@ class _SignInScreenState extends State<SignInScreen> {
                                 labelText: loc.passwordLabel,
                                 hintText: loc.passwordHint,
                                 border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8.0)),
+                                  borderRadius: BorderRadius.circular(8.0),
+                                ),
                                 suffixIcon: IconButton(
-                                  icon: Icon(_obscurePassword
-                                      ? Icons.visibility_off
-                                      : Icons.visibility),
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                  ),
                                   onPressed: () {
                                     setState(() {
                                       _obscurePassword = !_obscurePassword;
@@ -174,10 +200,11 @@ class _SignInScreenState extends State<SignInScreen> {
                                   },
                                 ),
                               ),
-                              validator: (value) =>
-                                  value == null || value.isEmpty
-                                      ? loc.passwordRequired
-                                      : null,
+                              validator:
+                                  (value) =>
+                                      value == null || value.isEmpty
+                                          ? loc.passwordRequired
+                                          : null,
                             ),
                             const SizedBox(height: 16),
                             Row(
@@ -199,11 +226,15 @@ class _SignInScreenState extends State<SignInScreen> {
                                 TextButton(
                                   onPressed: () {
                                     Navigator.pushNamed(
-                                        context, '/forgot-password');
+                                      context,
+                                      '/forgot-password',
+                                    );
                                   },
                                   child: Text(
                                     loc.forgotPassword,
-                                    style: const TextStyle(color: Colors.purple),
+                                    style: const TextStyle(
+                                      color: Colors.purple,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -211,24 +242,28 @@ class _SignInScreenState extends State<SignInScreen> {
                             const SizedBox(height: 16),
                             SizedBox(
                               width: double.infinity,
-                              child: _isLoading
-                                  ? const Center(
-                                      child: CircularProgressIndicator())
-                                  : ElevatedButton(
-                                      onPressed: _signIn,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor:
-                                            AppConstants.primaryBlue,
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 16),
-                                      ),
-                                      child: Text(
-                                        loc.signInButton,
-                                        style: const TextStyle(
+                              child:
+                                  _isLoading
+                                      ? const Center(
+                                        child: CircularProgressIndicator(),
+                                      )
+                                      : ElevatedButton(
+                                        onPressed: _signIn,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor:
+                                              AppConstants.primaryBlue,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          loc.signInButton,
+                                          style: const TextStyle(
                                             color: AppConstants.white,
-                                            fontSize: 16),
+                                            fontSize: 16,
+                                          ),
+                                        ),
                                       ),
-                                    ),
                             ),
                             const SizedBox(height: 16),
                             TextButton(

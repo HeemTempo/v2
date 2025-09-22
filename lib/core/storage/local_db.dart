@@ -1,3 +1,4 @@
+import 'package:openspace_mobile_app/data/local/rofile_local_data_source.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -9,7 +10,7 @@ class LocalDb {
     final path = join(await getDatabasesPath(), 'offline_data.db');
     _db = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE bookings(
@@ -57,7 +58,19 @@ class LocalDb {
             images TEXT
           )
         ''');
+
+
+       await ProfileLocalDataSource.createTable(db);
       },
+
+       onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          // only create the profile table if upgrading from older version
+          await ProfileLocalDataSource.createTable(db);
+        }
+      },
+
+
     );
     return _db!;
   }

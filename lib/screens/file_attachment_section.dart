@@ -1,4 +1,3 @@
-// screens/file_attachment_section.dart
 import 'package:flutter/material.dart';
 
 class FileAttachmentSection extends StatelessWidget {
@@ -17,14 +16,13 @@ class FileAttachmentSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determine if buttons are enabled to style them accordingly
     final bool canPickImages = pickImages != null;
     final bool canPickGeneralFiles = pickGeneralFiles != null;
-    final Color enabledButtonColor = Theme.of(context).colorScheme.primary; // Or your preferred color
+    final Color enabledButtonColor = Theme.of(context).colorScheme.primary;
     final Color disabledButtonColor = Colors.grey.shade400;
 
     return Card(
-      elevation: 2, 
+      elevation: 2,
       color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
       child: Padding(
@@ -67,7 +65,7 @@ class FileAttachmentSection extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10), // Spacing between buttons
+                const SizedBox(width: 10),
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: pickGeneralFiles,
@@ -96,12 +94,15 @@ class FileAttachmentSection extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             if (selectedFileNames.isEmpty)
-              Center( // Centering the "No Files Chosen" text
+              Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 10.0),
                   child: Text(
                     "No Files Chosen",
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 15, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 15,
+                        fontStyle: FontStyle.italic),
                   ),
                 ),
               )
@@ -122,17 +123,22 @@ class FileAttachmentSection extends StatelessWidget {
                           size: 20,
                         ),
                         label: Text(
-                          fileName.length > 20 ? '${fileName.substring(0, 17)}...' : fileName,
+                          fileName.length > 20
+                              ? '${fileName.substring(0, 17)}...'
+                              : fileName,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        deleteIcon: Icon(Icons.close, size: 18, color: Colors.red.shade400),
-                        onDeleted: removeFile != null ? () => removeFile!(index) : null,
+                        deleteIcon: Icon(Icons.close,
+                            size: 18, color: Colors.red.shade400),
+                        onDeleted:
+                            removeFile != null ? () => removeFile!(index) : null,
                         backgroundColor: Colors.grey.shade100,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20), // More rounded chips
-                            side: BorderSide(color: Colors.grey.shade300)
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(color: Colors.grey.shade300),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                       ),
                     );
                   },
@@ -143,6 +149,7 @@ class FileAttachmentSection extends StatelessWidget {
       ),
     );
   }
+
   IconData _getFileIcon(String fileName) {
     final extension = fileName.split('.').last.toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].contains(extension)) {
@@ -156,6 +163,6 @@ class FileAttachmentSection extends StatelessWidget {
     } else if (['txt'].contains(extension)) {
       return Icons.article_outlined;
     }
-    return Icons.insert_drive_file; // Default
+    return Icons.insert_drive_file;
   }
 }

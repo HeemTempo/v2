@@ -1,4 +1,10 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:openspace_mobile_app/screens/file_attachment_section.dart';
+import 'package:openspace_mobile_app/service/report_service.dart';
 import '../l10n/app_localizations.dart';
 
 class ReportIssuePage extends StatefulWidget {
@@ -6,21 +12,78 @@ class ReportIssuePage extends StatefulWidget {
   final double? latitude;
   final double? longitude;
 
-  const ReportIssuePage({super.key, this.spaceName, this.latitude, this.longitude});
+  const ReportIssuePage({
+    super.key,
+    this.spaceName,
+    this.latitude,
+    this.longitude,
+  });
 
   @override
   State<ReportIssuePage> createState() => _ReportIssuePageState();
 }
 
 class _ReportIssuePageState extends State<ReportIssuePage> {
+  List<String> _attachedFiles = [];       // For showing file names
+  List<File> _selectedFiles = [];         // For uploading actual files
+
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _spaceNameController = TextEditingController();
+  double? _currentLatitude;
+  double? _currentLongitude;
+  File? _selectedFile; // For image/document upload
 
-  final List<String> _attachedFiles = ['park_photo1.jpg', 'document.pdf'];
+ 
   bool _isSubmitting = false;
   bool _guidelinesExpanded = false;
+
+  Future<void> _pickImages() async {
+  try {
+    final ImagePicker picker = ImagePicker();
+    final List<XFile>? pickedFiles = await picker.pickMultiImage(
+      imageQuality: 80,
+    );
+
+    if (pickedFiles != null && pickedFiles.isNotEmpty) {
+      setState(() {
+        for (var file in pickedFiles) {
+          _attachedFiles.add(file.name);
+          _selectedFiles.add(File(file.path));
+        }
+      });
+    }
+  } catch (e) {
+    print("Image pick error: $e");
+  }
+}
+
+
+  Future<void> _pickGeneralFiles() async {
+  try {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt'],
+    );
+
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        for (var pickedFile in result.files) {
+          if (pickedFile.path != null) {
+            _attachedFiles.add(pickedFile.name);
+            _selectedFiles.add(File(pickedFile.path!));
+          }
+        }
+      });
+    }
+  } catch (e) {
+    print("File pick error: $e");
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +111,10 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                     children: [
                       Text(
                         loc.reportHeader,
-                        style: const TextStyle(fontSize: 16, color: Colors.black87),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 24),
@@ -61,12 +127,16 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                   icon: Icons.location_on_outlined,
                   title: loc.locationDetailsTitle,
                   children: [
-                    _InfoRow(label: loc.spaceNameLabel, value: widget.spaceName ?? loc.notAvailable),
+                    _InfoRow(
+                      label: loc.spaceNameLabel,
+                      value: widget.spaceName ?? loc.notAvailable,
+                    ),
                     _InfoRow(
                       label: loc.coordinatesLabel,
-                      value: (widget.latitude != null && widget.longitude != null)
-                          ? '${widget.latitude!.toStringAsFixed(5)}°, ${widget.longitude!.toStringAsFixed(5)}°'
-                          : loc.notAvailable,
+                      value:
+                          (widget.latitude != null && widget.longitude != null)
+                              ? '${widget.latitude!.toStringAsFixed(5)}°, ${widget.longitude!.toStringAsFixed(5)}°'
+                              : loc.notAvailable,
                     ),
                   ],
                 ),
@@ -89,7 +159,8 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                       validator: (value) {
                         if (value == null || value.isEmpty) return null;
                         final emailRegex = RegExp(
-                            r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
+                          r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+                        );
                         if (!emailRegex.hasMatch(value)) {
                           return loc.emailLabel + ' is invalid';
                         }
@@ -137,65 +208,15 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                 const SizedBox(height: 20),
 
                 // Attachments
-                _InfoCard(
-                  icon: Icons.attach_file_outlined,
-                  title: loc.attachmentsTitle,
-                  children: [
-                    Text(
-                      loc.attachmentsHint,
-                      style: const TextStyle(color: Colors.black87),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _attachedFiles
-                          .map((file) => Chip(
-                                label: Text(file),
-                                deleteIcon: const Icon(Icons.close),
-                                onDeleted: () {
-                                  setState(() {
-                                    _attachedFiles.remove(file);
-                                  });
-                                },
-                              ))
-                          .toList(),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            // TODO: Implement add photos
-                          },
-                          icon: const Icon(Icons.camera_alt_outlined),
-                          label: Text(loc.addPhotosButton),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[200],
-                            foregroundColor: Colors.black87,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            // TODO: Implement add documents
-                          },
-                          icon: const Icon(Icons.insert_drive_file_outlined),
-                          label: Text(loc.addDocumentsButton),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[200],
-                            foregroundColor: Colors.black87,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                FileAttachmentSection(
+                  selectedFileNames: _attachedFiles,
+                  pickImages: _pickImages,
+                  pickGeneralFiles: _pickGeneralFiles,
+                  removeFile: (index) {
+                    setState(() {
+                      _attachedFiles.removeAt(index);
+                    });
+                  },
                 ),
 
                 const SizedBox(height: 30),
@@ -203,7 +224,8 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                 // Reporting Guidelines
                 Card(
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   elevation: 3,
                   child: ExpansionTile(
                     initiallyExpanded: _guidelinesExpanded,
@@ -214,7 +236,10 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                     },
                     leading: CircleAvatar(
                       backgroundColor: primaryBlue,
-                      child: const Icon(Icons.info_outline, color: Colors.white),
+                      child: const Icon(
+                        Icons.info_outline,
+                        color: Colors.white,
+                      ),
                     ),
                     title: Text(
                       loc.reportGuidelinesTitle,
@@ -225,7 +250,9 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                       ),
                     ),
                     childrenPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     children: [
                       _GuidelineText(loc.guideline1),
                       _GuidelineText(loc.guideline2),
@@ -243,26 +270,32 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: _isSubmitting ? null : _submitReport,
-                        icon: _isSubmitting
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2),
-                              )
-                            : const Icon(Icons.send),
+                        icon:
+                            _isSubmitting
+                                ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                                : const Icon(Icons.send),
                         label: Text(
                           _isSubmitting
                               ? loc.submittingLabel
                               : loc.submitReportButton,
                           style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primaryBlue,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14)),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                       ),
                     ),
@@ -271,12 +304,15 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                       child: OutlinedButton.icon(
                         onPressed: _isSubmitting ? null : _cancelReport,
                         icon: const Icon(Icons.cancel_outlined),
-                        label: Text(loc.cancelButton,
-                            style: const TextStyle(fontSize: 16)),
+                        label: Text(
+                          loc.cancelButton,
+                          style: const TextStyle(fontSize: 16),
+                        ),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14)),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                       ),
                     ),
@@ -291,52 +327,89 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
     );
   }
 
-  InputDecoration _inputDecoration(
-      {required String label, required String hint, IconData? icon}) {
+  InputDecoration _inputDecoration({
+    required String label,
+    required String hint,
+    IconData? icon,
+  }) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
       prefixIcon: icon != null ? Icon(icon, color: Colors.blue[700]) : null,
       filled: true,
       fillColor: Colors.white,
-      contentPadding:
-          const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.shade300)),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
       enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.shade300)),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
       focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.blue.shade700, width: 2)),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
+      ),
       errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.red.shade700)),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.red.shade700),
+      ),
       focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.red.shade700, width: 2)),
-      labelStyle: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w600),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.red.shade700, width: 2),
+      ),
+      labelStyle: TextStyle(
+        color: Colors.grey[700],
+        fontWeight: FontWeight.w600,
+      ),
       hintStyle: TextStyle(color: Colors.grey[500]),
     );
   }
 
-  void _submitReport() {
+  void _submitReport() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isSubmitting = true;
     });
 
-    Future.delayed(const Duration(seconds: 2), () {
+    try {
+      final result = await ReportingService.createReport(
+        description: _descriptionController.text,
+        email: _emailController.text.isNotEmpty ? _emailController.text : null,
+        file: _selectedFile, // File? picked from image picker
+        spaceName:
+            _spaceNameController.text.isNotEmpty
+                ? _spaceNameController.text
+                : null,
+        latitude: _currentLatitude,
+        longitude: _currentLongitude,
+      );
+
       setState(() {
         _isSubmitting = false;
       });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.reportSubmittedMessage)),
+        SnackBar(
+          content: Text(
+            result['message'] ??
+                'Report submitted successfully! ID: ${result['reportId']}',
+          ),
+        ),
       );
-      _clearForm();
-    });
+
+      _clearForm(); // Reset the form fields
+    } catch (e) {
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to submit report: $e')));
+    }
   }
 
   void _cancelReport() {
@@ -359,7 +432,11 @@ class _InfoCard extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  const _InfoCard({required this.icon, required this.title, required this.children});
+  const _InfoCard({
+    required this.icon,
+    required this.title,
+    required this.children,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -381,7 +458,10 @@ class _InfoCard extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue[700]),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue[700],
+                  ),
                 ),
               ],
             ),
@@ -411,14 +491,14 @@ class _InfoRow extends StatelessWidget {
             width: 110,
             child: Text(
               '$label:',
-              style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87),
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(color: Colors.black87),
-            ),
+            child: Text(value, style: const TextStyle(color: Colors.black87)),
           ),
         ],
       ),

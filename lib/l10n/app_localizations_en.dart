@@ -715,4 +715,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get connectionTimeout => 'Connection timed out. Please check your internet and try again.';
+
+  @override
+  String get offlineNoCachedToken => 'No offline login available. Please connect to the internet.';
+
+  @override
+  String get offlineLoginSuccess => 'You have successfully logged in offline';
 }

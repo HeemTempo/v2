@@ -288,6 +288,10 @@
   "okButton": "Sawa",
   "usernameRequired": "Jina la mtumiaji linahitajika",
   "passwordRequired": "Nenosiri linahitajika",
-  "connectionTimeout": "Muunganisho umekwisha muda. Tafadhali angalia intaneti yako na ujaribu tena."
+  "connectionTimeout": "Muunganisho umekwisha muda. Tafadhali angalia intaneti yako na ujaribu tena.",
+  "offlineNoCachedToken": "Hakuna uwezo wa kuingia bila mtandao. Tafadhali ungana na intaneti.",
+  "offlineLoginSuccess": "Umefanikiwa kuingia bila mtandao"
+
+
 
 }

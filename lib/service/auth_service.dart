@@ -1,4 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:openspace_mobile_app/core/network/connectivity_service.dart';
 import '../api/graphql/auth_mutation.dart';
 import '../api/graphql/graphql_service.dart';
 import '../model/user_model.dart';
@@ -60,65 +61,82 @@ class AuthService {
     return User.fromRegisterJson(user);
   }
 
-  Future<Map<String, dynamic>?> login(String username, String password, {int retryCount = 3}) async {
-    final sanitizedUsername = _sanitizeInput(username);
-    int attempts = 0;
-    while (attempts < retryCount) {
-      attempts++;
-      try {
-        print('AuthService: Login attempt $attempts/$retryCount for username: $sanitizedUsername');
-        final result = await _graphQLService.mutate(
-          loginMutation,
-          variables: {
-            "input": {
-              "username": sanitizedUsername,
-              "password": password,
-            },
+  Future<User> login(String username, String password, {int retryCount = 3}) async {
+  final sanitizedUsername = _sanitizeInput(username);
+  int attempts = 0;
+  while (attempts < retryCount) {
+    attempts++;
+    try {
+      print('AuthService: Login attempt $attempts/$retryCount for username: $sanitizedUsername');
+      final result = await _graphQLService.mutate(
+        loginMutation,
+        variables: {
+          "input": {
+            "username": sanitizedUsername,
+            "password": password,
           },
-        );
+        },
+      );
 
-        if (result.hasException) {
-          print('AuthService Login Exception: ${result.exception}');
-          if (result.exception.toString().contains('TimeoutException') && attempts < retryCount) {
-            print('AuthService: Timeout detected, retrying after 2s...');
-            await Future.delayed(Duration(seconds: 2));
-            continue;
-          }
-          throw Exception("Login failed");
-        }
-
-        final output = result.data?['loginUser']?['output'];
-        print('AuthService Login response output: $output');
-
-        if (output == null || output['success'] != true) {
-          throw Exception(output?['message'] ?? "Login failed, no success response.");
-        }
-
-        final accessToken = output['user']?['accessToken'] as String?;
-        final refreshToken = output['user']?['refreshToken'] as String?;
-        if (accessToken != null) {
-          await _storage.write(key: _tokenKey, value: accessToken);
-          print('AuthService: AccessToken stored securely');
-        } else {
-          print('AuthService Warning: No accessToken found in login response');
-          throw Exception('Login successful, no accessToken found.');
-        }
-
-        return output;
-      } catch (e) {
-        print('AuthService Login Error (Attempt $attempts/$retryCount): $e');
-        if (e.toString().contains('TimeoutException') && attempts < retryCount) {
-          await Future.delayed(Duration(seconds: 2));
+      if (result.hasException) {
+        print('AuthService Login Exception: ${result.exception}');
+        if (result.exception.toString().contains('TimeoutException') && attempts < retryCount) {
+          await Future.delayed(const Duration(seconds: 2));
           continue;
         }
-        if (e.toString().contains('SocketException')) {
-          throw Exception('Network error: Please check your internet connection.');
-        }
-        throw Exception('Login failed');
+        throw Exception("Login failed");
       }
+
+      final output = result.data?['loginUser']?['output'];
+      if (output == null || output['success'] != true) {
+        throw Exception(output?['message'] ?? "Login failed, no success response.");
+      }
+
+      final accessToken = output['user']?['accessToken'] as String?;
+      if (accessToken != null) {
+        await _storage.write(key: _tokenKey, value: accessToken);
+      }
+
+      // **Return User object directly**
+      return User.fromLoginJson(output);
+
+    } catch (e) {
+      if (e.toString().contains('TimeoutException') && attempts < retryCount) {
+        await Future.delayed(const Duration(seconds: 2));
+        continue;
+      }
+      throw Exception('Login failed: $e');
     }
-    throw Exception('Login failed after attempts due to timeout.');
   }
+
+  throw Exception('Login failed after $retryCount attempts.');
+}
+
+  Future<User?> loginOffline(ConnectivityService connectivityService) async {
+  if (!connectivityService.isOnline) {
+    print('AuthService: Offline detected');
+    final cachedToken = await getToken();
+
+    if (cachedToken != null) {
+      print('AuthService: Offline login allowed with cached token');
+      // Create a minimal User object using the cached token
+      return User(
+        id: '', // Unknown offline
+        username: '', // Unknown offline
+        accessToken: cachedToken,
+        refreshToken: null,
+        isStaff: false,
+        isWardExecutive: false,
+      );
+    } else {
+      throw Exception('Offline login failed: no cached token available.');
+    }
+  } else {
+    print('AuthService: Network available, offline login skipped');
+    return null; // fallback to online login
+  }
+}
+
 
   static Future<String?> getToken() async {
     print('AuthService: Retrieving token from secure storage');
