@@ -1,0 +1,307 @@
+{
+  "@@locale": "en",
+
+  "appName": "OpenSpace",
+  "version": "Version 1.0.0",
+  "splashTagline": "Connecting Communities",
+
+  "termsPrivacyTitle": "Terms & Privacy Policy",
+  "termsOfService": "Terms of Service",
+  "privacyPolicy": "Privacy Policy",
+  "termsContent": "Welcome to OpenSpace, a platform dedicated to enhancing community engagement through reporting issues and booking public spaces. By using OpenSpace, you agree to the following terms ...",
+  "privacyContent": "At OpenSpace, we prioritize your privacy and adhere to Tanzania’s Personal Data Protection Act, 2022...",
+  "effectiveDate": "Effective Date: 30 July 2025",
+  "copyrightNotice": "© 2025 OpenSpace Tanzania",
+  "acceptAndReturn": "Accept and Return",
+
+  "welcomeBack": "Welcome back",
+  "signInSubtitle": "Please enter your credentials to sign in",
+  "usernameLabel": "Username",
+  "usernameHint": "Enter your username",
+  "passwordLabel": "Password",
+  "passwordHint": "********",
+  "rememberMe": "Remember me",
+  "forgotPassword": "Forgot password?",
+  "signInButton": "Sign in",
+  "dontHaveAccount": "Don't have an account? Create account",
+  "loginSuccess": "Successfully Logged In!",
+  "loginFailed": "Login failed. Please check your credentials.",
+
+  "createAccountTitle": "Create Account",
+  "signUpSubtitle": "Please enter your details to sign up",
+  "emailLabel": "Email address",
+  "emailHint": "Enter your email",
+  "wardLabel": "Select Ward",
+  "passwordConfirmLabel": "Confirm Password",
+  "agreeTerms": "I agree with Terms and Privacy",
+  "signUpButton": "Sign Up",
+  "alreadyHaveAccount": "Already have an account? Sign In",
+  "signUpSuccess": "Registered successfully! Please sign in.",
+  "signUpErrorAgree": "You must agree to the Terms and Privacy",
+  "emailRequired": "Email is required",
+  "emailInvalid": "Enter a valid email",
+  "wardRequired": "Ward is required",
+  "passwordMinLength": "Password must be at least 8 characters",
+  "passwordConfirmRequired": "Please confirm your password",
+  "passwordsDoNotMatch": "Passwords do not match",
+
+  "dashboard": "Dashboard",
+  "notificationsTitle": "Notifications",
+  "myProfile": "My Profile",
+  "helpFaqs": "Help & FAQs",
+  "termsConditions": "Terms & Conditions",
+  "privacyPolicyMenu": "Privacy Policy",
+  "rateApp": "Rate This App",
+  "about": "About",
+  "settings": "Settings",
+  "signOut": "Sign Out",
+
+  "reportIssue": "Report Issue",
+  "reportIssueSubtitle": "Submit concerns about open spaces",
+  "viewReports": "View Reports",
+  "viewReportsSubtitle": "Check status of reported issues",
+  "bookSpace": "Book Space",
+  "bookSpaceSubtitle": "Reserve an open space",
+  "trackProgress": "Track Progress",
+  "trackProgressSubtitle": "Monitor community improvements",
+
+  "quickStats": "Quick Stats",
+  "openSpaces": "Open Spaces",
+  "activeReports": "Active Reports",
+  "bookings": "Bookings",
+
+  "quickActions": "Quick Actions",
+  "recentActivities": "Recent Activities",
+
+  "newReportSubmitted": "New report submitted",
+  "spaceBooked": "Space booked",
+  "issueResolved": "Issue resolved",
+
+  "emergencyContacts": "Emergency Contacts",
+  "police": "Police",
+  "fire": "Fire",
+  "ambulance": "Ambulance",
+  "close": "Close",
+
+  "heroTitle1": "Dar es Salaam Open Spaces",
+  "heroTitle2": "Community Gardens",
+  "heroTitle3": "Public Parks & Recreation",
+  "heroTitle4": "Urban Green Spaces",
+  "heroSubtitle1": "Building stronger communities together",
+  "heroSubtitle2": "Growing together as one community",
+  "heroSubtitle3": "Fun for families and friends",
+  "heroSubtitle4": "Nature in the heart of the city",
+
+  "mapScreenAppBar": "Open Spaces Map",
+  "searchHint": "Search public open space",
+  "latitudeLabel": "Latitude",
+  "longitudeLabel": "Longitude",
+  "openSpaceDetails": "Open Space Details",
+  "amenitiesLabel": "Amenities",
+  "getDirectionsButton": "Get Directions",
+  "bookNowButton": "Book Now",
+  "reportButton": "Report",
+  "cancelButton": "Cancel",
+  "unknownArea": "Unknown Area",
+  "noSpaceSelected": "No space selected for booking.",
+  "spaceNotAvailable": "This space is currently not available for booking.",
+  "pinpointedNotPublic": "Pinpointed area is not a Public open space",
+  "unableFetchLocation": "Unable to fetch location.",
+  "locationError": "Location error",
+  "directionsError": "Unable to fetch your current location.",
+  "distanceInfo": "Directions to {area}:\nStraight-line distance: {distance} km.\n(Implement a directions API for detailed navigation.)",
+  "@distanceInfo": {
+    "placeholders": {
+      "area": {},
+      "distance": {}
+    }
+  },
+
+  "reportPageTitle": "OpenSpace Report",
+  "reportHeader": "Report unused or underutilized public spaces in your community",
+  "locationDetailsTitle": "Location Details",
+  "spaceNameLabel": "Space Name",
+  "coordinatesLabel": "Coordinates",
+  "yourInfoTitle": "Your Information",
+  "phoneLabel": "Phone Number (Optional)",
+  "issueDescriptionTitle": "Issue Description",
+  "issueDescriptionHint": "Please provide a clear description of the issue you've observed...",
+  "attachmentsTitle": "Attachments",
+  "attachmentsHint": "Add photos or documents to support your report (max 5 files)",
+  "addPhotosButton": "Add Photos",
+  "addDocumentsButton": "Add Documents",
+  "reportGuidelinesTitle": "Reporting Guidelines",
+  "guideline1": "Provide accurate details to assist government officials.",
+  "guideline2": "Avoid duplicate reports; check existing submissions.",
+  "guideline3": "Submit issues that benefit the public (e.g., infrastructure, safety).",
+  "guideline4": "Attach clear evidence (photos, documents) if available.",
+  "submitReportButton": "Submit Report",
+  "submittingLabel": "Submitting...",
+  "reportSubmittedMessage": "Report submitted successfully!",
+
+
+
+  "bookingPageTitle": "Book Community Space",
+  "bookingHeader": "Booking Details",
+  "fullNameLabel": "Full Name *",
+  "phoneBookingLabel": "Phone Number *",
+  "emailBookingLabel": "Email Address (Optional)",
+  "spaceDistrictLabel": "Space Name / District *",
+  "startDateLabel": "Start Date *",
+  "endDateLabel": "End Date",
+  "startTimeLabel": "Start Time *",
+  "endTimeLabel": "End Time *",
+  "activitiesLabel": "Activities Planned *",
+  "submitBookingButton": "Submit Booking Request",
+  "bookingTermsTitle": "Booking Terms",
+  "bookingTerm1": "Bookings are subject to availability",
+  "bookingTerm2": "Please arrive on time for your scheduled slot",
+  "bookingTerm3": "Cancellations must be made at least 24 hours in advance",
+  "bookingTerm4": "Keep the space clean and follow all facility rules",
+
+  "reportedIssuesTitle": "Reported Issues",
+  "noIssuesMessage": "No issues reported yet.",
+  "viewMapLabel": "View Map",
+  "statusResolved": "Resolved",
+  "statusPending": "Pending",
+  "statusRejected": "Rejected",
+  "statusUnknown": "Unknown",
+
+  "profileTitle": "Profile",
+  "profileNoLogin": "Please log in to view your profile.",
+  "profileFailedLoad": "Failed to load profile",
+  "profileNoData": "No profile data available.",
+  "fetchProfile": "Fetch Profile",
+  "sessionExpired": "Session expired or invalid. Please log in again.",
+
+  "generalSection": "GENERAL",
+  "activitySection": "ACTIVITY",
+
+  "profileSettings": "Profile Settings",
+  "profileSettingsSubtitle": "Update and modify your profile",
+
+  "privacy": "Privacy",
+  "privacySubtitle": "Change your password",
+  "privacyPopupTitle": "Privacy Settings",
+  "privacyPopupMessage": "Password change feature coming soon!",
+  "privacyPopupButton": "Got it!",
+
+  "myReports": "My Reports",
+  "myReportsSubtitle": "View and manage your reports",
+
+  "myBookings": "My Bookings",
+  "myBookingsSubtitle": "View and manage your bookings",
+
+  "editProfileTitle": "Edit Profile",
+  "tapChangePhoto": "Tap to change profile photo",
+  "personalInformation": "Personal Information",
+
+  "name": "Name",
+  "enterName": "Enter your name",
+  "emailInput": "Email",
+  "enterEmail": "Enter your email",
+  "phoneNumber": "Phone Number",
+  "enterPhoneNumber": "Enter your phone number",
+  "passwordInput": "Password",
+  "enterPassword": "Enter new password",
+
+  "saveChanges": "Save Changes",
+  "profileUpdatedSuccess": "Profile updated successfully!",
+
+  "settingsTitle": "Settings",
+  "changeLanguage": "Change Language",
+  "theme": "Theme",
+  "notificationSettings": "Notification Settings",
+
+  "resetPasswordTitle": "Reset Password",
+  "resetPasswordInstruction": "Enter your new password below.",
+  "resetPasswordNewPassword": "New Password",
+  "resetPasswordConfirmPassword": "Confirm New Password",
+  "resetPasswordSubmitButton": "Set New Password",
+  "resetPasswordSuccessMessage": "{message} You can now log in with your new password.",
+  "@resetPasswordSuccessMessage": {
+    "placeholders": {
+      "message": {}
+    }
+  },
+  "resetPasswordErrorMessageEmptyPassword": "Please enter a new password",
+  "resetPasswordErrorMessageShortPassword": "Password must be at least 8 characters long",
+  "resetPasswordErrorMessageConfirmEmpty": "Please confirm your new password",
+  "resetPasswordErrorMessageMismatch": "Passwords do not match",
+
+
+  "themeTitle": "Choose Theme",
+  "themeLightMode": "Light Mode",
+  "themeDarkMode": "Dark Mode",
+
+
+  "languageTitle": "Select Language", 
+  "english": "English   ",
+  
+  "kiswahili": "Kiswahili",
+
+  "userTypeTitle": "Join OpenSpace",
+  "userTypeDescription": "Sign in to track your reports and bookings, or continue anonymously to explore open spaces.",
+  "signInRegisteredButton": "Sign In as Registered User",
+  "continueAnonymousButton": "Continue as Anonymous",
+  "termsPrivacyButton": "Terms & Privacy Policy",
+
+
+  "onboardingTitle1": "Report Issues",
+  "onboardingDescription1": "Easily report unusual activities in open spaces to keep your community safe.",
+
+  "onboardingTitle2": "Book Spaces",
+  "onboardingDescription2": "Reserve open spaces for community events or personal use with a few taps.",
+
+  "skipButton": "Skip",
+  "backButton": "Back",
+  "nextButton": "Next",
+
+
+
+  "search": "Search",
+  "enterReferenceId": "Enter Reference ID",
+  "enterReferenceIdHint": "Enter Reference ID...",
+  "enterReferenceIdPrompt": "Enter a Reference ID and click Search to view report details.",
+  "enterReferenceIdError": "Please enter a Reference ID",
+  "noReportFound": "No report found for Reference ID: {refId}",
+  "@noReportFound": {
+    "description": "Message when no report matches the entered Reference ID",
+    "placeholders": {
+      "refId": {}
+    }
+  },
+  "notAvailable": "N/A",
+  "anonymousUser": "Anonymous User",
+  "attachmentViewNotImplemented": "Attachment viewing not yet implemented",
+  "description": "Description",
+  "attachments": "Attachments",
+   "noAttachments": "No attachments provided.",
+  "location": "Location",
+  "reportId": "Report ID",
+
+ 
+  "activeBookings": "Active Bookings",
+  "pastBookings": "Past Bookings",
+  "pendingBookings": "Pending Bookings",
+  "noBookingsMessage": "No bookings found.",
+  "status": "Status",
+  "contact": "Contact",
+  "purpose": "Purpose",
+  "district": "District",
+  "error": "Error",
+
+  "okButton": "OK",
+  "usernameRequired": "Username is required",
+  "passwordRequired": "Password is required",
+  "connectionTimeout": "Connection timed out. Please check your internet and try again.",
+  "offlineNoCachedToken": "No offline login available. Please connect to the internet.",
+  "offlineLoginSuccess": "You have successfully logged in offline"
+
+  
+
+
+  
+  
+  
+}
