@@ -292,11 +292,16 @@
   "error": "Error",
 
   "okButton": "OK",
+
+  "onlineMode": "Online",
+   "offlineMode": "Offline",
   "usernameRequired": "Username is required",
   "passwordRequired": "Password is required",
   "connectionTimeout": "Connection timed out. Please check your internet and try again.",
   "offlineNoCachedToken": "No offline login available. Please connect to the internet.",
-  "offlineLoginSuccess": "You have successfully logged in offline"
+  "offlineLoginSuccess": "You have successfully logged in offline",
+  "offlineLoginHint": "You are offline. Tap below to continue with your saved session",
+  "invalidCredentials": "Invalid username or password"
 
   
 

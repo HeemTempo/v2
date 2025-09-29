@@ -708,6 +708,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get okButton => 'OK';
 
   @override
+  String get onlineMode => 'Online';
+
+  @override
+  String get offlineMode => 'Offline';
+
+  @override
   String get usernameRequired => 'Username is required';
 
   @override
@@ -721,4 +727,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get offlineLoginSuccess => 'You have successfully logged in offline';
+
+  @override
+  String get offlineLoginHint => 'You are offline. Tap below to continue with your saved session';
+
+  @override
+  String get invalidCredentials => 'Invalid username or password';
 }

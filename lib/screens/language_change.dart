@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/locale_provider.dart';
 import '../l10n/app_localizations.dart';
+import 'package:openspace_mobile_app/utils/constants.dart';
 
 class LanguageSettings extends StatelessWidget {
   const LanguageSettings({super.key});
@@ -12,7 +13,7 @@ class LanguageSettings extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        backgroundColor: AppConstants.primaryBlue, 
         elevation: 2,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),

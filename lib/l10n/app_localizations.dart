@@ -1481,6 +1481,18 @@ abstract class AppLocalizations {
   /// **'OK'**
   String get okButton;
 
+  /// No description provided for @onlineMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get onlineMode;
+
+  /// No description provided for @offlineMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get offlineMode;
+
   /// No description provided for @usernameRequired.
   ///
   /// In en, this message translates to:
@@ -1510,6 +1522,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You have successfully logged in offline'**
   String get offlineLoginSuccess;
+
+  /// No description provided for @offlineLoginHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You are offline. Tap below to continue with your saved session'**
+  String get offlineLoginHint;
+
+  /// No description provided for @invalidCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid username or password'**
+  String get invalidCredentials;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

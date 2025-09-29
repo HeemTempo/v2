@@ -5,6 +5,7 @@ import 'package:openspace_mobile_app/data/repository/booking_repository.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:openspace_mobile_app/utils/constants.dart';
 
 
 
@@ -65,21 +66,6 @@ class _BookingPageState extends State<BookingPage> {
     }
   }
 
-  Future<void> _selectTime(BuildContext context, bool isStart) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: (isStart ? _startTime : _endTime) ?? TimeOfDay.now(),
-    );
-    if (picked != null) {
-      setState(() {
-        if (isStart) {
-          _startTime = picked;
-        } else {
-          _endTime = picked;
-        }
-      });
-    }
-  }
 
   Future<void> _pickFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -120,25 +106,6 @@ class _BookingPageState extends State<BookingPage> {
       return;
     }
 
-    if (_startTime == null) {
-      QuickAlert.show(
-        context: context,
-        type: QuickAlertType.error,
-        title: 'Validation Error',
-        text: 'Please select a start time.',
-      );
-      return;
-    }
-
-    if (_endTime == null) {
-      QuickAlert.show(
-        context: context,
-        type: QuickAlertType.error,
-        title: 'Validation Error',
-        text: 'Please select an end time.',
-      );
-      return;
-    }
 
     setState(() => _isSubmitting = true);
 
@@ -216,14 +183,14 @@ class _BookingPageState extends State<BookingPage> {
   InputDecoration _buildInputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Color(0xFF6B48FF)),
+      labelStyle: const TextStyle(color: AppConstants.primaryBlue),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide.none,
       ),
       filled: true,
       fillColor: Colors.white,
-      prefixIcon: Icon(icon, color: const Color(0xFF6B48FF)),
+      prefixIcon: Icon(icon, color: AppConstants.primaryBlue ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     );
   }
@@ -287,7 +254,7 @@ class _BookingPageState extends State<BookingPage> {
       appBar: AppBar(
         title: const Text('Book Community Space'),
         centerTitle: true,
-        backgroundColor: const Color(0xFF6B48FF),
+        backgroundColor: AppConstants.primaryBlue,
         foregroundColor: Colors.white,
         elevation: 2,
         leading: IconButton(
@@ -307,7 +274,7 @@ class _BookingPageState extends State<BookingPage> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF6B48FF),
+                  color: AppConstants.primaryBlue,
                 ),
               ),
               const SizedBox(height: 16),
@@ -385,35 +352,6 @@ class _BookingPageState extends State<BookingPage> {
                   ),
                 ],
               ),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildDateTimeField(
-                      label: 'Start Time *',
-                      icon: Icons.access_time,
-                      text:
-                          _startTime == null
-                              ? 'HH:MM'
-                              : _startTime!.format(context),
-                      onTap: () => _selectTime(context, true),
-                      isRequired: true,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildDateTimeField(
-                      label: 'End Time *',
-                      icon: Icons.access_time,
-                      text:
-                          _endTime == null
-                              ? 'HH:MM'
-                              : _endTime!.format(context),
-                      onTap: () => _selectTime(context, false),
-                      isRequired: true,
-                    ),
-                  ),
-                ],
-              ),
               _buildFormField(
                 controller: _activitiesController,
                 label: 'Activities Planned *',
@@ -428,7 +366,7 @@ class _BookingPageState extends State<BookingPage> {
               const SizedBox(height: 16),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6B48FF),
+                  backgroundColor: AppConstants.primaryBlue,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -471,7 +409,7 @@ class _BookingPageState extends State<BookingPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF6B48FF),
+                        color: AppConstants.primaryBlue,
                       ),
                     ),
                     SizedBox(height: 8),

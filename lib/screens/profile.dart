@@ -9,6 +9,7 @@ import '../utils/alert/access_denied_dialog.dart';
 import '../widget/custom_navigation_bar.dart';
 import 'bookings.dart';
 import '../providers/user_provider.dart';
+import '../l10n/app_localizations.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -54,7 +55,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         errorMessage = errorMessage.substring("Exception: ".length);
       }
       setState(() {
-        _error = 'Failed to load profile';
+        _error = AppLocalizations.of(context)!.profileFailedLoad;
         _isLoading = false;
       });
 
@@ -63,9 +64,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
           errorMessage.toLowerCase().contains('unauthorized')) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Session expired or invalid. Please log in again.'),
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.sessionExpired),
+              duration: const Duration(seconds: 2),
             ),
           );
           Future.delayed(const Duration(milliseconds: 2100), () {
@@ -101,7 +102,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final user = Provider.of<UserProvider>(context).user;
+
     if (user.isAnonymous) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showAccessDeniedDialog(context, featureName: "profile");
@@ -114,9 +117,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
             child: Scaffold(
               appBar: AppBar(
                 backgroundColor: AppConstants.primaryBlue,
-                title: const Text(
-                  'Profile',
-                  style: TextStyle(
+                title: Text(
+                  loc.profileTitle,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color: AppConstants.white,
@@ -124,8 +127,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 ),
                 centerTitle: true,
               ),
-              body: const Center(
-                child: Text("Please log in to view your profile."),
+              body: Center(
+                child: Text(loc.profileNoLogin),
               ),
               bottomNavigationBar: CustomBottomNavBar(
                 currentIndex: _currentIndex,
@@ -138,7 +141,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white, // Changed background to white
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: AppConstants.primaryBlue,
         leading: IconButton(
@@ -147,9 +150,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
             Navigator.pushReplacementNamed(context, '/home');
           },
         ),
-        title: const Text(
-          'Profile',
-          style: TextStyle(
+        title: Text(
+          loc.profileTitle,
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: AppConstants.white,
@@ -178,7 +181,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
           ),
         ],
       ),
-      body: _buildBody(),
+      body: _buildBody(loc),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: _currentIndex,
         onTap: _onNavTap,
@@ -186,7 +189,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(AppLocalizations loc) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -205,7 +208,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _fetchProfile,
-                child: const Text("Retry"),
+                child: Text(loc.fetchProfile),
               ),
             ],
           ),
@@ -219,23 +222,24 @@ class _UserProfilePageState extends State<UserProfilePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                "No profile data available.",
+              Text(
+                loc.profileNoData,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.orange, fontSize: 16),
+                style: const TextStyle(color: Colors.orange, fontSize: 16),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _fetchProfile,
-                child: const Text("Fetch Profile"),
+                child: Text(loc.fetchProfile),
               ),
             ],
           ),
         ),
       );
     }
-    String name = _profile?['name'] ?? _profile?['username'] ?? 'N/A';
-    String email = _profile?['email'] ?? 'No email provided';
+
+    String name = _profile?['name'] ?? _profile?['username'] ?? loc.notAvailable;
+    String email = _profile?['email'] ?? loc.notAvailable;
     String? photoUrl =
         _profile?['photoUrl'] ?? _profile?['profile_picture'] ?? _profile?['user']?['profile_picture'];
 
@@ -244,7 +248,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
@@ -255,11 +258,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
               ),
               margin: const EdgeInsets.only(bottom: 24),
               child: Padding(
-                padding: const EdgeInsets.all(24.0), // Increased padding for better spacing
+                padding: const EdgeInsets.all(24.0),
                 child: Column(
                   children: [
                     CircleAvatar(
-                      radius: 60, // Larger avatar radius
+                      radius: 60,
                       backgroundColor: Colors.grey[200],
                       backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
                           ? NetworkImage(photoUrl)
@@ -292,7 +295,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
           ),
           const SizedBox(height: 16),
           Text(
-            'GENERAL',
+            loc.generalSection,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: AppConstants.primaryBlue.withOpacity(0.85),
@@ -303,8 +306,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
           _buildSettingsItem(
             context,
             icon: Icons.settings_outlined,
-            title: 'Profile Settings',
-            subtitle: 'Update and modify your profile',
+            title: loc.profileSettings,
+            subtitle: loc.profileSettingsSubtitle,
             onTap: () {
               if (_profile != null) {
                 Navigator.push(
@@ -319,14 +322,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
           _buildSettingsItem(
             context,
             icon: Icons.lock_outline,
-            title: 'Privacy',
-            subtitle: 'Change your password',
+            title: loc.privacy,
+            subtitle: loc.privacySubtitle,
             onTap: () {
               _showPopup(
                 context,
-                title: 'Privacy Settings',
-                message: 'Password change feature coming soon!',
-                buttonText: 'Got it!',
+                title: loc.privacyPopupTitle,
+                message: loc.privacyPopupMessage,
+                buttonText: loc.privacyPopupButton,
                 icon: Icons.lock_outline,
                 iconColor: Colors.blueAccent,
                 onConfirm: () => Navigator.pop(context),
@@ -336,15 +339,15 @@ class _UserProfilePageState extends State<UserProfilePage> {
           _buildSettingsItem(
             context,
             icon: Icons.notifications_outlined,
-            title: 'Notifications',
-            subtitle: 'Manage your notification preferences',
+            title: loc.notificationsTitle,
+            subtitle: loc.notificationSettings,
             onTap: () {
               Navigator.pushNamed(context, '/user-notification');
             },
           ),
           const SizedBox(height: 24),
           Text(
-            'ACTIVITY',
+            loc.activitySection,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: AppConstants.primaryBlue.withOpacity(0.85),
@@ -355,8 +358,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
           _buildSettingsItem(
             context,
             icon: Icons.report_problem_outlined,
-            title: 'My Reports',
-            subtitle: 'View and manage your reports',
+            title: loc.myReports,
+            subtitle: loc.myReportsSubtitle,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -367,8 +370,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
           _buildSettingsItem(
             context,
             icon: Icons.event_available_outlined,
-            title: 'My Bookings',
-            subtitle: 'View and manage your bookings',
+            title: loc.myBookings,
+            subtitle: loc.myBookingsSubtitle,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(

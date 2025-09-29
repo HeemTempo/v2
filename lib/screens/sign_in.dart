@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:openspace_mobile_app/core/network/connectivity_service.dart';
 import 'package:quickalert/quickalert.dart';
@@ -24,11 +23,13 @@ class _SignInScreenState extends State<SignInScreen> {
   bool _obscurePassword = true;
   bool _rememberMe = false;
   late final AuthService _authService;
+  bool _isCheckingAutoLogin = true;
 
   @override
   void initState() {
     super.initState();
     _authService = AuthService();
+    _checkAutoLogin();
   }
 
   @override
@@ -36,6 +37,39 @@ class _SignInScreenState extends State<SignInScreen> {
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  // Check if user can auto-login (offline mode with cached credentials)
+  Future<void> _checkAutoLogin() async {
+    try {
+      final connectivityService = Provider.of<ConnectivityService>(
+        context,
+        listen: false,
+      );
+
+      // Only auto-login if offline and has cached credentials
+      if (!connectivityService.isOnline) {
+        final offlineUser = await _authService.getOfflineUser();
+        
+        if (offlineUser != null && mounted) {
+          final userProvider = Provider.of<UserProvider>(
+            context,
+            listen: false,
+          );
+          userProvider.setUser(offlineUser);
+          
+          // Navigate to home
+          Navigator.pushReplacementNamed(context, '/home');
+          return;
+        }
+      }
+    } catch (e) {
+      print('Auto-login error: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isCheckingAutoLogin = false);
+      }
+    }
   }
 
   void _showAlert(
@@ -57,70 +91,116 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
- void _signIn() async {
-  final loc = AppLocalizations.of(context)!;
+  void _signIn() async {
+    final loc = AppLocalizations.of(context)!;
 
-  if (!_formKey.currentState!.validate()) return;
+    // Get connectivity status
+    final connectivityService = Provider.of<ConnectivityService>(
+      context,
+      listen: false,
+    );
 
-  setState(() => _isLoading = true);
+    // OFFLINE MODE: Try to use cached credentials
+    if (!connectivityService.isOnline) {
+      setState(() => _isLoading = true);
+      
+      try {
+        final offlineUser = await _authService.getOfflineUser();
+        
+        if (offlineUser == null) {
+          throw Exception(loc.offlineNoCachedToken);
+        }
 
-  final connectivityService = Provider.of<ConnectivityService>(context, listen: false);
+        if (!mounted) return;
+        setState(() => _isLoading = false);
 
-  try {
-    User? user;
+        // Set user in provider
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        userProvider.setUser(offlineUser);
 
-    if (connectivityService.isOnline) {
-      // ONLINE login
-      user = await _authService.login(
+        // Show success and navigate
+        _showAlert(
+          QuickAlertType.success,
+          loc.offlineLoginSuccess,
+          onConfirmed: () {
+            if (mounted) Navigator.pushReplacementNamed(context, '/home');
+          },
+        );
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+
+        _showAlert(
+          QuickAlertType.error,
+          loc.offlineNoCachedToken,
+        );
+      }
+      return;
+    }
+
+    // ONLINE MODE: Validate form and login with credentials
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final user = await _authService.login(
         _usernameController.text.trim(),
         _passwordController.text.trim(),
       );
-    } else {
-      // OFFLINE login
-      user = await _authService.loginOffline();
-      if (user == null) throw Exception('No cached credentials for offline login.');
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      // Set user in provider
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      userProvider.setUser(user);
+
+      // Show success alert
+      _showAlert(
+        QuickAlertType.success,
+        loc.loginSuccess,
+        onConfirmed: () {
+          if (mounted) Navigator.pushReplacementNamed(context, '/home');
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      final errorMessage = e.toString().replaceFirst('Exception: ', '');
+
+      _showAlert(
+        QuickAlertType.error,
+        _getErrorMessage(errorMessage, loc),
+      );
     }
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    // Set user in provider
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    userProvider.setUser(user);
-
-    // Show success alert
-    _showAlert(
-      QuickAlertType.success,
-      connectivityService.isOnline
-          ? loc.loginSuccess
-          : loc.offlineLoginSuccess,
-      onConfirmed: () {
-        if (mounted) Navigator.pushReplacementNamed(context, '/home');
-      },
-    );
-  } catch (e) {
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    final errorMessage = e.toString().replaceFirst('Exception: ', '');
-
-    _showAlert(
-      QuickAlertType.error,
-      errorMessage.contains('timeout')
-          ? loc.connectionTimeout
-          : errorMessage.contains('Offline login failed')
-              ? loc.offlineNoCachedToken
-              : loc.loginFailed,
-    );
   }
-}
 
-
-
+  String _getErrorMessage(String error, AppLocalizations loc) {
+    if (error.contains('timeout') || error.contains('network')) {
+      return loc.connectionTimeout;
+    } else if (error.contains('Invalid credentials') || 
+               error.contains('invalid username') ||
+               error.contains('invalid password')) {
+      return loc.invalidCredentials ?? 'Invalid username or password';
+    }
+    return error.isNotEmpty ? error : loc.loginFailed;
+  }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
+    final connectivityService = Provider.of<ConnectivityService>(context);
+
+    // Show loading while checking auto-login
+    if (_isCheckingAutoLogin) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
     return Scaffold(
       body: LayoutBuilder(
@@ -143,6 +223,53 @@ class _SignInScreenState extends State<SignInScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            // Connectivity status indicator
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: connectivityService.isOnline
+                                    ? Colors.green.withOpacity(0.1)
+                                    : Colors.orange.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: connectivityService.isOnline
+                                      ? Colors.green
+                                      : Colors.orange,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    connectivityService.isOnline
+                                        ? Icons.wifi
+                                        : Icons.wifi_off,
+                                    size: 16,
+                                    color: connectivityService.isOnline
+                                        ? Colors.green
+                                        : Colors.orange,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    connectivityService.isOnline
+                                        ? loc.onlineMode ?? 'Online'
+                                        : loc.offlineMode ?? 'Offline',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: connectivityService.isOnline
+                                          ? Colors.green
+                                          : Colors.orange,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
                             Image.asset('assets/images/bibi.png', height: 75),
                             const SizedBox(height: 16),
                             Text(
@@ -159,121 +286,161 @@ class _SignInScreenState extends State<SignInScreen> {
                                 fontSize: 16,
                                 color: AppConstants.grey,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 24),
-                            TextFormField(
-                              controller: _usernameController,
-                              decoration: InputDecoration(
-                                labelText: loc.usernameLabel,
-                                hintText: loc.usernameHint,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                              ),
-                              validator:
-                                  (value) =>
-                                      value == null || value.isEmpty
-                                          ? loc.usernameRequired
-                                          : null,
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: _obscurePassword,
-                              decoration: InputDecoration(
-                                labelText: loc.passwordLabel,
-                                hintText: loc.passwordHint,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscurePassword
-                                        ? Icons.visibility_off
-                                        : Icons.visibility,
+
+                            // Show input fields only in ONLINE mode
+                            if (connectivityService.isOnline) ...[
+                              TextFormField(
+                                controller: _usernameController,
+                                decoration: InputDecoration(
+                                  labelText: loc.usernameLabel,
+                                  hintText: loc.usernameHint,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8.0),
                                   ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _obscurePassword = !_obscurePassword;
-                                    });
-                                  },
+                                  prefixIcon: const Icon(Icons.person),
                                 ),
+                                validator: (value) =>
+                                    value == null || value.isEmpty
+                                        ? loc.usernameRequired
+                                        : null,
                               ),
-                              validator:
-                                  (value) =>
-                                      value == null || value.isEmpty
-                                          ? loc.passwordRequired
-                                          : null,
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    Checkbox(
-                                      value: _rememberMe,
-                                      onChanged: (value) {
-                                        setState(() {
-                                          _rememberMe = value!;
-                                        });
-                                      },
+                              const SizedBox(height: 16),
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: _obscurePassword,
+                                decoration: InputDecoration(
+                                  labelText: loc.passwordLabel,
+                                  hintText: loc.passwordHint,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8.0),
+                                  ),
+                                  prefixIcon: const Icon(Icons.lock),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
                                     ),
-                                    Text(loc.rememberMe),
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscurePassword = !_obscurePassword;
+                                      });
+                                    },
+                                  ),
+                                ),
+                                validator: (value) =>
+                                    value == null || value.isEmpty
+                                        ? loc.passwordRequired
+                                        : null,
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Checkbox(
+                                        value: _rememberMe,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _rememberMe = value!;
+                                          });
+                                        },
+                                      ),
+                                      Text(loc.rememberMe),
+                                    ],
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pushNamed(
+                                        context,
+                                        '/forgot-password',
+                                      );
+                                    },
+                                    child: Text(
+                                      loc.forgotPassword,
+                                      style: const TextStyle(
+                                        color: Colors.purple,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ] else ...[
+                              // OFFLINE MODE MESSAGE
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.orange.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Column(
+                                  children: [
+                                    const Icon(
+                                      Icons.offline_bolt,
+                                      size: 48,
+                                      color: Colors.orange,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      loc.offlineLoginHint ??
+                                          'You are offline. Tap below to continue with your saved session.',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.orange,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ],
                                 ),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/forgot-password',
-                                    );
-                                  },
-                                  child: Text(
-                                    loc.forgotPassword,
-                                    style: const TextStyle(
-                                      color: Colors.purple,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
+                              ),
+                            ],
+
+                            const SizedBox(height: 24),
                             SizedBox(
                               width: double.infinity,
-                              child:
-                                  _isLoading
-                                      ? const Center(
-                                        child: CircularProgressIndicator(),
-                                      )
-                                      : ElevatedButton(
-                                        onPressed: _signIn,
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                              AppConstants.primaryBlue,
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 16,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          loc.signInButton,
-                                          style: const TextStyle(
-                                            color: AppConstants.white,
-                                            fontSize: 16,
-                                          ),
+                              child: _isLoading
+                                  ? const Center(
+                                      child: CircularProgressIndicator(),
+                                    )
+                                  : ElevatedButton(
+                                      onPressed: _signIn,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            AppConstants.primaryBlue,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
                                         ),
                                       ),
+                                      child: Text(
+                                        connectivityService.isOnline
+                                            ? loc.signInButton
+                                            : 'Continue Offline',
+                                        style: const TextStyle(
+                                          color: AppConstants.white,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
                             ),
                             const SizedBox(height: 16),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pushNamed(context, '/register');
-                              },
-                              child: Text(
-                                loc.dontHaveAccount,
-                                style: const TextStyle(color: Colors.grey),
+                            if (connectivityService.isOnline)
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pushNamed(context, '/register');
+                                },
+                                child: Text(
+                                  loc.dontHaveAccount,
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ),

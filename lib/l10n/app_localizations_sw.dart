@@ -708,6 +708,12 @@ class AppLocalizationsSw extends AppLocalizations {
   String get okButton => 'Sawa';
 
   @override
+  String get onlineMode => 'Mtandaoni';
+
+  @override
+  String get offlineMode => 'Nje ya mtandao';
+
+  @override
   String get usernameRequired => 'Jina la mtumiaji linahitajika';
 
   @override
@@ -721,4 +727,10 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get offlineLoginSuccess => 'Umefanikiwa kuingia bila mtandao';
+
+  @override
+  String get offlineLoginHint => 'Uko nje ya mtandao. Gusa hapa chini ili kuendelea na kikao chako kilichohifadhiwa';
+
+  @override
+  String get invalidCredentials => 'Jina la mtumiaji au nywila si sahihi';
 }

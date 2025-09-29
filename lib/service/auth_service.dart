@@ -8,10 +8,25 @@ class AuthService {
   final GraphQLService _graphQLService = GraphQLService();
   static const _tokenKey = 'auth_access_token';
   static const _userKey = 'auth_user_data';
-  static const _storage = FlutterSecureStorage();
+  static const _lastLoginKey = 'auth_last_login_timestamp';
+  static const _hasLoggedInBeforeKey = 'auth_has_logged_in_before';
+  static const _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+    iOptions: IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock,
+    ),
+  );
 
   // Sanitize input to prevent injection attacks
   String _sanitize(String input) => input.replaceAll(RegExp(r'[<>;]'), '');
+
+  // Check if user has logged in before
+  Future<bool> hasLoggedInBefore() async {
+    final value = await _storage.read(key: _hasLoggedInBeforeKey);
+    return value == 'true';
+  }
 
   Future<User> register({
     required String username,
@@ -30,7 +45,7 @@ class AuthService {
         "input": {
           "username": sanitizedUsername,
           "email": sanitizedEmail ?? "",
-          "password": password, // Password handled securely by backend
+          "password": password,
           "passwordConfirm": confirmPassword,
           "role": "user",
           "sessionId": "",
@@ -40,14 +55,13 @@ class AuthService {
     );
 
     if (result.hasException) {
-      throw Exception("Registration failed");
+      throw Exception(_extractErrorMessage(result.exception.toString()));
     }
 
     final data = result.data!["registerUser"];
     final output = data["output"];
 
     if (output == null || output["success"] == false) {
-      print(output);
       throw Exception(
         output != null ? output["message"] : "Registration failed.",
       );
@@ -61,6 +75,7 @@ class AuthService {
     return User.fromRegisterJson(user);
   }
 
+  // ONLINE LOGIN - Must provide username and password
   Future<User> login(
     String username,
     String password, {
@@ -68,6 +83,7 @@ class AuthService {
   }) async {
     final sanitizedUsername = _sanitize(username);
     int attempts = 0;
+    Exception? lastException;
 
     while (attempts < retryCount) {
       attempts++;
@@ -80,12 +96,12 @@ class AuthService {
         );
 
         if (result.hasException) {
-          if (result.exception.toString().contains('TimeoutException') &&
-              attempts < retryCount) {
-            await Future.delayed(const Duration(seconds: 2));
+          final exceptionStr = result.exception.toString();
+          if (_isNetworkError(exceptionStr) && attempts < retryCount) {
+            await Future.delayed(Duration(seconds: attempts * 2));
             continue;
           }
-          throw Exception(result.exception.toString());
+          throw Exception(_extractErrorMessage(exceptionStr));
         }
 
         final output = result.data?['loginUser']?['output'];
@@ -95,30 +111,72 @@ class AuthService {
 
         final user = User.fromLoginJson(output);
 
-        // Save token & minimal user info for offline login
-        await _storage.write(key: _tokenKey, value: user.accessToken ?? '');
-        await _storage.write(key: _userKey, value: user.toJsonString());
+        // Cache credentials for future offline access
+        await _cacheUserCredentials(user);
 
         return user;
       } catch (e) {
-        if (e.toString().contains('TimeoutException') &&
-            attempts < retryCount) {
-          await Future.delayed(const Duration(seconds: 2));
+        lastException = e is Exception ? e : Exception(e.toString());
+        if (_isNetworkError(e.toString()) && attempts < retryCount) {
+          await Future.delayed(Duration(seconds: attempts * 2));
           continue;
         }
-        throw Exception('Login failed: $e');
+        rethrow;
       }
     }
 
-    throw Exception('Login failed after $retryCount attempts.');
+    throw lastException ?? Exception('Login failed after $retryCount attempts.');
   }
 
-  Future<User?> loginOffline() async {
-    final token = await _storage.read(key: _tokenKey);
-    final userJsonStr = await _storage.read(key: _userKey);
+  // Cache user credentials for offline access
+  Future<void> _cacheUserCredentials(User user) async {
+    await Future.wait([
+      _storage.write(key: _tokenKey, value: user.accessToken ?? ''),
+      _storage.write(key: _userKey, value: user.toJsonString()),
+      _storage.write(
+        key: _lastLoginKey,
+        value: DateTime.now().millisecondsSinceEpoch.toString(),
+      ),
+      _storage.write(key: _hasLoggedInBeforeKey, value: 'true'),
+    ]);
+    print('AuthService: User credentials cached for offline access');
+  }
 
-    if (token != null && userJsonStr != null) {
+  // OFFLINE LOGIN - Uses cached credentials, no username/password needed
+  Future<User?> getOfflineUser() async {
+    try {
+      final results = await Future.wait([
+        _storage.read(key: _tokenKey),
+        _storage.read(key: _userKey),
+        _storage.read(key: _lastLoginKey),
+      ]);
+
+      final token = results[0];
+      final userJsonStr = results[1];
+      final lastLoginStr = results[2];
+
+      if (token == null || userJsonStr == null || token.isEmpty) {
+        print('AuthService: No cached credentials found');
+        return null;
+      }
+
+      // Optional: Check if cached credentials are too old (e.g., 30 days)
+      if (lastLoginStr != null) {
+        final lastLogin = DateTime.fromMillisecondsSinceEpoch(
+          int.parse(lastLoginStr),
+        );
+        final daysSinceLogin = DateTime.now().difference(lastLogin).inDays;
+        
+        if (daysSinceLogin > 30) {
+          print('AuthService: Cached credentials expired (>30 days)');
+          await clearCache();
+          return null;
+        }
+      }
+
       final user = User.fromJsonString(userJsonStr);
+      print('AuthService: Offline user loaded successfully');
+      
       return User(
         id: user.id,
         username: user.username,
@@ -127,20 +185,56 @@ class AuthService {
         isWardExecutive: user.isWardExecutive,
         isAnonymous: false,
       );
+    } catch (e) {
+      print('AuthService: Error loading offline user: $e');
+      return null;
     }
-    return null; // No cached data available
+  }
+
+  // Check if valid cached credentials exist
+  Future<bool> hasCachedCredentials() async {
+    final token = await _storage.read(key: _tokenKey);
+    final userData = await _storage.read(key: _userKey);
+    return token != null && userData != null && token.isNotEmpty;
   }
 
   static Future<void> logout() async {
-    await _storage.delete(key: _tokenKey);
-    await _storage.delete(key: _userKey);
-    print('AuthService: Token removed (logged out).');
+    await Future.wait([
+      _storage.delete(key: _tokenKey),
+      _storage.delete(key: _userKey),
+      _storage.delete(key: _lastLoginKey),
+      // Keep _hasLoggedInBeforeKey so app knows user has logged in before
+    ]);
+    print('AuthService: User logged out successfully');
+  }
+
+  static Future<void> clearCache() async {
+    await _storage.deleteAll();
+    print('AuthService: All cache cleared');
   }
 
   static Future<String?> getToken() async {
-    print('AuthService: Retrieving token from secure storage');
-    final token = await _storage.read(key: _tokenKey);
-    print('AuthService: Token: $token');
-    return token;
+    return await _storage.read(key: _tokenKey);
+  }
+
+  // Helper method to check if error is network-related
+  bool _isNetworkError(String error) {
+    final networkErrors = [
+      'timeout',
+      'network',
+      'connection',
+      'socket',
+      'failed host lookup',
+    ];
+    final lowerError = error.toLowerCase();
+    return networkErrors.any((e) => lowerError.contains(e));
+  }
+
+  // Extract clean error message
+  String _extractErrorMessage(String error) {
+    return error
+        .replaceFirst('Exception: ', '')
+        .replaceFirst('Error: ', '')
+        .trim();
   }
 }
