@@ -48,7 +48,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
 
     try {
-      await _authService.register(
+      final user = await _authService.register(
         username: _usernameController.text.trim(),
         email: _emailController.text.trim().isEmpty
             ? null
@@ -57,7 +57,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
         confirmPassword: _confirmPasswordController.text,
       );
 
-      
+      if (user.isStaff == true || user.role?.toLowerCase() == "admin") {
+        throw Exception(
+          loc.adminNotAllowed ?? "Admins are not allowed to register here.",
+        );
+      }
 
       QuickAlert.show(
         context: context,

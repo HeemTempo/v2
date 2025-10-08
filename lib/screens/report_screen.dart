@@ -1,13 +1,14 @@
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:openspace_mobile_app/core/network/connectivity_service.dart';
 import 'package:openspace_mobile_app/data/local/report_local.dart';
 import 'package:openspace_mobile_app/data/repository/report_repository.dart';
 import 'package:openspace_mobile_app/providers/report_provider.dart';
 import 'package:openspace_mobile_app/screens/file_attachment_section.dart';
-import 'package:openspace_mobile_app/service/report_service.dart';
 import 'package:provider/provider.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
@@ -51,8 +52,11 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
   @override
   void initState() {
     super.initState();
-    _repository = ReportRepository(localService: ReportLocal());
-    _syncPendingReports();
+    // Sync pending reports automatically when opening the screen
+    Future.microtask(() {
+      final reportProvider = context.read<ReportProvider>();
+      reportProvider.syncPendingReports();
+    });
   }
 
   Future<void> _syncPendingReports() async {
@@ -340,7 +344,11 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: _isSubmitting ? null : _submitReport,
+                        onPressed:
+                            context.watch<ReportProvider>().isSubmitting
+                                ? null
+                                : _submitReport,
+
                         icon:
                             _isSubmitting
                                 ? const SizedBox(
@@ -438,54 +446,100 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
     );
   }
 
+  
+
   void _submitReport() async {
-    if (!_formKey.currentState!.validate()) return;
+  if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isSubmitting = true;
-    });
-    final reportProvider = context.read<ReportProvider>();
+  final reportProvider = context.read<ReportProvider>();
+  final connectivityService = Provider.of<ConnectivityService>(context, listen: false);
+  final isOnlineNow = connectivityService.isOnline;
 
-    try {
-      final report = await reportProvider.submitReport(
+  print("DEBUG => Connectivity service says: ${connectivityService.isOnline}");
+  print("DEBUG => Direct check says: $isOnlineNow");
+
+  setState(() {
+    _isSubmitting = true;
+  });
+
+  // Generate a temporary local ID for offline storage
+  final tempLocalId = 'local_${DateTime.now().millisecondsSinceEpoch}';
+
+  try {
+    Map<String, dynamic> responseData;
+
+    if (isOnlineNow) {
+      // Try sending online
+      responseData = await reportProvider.createReport(
         description: _descriptionController.text,
         email: _emailController.text.isNotEmpty ? _emailController.text : null,
-        file: _selectedFile,
-        spaceName:
-            _spaceNameController.text.isNotEmpty
-                ? _spaceNameController.text
-                : widget.spaceName,
+        file: _selectedFiles.isNotEmpty ? _selectedFiles.first : null,
+        spaceName: widget.spaceName,
         latitude: widget.latitude,
         longitude: widget.longitude,
       );
 
-      if (reportProvider.isOnline && report.reportId != 'pending') {
-        // Online submission → backend generated reportId
-        _showAlert(QuickAlertType.success, '''
-                    Your report has been successfully submitted online.
+      // Convert REST response into Report object
+      final report = Report.fromRestJson(responseData);
 
-                    Report ID: ${report.reportId}
-                    Location: ${report.spaceName ?? 'Not specified'}
-                    Submission Date: ${DateTime.now().toLocal().toString().split('.')[0]}
+      _showAlert(
+        QuickAlertType.success,
+        '''
+Your report has been successfully received.
 
-                    Thank you! Our team will review and take appropriate action.
-                    ''', onConfirmed: _clearForm);
-      } else {
-        // Offline submission → no backend reportId yet
-        _showAlert(QuickAlertType.info, '''
-You are currently offline. Your report has been saved locally and will be submitted automatically when your connection is restored.
+Report ID: ${report.reportId}
+Location: ${report.spaceName ?? 'Not specified'}
+Submission Date: ${report.createdAt.toLocal().toString().split('.')[0]}
+
+Thank you for reporting. Our team will review and act as soon as possible.
+''',
+        onConfirmed: _clearForm,
+      );
+
+      // Save online report locally as synced
+      await reportProvider.saveLocalReport(report, status: 'submitted');
+
+    } else {
+      // Offline: save locally with pending status
+      final pendingReport = Report(
+        id: tempLocalId,
+        reportId: null, // No backend ID yet
+        description: _descriptionController.text,
+        email: _emailController.text.isNotEmpty ? _emailController.text : null,
+        file: _selectedFiles.isNotEmpty ? _selectedFiles.first.path : null,
+        createdAt: DateTime.now(),
+        latitude: widget.latitude,
+        longitude: widget.longitude,
+        spaceName: widget.spaceName,
+        status: 'pending',
+      );
+
+      await reportProvider.saveLocalReport(pendingReport, status: 'pending');
+
+      _showAlert(
+        QuickAlertType.info,
+        '''
+You are offline. Your report has been saved locally and will be submitted automatically when you reconnect.
 
 Report ID: pending
-Location: ${report.spaceName ?? 'Not specified'}
-Submission Date: ${DateTime.now().toLocal().toString().split('.')[0]}
-
-Thank you! Our team will review and take appropriate action once online.
-''', onConfirmed: _clearForm);
-      }
-    } catch (e) {
-      _showAlert(QuickAlertType.error, 'Failed to submit report: $e');
+Location: ${pendingReport.spaceName ?? 'Not specified'}
+Submission Date: ${pendingReport.createdAt.toLocal().toString().split('.')[0]}
+''',
+        onConfirmed: _clearForm,
+      );
     }
+  } catch (e) {
+    _showAlert(
+      QuickAlertType.error,
+      'Failed to submit report: $e',
+    );
+  } finally {
+    setState(() {
+      _isSubmitting = false;
+    });
   }
+}
+
 
   void _cancelReport() {
     _clearForm();

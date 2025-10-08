@@ -69,10 +69,11 @@ class MyApp extends StatelessWidget {
 
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ConnectivityService()),
         ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
-        ChangeNotifierProvider(create: (_) => ConnectivityService()),
+       
         ChangeNotifierProvider(
           create:
               (context) => ReportProvider(

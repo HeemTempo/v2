@@ -28,36 +28,18 @@ class Report {
   });
 
 
-  factory Report.fromRestJson(Map<String, dynamic> json) {
-    if (json['id'] == null ||
-        json['report_id'] == null ||
-        json['description'] == null ||
-        json['created_at'] == null) {
-      print("Error: Report.fromRestJson missing fields. Data: $json");
-      throw FormatException("Missing fields in REST response.");
-    }
-
-    User? reportUser;
-    if (json['user'] != null && json['user'] is Map<String, dynamic>) {
-      try {
-        reportUser = User.fromReportJson(json['user']);
-      } catch (e, s) {
-        print("Error parsing user: $e\n$s");
-      }
-    }
-
+  factory Report.fromRestJson(Map<String, dynamic> json, {String? localId}) {
     return Report(
-      id: json['id'].toString(),
-      reportId: json['report_id'],
+      id: localId ?? 'local_${DateTime.now().millisecondsSinceEpoch}',
+      reportId: json['reportId']!.toString(),
       description: json['description'],
       email: json['email'],
       file: json['file'],
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: DateTime.now(), // createdAt is local timestamp
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
-      spaceName: json['space_name'],
-      user: reportUser,
-      status: json['status'],
+      spaceName: json['space_name'] ?? json['spaceName'],
+      status: 'submitted',
     );
   }
 

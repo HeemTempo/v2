@@ -65,7 +65,7 @@ class _TrackProgressScreenState extends State<TrackProgressScreen> with SingleTi
       Report? matchingReport;
       try {
         matchingReport = reports.firstWhere(
-          (report) => report.reportId.toLowerCase() == enteredRefId.toLowerCase(),
+          (report) => report.reportId?.toLowerCase() == enteredRefId.toLowerCase(),
         );
       } catch (e) {
         matchingReport = null;
@@ -263,7 +263,7 @@ class _TrackProgressScreenState extends State<TrackProgressScreen> with SingleTi
 
   Widget _buildReportDetailsView(Report currentReport) {
     final loc = AppLocalizations.of(context)!;
-    final String reportId = currentReport.reportId;
+    final String? reportId = currentReport.reportId;
     final String spaceName = currentReport.spaceName ?? loc.notAvailable;
     final String formattedDate = DateFormat('MMMM dd, yyyy').format(currentReport.createdAt.toLocal());
     final String description = currentReport.description;
