@@ -3,8 +3,12 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:openspace_mobile_app/data/local/report_local.dart';
+import 'package:openspace_mobile_app/data/repository/report_repository.dart';
+import 'package:openspace_mobile_app/providers/report_provider.dart';
 import 'package:openspace_mobile_app/screens/file_attachment_section.dart';
 import 'package:openspace_mobile_app/service/report_service.dart';
+import 'package:provider/provider.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
 import '../l10n/app_localizations.dart';
@@ -13,7 +17,7 @@ class ReportIssuePage extends StatefulWidget {
   final String? spaceName;
   final double? latitude;
   final double? longitude;
-   final String? district;
+  final String? district;
 
   const ReportIssuePage({
     super.key,
@@ -39,9 +43,21 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
   double? _currentLatitude;
   double? _currentLongitude;
   File? _selectedFile; // For image/document upload
+  late final ReportRepository _repository;
 
   bool _isSubmitting = false;
   bool _guidelinesExpanded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _repository = ReportRepository(localService: ReportLocal());
+    _syncPendingReports();
+  }
+
+  Future<void> _syncPendingReports() async {
+    await _repository.syncPendingReports();
+  }
 
   void _showAlert(
     QuickAlertType type,
@@ -428,37 +444,45 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
     setState(() {
       _isSubmitting = true;
     });
+    final reportProvider = context.read<ReportProvider>();
 
     try {
-      final result = await ReportingService.createReport(
+      final report = await reportProvider.submitReport(
         description: _descriptionController.text,
         email: _emailController.text.isNotEmpty ? _emailController.text : null,
         file: _selectedFile,
         spaceName:
             _spaceNameController.text.isNotEmpty
                 ? _spaceNameController.text
-                : null,
-        latitude: _currentLatitude,
-        longitude: _currentLongitude,
+                : widget.spaceName,
+        latitude: widget.latitude,
+        longitude: widget.longitude,
       );
 
-      setState(() {
-        _isSubmitting = false;
-      });
+      if (reportProvider.isOnline && report.reportId != 'pending') {
+        // Online submission → backend generated reportId
+        _showAlert(QuickAlertType.success, '''
+                    Your report has been successfully submitted online.
 
-      // Show success alert
-      _showReportSuccessAlert({
-        'reportId': result['reportId'],
-        'district': widget.district ?? 'Not specified',
-        'spaceName': _spaceNameController.text,
-        'createdAt': DateTime.now().toIso8601String(),
-      });
+                    Report ID: ${report.reportId}
+                    Location: ${report.spaceName ?? 'Not specified'}
+                    Submission Date: ${DateTime.now().toLocal().toString().split('.')[0]}
+
+                    Thank you! Our team will review and take appropriate action.
+                    ''', onConfirmed: _clearForm);
+      } else {
+        // Offline submission → no backend reportId yet
+        _showAlert(QuickAlertType.info, '''
+You are currently offline. Your report has been saved locally and will be submitted automatically when your connection is restored.
+
+Report ID: pending
+Location: ${report.spaceName ?? 'Not specified'}
+Submission Date: ${DateTime.now().toLocal().toString().split('.')[0]}
+
+Thank you! Our team will review and take appropriate action once online.
+''', onConfirmed: _clearForm);
+      }
     } catch (e) {
-      setState(() {
-        _isSubmitting = false;
-      });
-
-      // Show error alert
       _showAlert(QuickAlertType.error, 'Failed to submit report: $e');
     }
   }

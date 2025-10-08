@@ -108,4 +108,31 @@ class Report {
       status: json['status'] as String?,
     );
   }
+  Report copyWith({
+  String? id,
+  String? reportId,
+  String? description,
+  String? email,
+  String? file,
+  DateTime? createdAt,
+  double? latitude,
+  double? longitude,
+  String? spaceName,
+  String? status,
+}) {
+  return Report(
+    id: id ?? this.id,
+    reportId: reportId ?? this.reportId,
+    description: description ?? this.description,
+    email: email ?? this.email,
+    file: file ?? this.file,
+    createdAt: createdAt ?? this.createdAt,
+    latitude: latitude ?? this.latitude,
+    longitude: longitude ?? this.longitude,
+    spaceName: spaceName ?? this.spaceName,
+    status: status ?? this.status,
+    user: this.user,
+  );
+}
+
 }

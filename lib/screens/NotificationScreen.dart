@@ -1,14 +1,28 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:openspace_mobile_app/model/Notification.dart';
 import 'package:openspace_mobile_app/screens/NotificationDetail.dart';
 import 'package:provider/provider.dart';
 import '../providers/notification_provider.dart';
-
 import '../utils/constants.dart';
 
-
-class NotificationScreen extends StatelessWidget {
+class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
+
+  @override
+  _NotificationScreenState createState() => _NotificationScreenState();
+}
+
+class _NotificationScreenState extends State<NotificationScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Connectivity().onConnectivityChanged.listen((result) {
+      if (result != ConnectivityResult.none) {
+        Provider.of<NotificationProvider>(context, listen: false).syncNotifications();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +33,14 @@ class NotificationScreen extends StatelessWidget {
           title: const Text('Notifications'),
           backgroundColor: AppConstants.primaryBlue,
           centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.sync),
+              onPressed: () {
+                Provider.of<NotificationProvider>(context, listen: false).syncNotifications();
+              },
+            ),
+          ],
         ),
         body: Consumer<NotificationProvider>(
           builder: (context, provider, _) {
@@ -100,10 +122,7 @@ class NotificationTile extends StatelessWidget {
           style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
         onTap: () {
-          notification.isRead = true;
-          Provider.of<NotificationProvider>(context, listen: false)
-              .markAsRead(notification.id);
-
+          Provider.of<NotificationProvider>(context, listen: false).markAsRead(notification.id);
           Navigator.push(
             context,
             MaterialPageRoute(

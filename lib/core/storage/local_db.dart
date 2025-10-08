@@ -7,13 +7,16 @@ class LocalDb {
 
   static Future<Database> getDb() async {
     if (_db != null) return _db!;
+
     final path = join(await getDatabasesPath(), 'offline_data.db');
+
     _db = await openDatabase(
       path,
-      version: 2,
+      version: 4, // Bump version to handle notifications table addition
       onCreate: (db, version) async {
+        // CREATE bookings table safely
         await db.execute('''
-          CREATE TABLE bookings(
+          CREATE TABLE IF NOT EXISTS bookings(
             id TEXT PRIMARY KEY,
             spaceId INTEGER,
             userId TEXT,
@@ -29,8 +32,9 @@ class LocalDb {
           )
         ''');
 
+        // CREATE reports table safely
         await db.execute('''
-          CREATE TABLE reports(
+          CREATE TABLE IF NOT EXISTS reports(
             id TEXT PRIMARY KEY,
             reportId TEXT,
             description TEXT,
@@ -45,8 +49,9 @@ class LocalDb {
           )
         ''');
 
+        // CREATE open_spaces table safely
         await db.execute('''
-          CREATE TABLE open_spaces(
+          CREATE TABLE IF NOT EXISTS open_spaces(
             id TEXT PRIMARY KEY,
             name TEXT,
             district TEXT,
@@ -60,19 +65,72 @@ class LocalDb {
           )
         ''');
 
+        // CREATE notifications table safely
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS notifications(
+            id INTEGER PRIMARY KEY,
+            reportId TEXT,
+            message TEXT,
+            repliedBy TEXT,
+            createdAt TEXT,
+            isRead INTEGER
+          )
+        ''');
+
+        // CREATE sync_queue table safely
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS sync_queue(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            action TEXT,
+            entity TEXT,
+            data TEXT,
+            createdAt TEXT
+          )
+        ''');
+
+        // CREATE profile table safely
         await ProfileLocalDataSource.createTable(db);
       },
-
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 3) {
-          // Add street column if upgrading
+        if (oldVersion < 4) {
+          // Add notifications table if upgrading from older version
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS notifications(
+              id INTEGER PRIMARY KEY,
+              reportId TEXT,
+              message TEXT,
+              repliedBy TEXT,
+              createdAt TEXT,
+              isRead INTEGER
+            )
+          ''');
+
+          // Add sync_queue table if upgrading from older version
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS sync_queue(
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              action TEXT,
+              entity TEXT,
+              data TEXT,
+              createdAt TEXT
+            )
+          ''');
+        }
+
+        // Ensure 'street' column exists in open_spaces table
+        final columns = await db.rawQuery("PRAGMA table_info(open_spaces)");
+        final columnNames = columns.map((c) => c['name'] as String).toList();
+        if (!columnNames.contains('street')) {
           await db.execute(
             'ALTER TABLE open_spaces ADD COLUMN street TEXT DEFAULT ""',
           );
-          await ProfileLocalDataSource.createTable(db);
         }
+
+        // Ensure profile table exists
+        await ProfileLocalDataSource.createTable(db);
       },
     );
+
     return _db!;
   }
 }

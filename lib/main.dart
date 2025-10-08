@@ -3,10 +3,15 @@ import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:openspace_mobile_app/api/graphql/graphql_service.dart';
 import 'package:openspace_mobile_app/core/network/connectivity_service.dart';
 import 'package:openspace_mobile_app/core/sync/sync_service.dart';
+import 'package:openspace_mobile_app/data/local/report_local.dart';
+import 'package:openspace_mobile_app/data/repository/report_repository.dart';
+import 'package:openspace_mobile_app/model/Notification.dart';
 import 'package:openspace_mobile_app/providers/locale_provider.dart';
+import 'package:openspace_mobile_app/providers/report_provider.dart';
 import 'package:openspace_mobile_app/providers/theme_provider.dart';
 import 'package:openspace_mobile_app/providers/user_provider.dart';
 import 'package:openspace_mobile_app/screens/Forget_password.dart';
+import 'package:openspace_mobile_app/screens/NotificationDetail.dart';
 import 'package:openspace_mobile_app/screens/NotificationScreen.dart';
 import 'package:openspace_mobile_app/screens/Reset_Password.dart';
 import 'package:openspace_mobile_app/screens/helps_and_Faqs.dart';
@@ -67,6 +72,13 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityService()),
+        ChangeNotifierProvider(
+          create:
+              (context) => ReportProvider(
+                repository: ReportRepository(localService: ReportLocal()),
+                connectivity: context.read<ConnectivityService>(),
+              ),
+        ),
         Provider<ValueNotifier<GraphQLClient>>(
           create: (_) => ValueNotifier(client),
         ),
@@ -97,9 +109,13 @@ class MyApp extends StatelessWidget {
               initialRoute: '/',
               onGenerateRoute: (RouteSettings settings) {
                 print(
-                    "onGenerateRoute called with: ${settings.name}, arguments: ${settings.arguments}");
+                  "onGenerateRoute called with: ${settings.name}, arguments: ${settings.arguments}",
+                );
 
-                final userProvider = Provider.of<UserProvider>(context, listen: false);
+                final userProvider = Provider.of<UserProvider>(
+                  context,
+                  listen: false,
+                );
 
                 final protectedRoutes = [
                   '/user-profile',
@@ -112,16 +128,51 @@ class MyApp extends StatelessWidget {
                 if (protectedRoutes.contains(settings.name) &&
                     userProvider.user.isAnonymous) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    showAccessDeniedDialog(context,
-                        featureName: settings.name!.split('/').last);
+                    showAccessDeniedDialog(
+                      context,
+                      featureName: settings.name!.split('/').last,
+                    );
                   });
                   return MaterialPageRoute(
-                    builder: (_) => const Scaffold(
-                      body: Center(child: Text("Access Denied. Please log in.")),
-                    ),
+                    builder:
+                        (_) => const Scaffold(
+                          body: Center(
+                            child: Text("Access Denied. Please log in."),
+                          ),
+                        ),
                   );
                 }
 
+                // Handle /user-notification-detail route
+                if (settings.name == '/user-notification-detail') {
+                  final args = settings.arguments;
+                  if (args is ReportNotification) {
+                    return MaterialPageRoute(
+                      builder:
+                          (context) =>
+                              NotificationDetailScreen(notification: args),
+                    );
+                  } else {
+                    print(
+                      "Error: Missing or invalid notification argument for /user-notification-detail",
+                    );
+                    return MaterialPageRoute(
+                      builder:
+                          (context) => Scaffold(
+                            appBar: AppBar(
+                              title: const Text("Notification Error"),
+                            ),
+                            body: const Center(
+                              child: Text(
+                                "Invalid or missing notification data.",
+                              ),
+                            ),
+                          ),
+                    );
+                  }
+                }
+
+                // Handle /report-issue route
                 if (settings.name == '/report-issue') {
                   final args = settings.arguments as Map<String, dynamic>?;
                   print("onGenerateRoute for /report-issue, args: $args");
@@ -131,17 +182,20 @@ class MyApp extends StatelessWidget {
                   final String? spaceName = args?['spaceName'] as String?;
 
                   print(
-                      "onGenerateRoute extracted for ReportIssuePage: lat=$latitude, lon=$longitude, name=$spaceName");
+                    "onGenerateRoute extracted for ReportIssuePage: lat=$latitude, lon=$longitude, name=$spaceName",
+                  );
 
                   return MaterialPageRoute(
-                    builder: (context) => ReportIssuePage(
-                      latitude: latitude,
-                      longitude: longitude,
-                      spaceName: spaceName,
-                    ),
+                    builder:
+                        (context) => ReportIssuePage(
+                          latitude: latitude,
+                          longitude: longitude,
+                          spaceName: spaceName,
+                        ),
                   );
                 }
 
+                // Handle /reset-password route
                 if (settings.name != null &&
                     settings.name!.startsWith('/reset-password')) {
                   final uri = Uri.parse(settings.name!);
@@ -150,22 +204,30 @@ class MyApp extends StatelessWidget {
                     final uid = uri.pathSegments[1];
                     final token = uri.pathSegments[2];
                     print(
-                        "Extracted for ResetPasswordPage - uid: $uid, token: $token");
+                      "Extracted for ResetPasswordPage - uid: $uid, token: $token",
+                    );
                     return MaterialPageRoute(
-                      builder: (context) => ResetPasswordPage(uid: uid, token: token),
+                      builder:
+                          (context) =>
+                              ResetPasswordPage(uid: uid, token: token),
                     );
                   }
                 }
 
-                if (settings.name != null && settings.name!.startsWith('/book')) {
+                // Handle /book route
+                if (settings.name != null &&
+                    settings.name!.startsWith('/book')) {
                   final uri = Uri.parse(settings.name!);
                   int? spaceId;
                   String? spaceName;
-                  if (uri.pathSegments.length == 2 && uri.pathSegments[0] == 'book') {
+                  if (uri.pathSegments.length == 2 &&
+                      uri.pathSegments[0] == 'book') {
                     try {
                       spaceId = int.parse(uri.pathSegments[1]);
                     } catch (e) {
-                      print("Invalid spaceId format in path: ${uri.pathSegments[1]}");
+                      print(
+                        "Invalid spaceId format in path: ${uri.pathSegments[1]}",
+                      );
                     }
                   }
                   if (settings.arguments != null) {
@@ -186,21 +248,26 @@ class MyApp extends StatelessWidget {
 
                   if (spaceId != null) {
                     return MaterialPageRoute(
-                      builder: (context) => BookingPage(
-                        spaceId: spaceId!,
-                        spaceName: spaceName,
-                      ),
+                      builder:
+                          (context) => BookingPage(
+                            spaceId: spaceId!,
+                            spaceName: spaceName,
+                          ),
                     );
                   } else {
                     print(
-                        "Error: Navigating to /book without a valid spaceId. Arguments: ${settings.arguments}, Path: ${settings.name}");
+                      "Error: Navigating to /book without a valid spaceId. Arguments: ${settings.arguments}, Path: ${settings.name}",
+                    );
                     return MaterialPageRoute(
-                      builder: (context) => Scaffold(
-                        appBar: AppBar(title: const Text("Booking Error")),
-                        body: const Center(
-                          child: Text("Invalid or missing space ID for booking."),
-                        ),
-                      ),
+                      builder:
+                          (context) => Scaffold(
+                            appBar: AppBar(title: const Text("Booking Error")),
+                            body: const Center(
+                              child: Text(
+                                "Invalid or missing space ID for booking.",
+                              ),
+                            ),
+                          ),
                     );
                   }
                 }
@@ -238,17 +305,24 @@ class MyApp extends StatelessWidget {
 
                 // Fallback for unknown routes
                 print(
-                    "Route ${settings.name} not found, showing default PageNotFound.");
+                  "Route ${settings.name} not found, showing default PageNotFound.",
+                );
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  showErrorDialog(context, routeName: settings.name ?? "unknown route");
+                  showErrorDialog(
+                    context,
+                    routeName: settings.name ?? "unknown route",
+                  );
                 });
                 return MaterialPageRoute(
-                  builder: (_) => Scaffold(
-                    appBar: AppBar(title: const Text("Page Not Found")),
-                    body: Center(
-                      child: Text("Sorry, the page '${settings.name}' could not be found."),
-                    ),
-                  ),
+                  builder:
+                      (_) => Scaffold(
+                        appBar: AppBar(title: const Text("Page Not Found")),
+                        body: Center(
+                          child: Text(
+                            "Sorry, the page '${settings.name}' could not be found.",
+                          ),
+                        ),
+                      ),
                 );
               },
             ),

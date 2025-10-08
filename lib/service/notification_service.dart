@@ -2,14 +2,14 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:openspace_mobile_app/model/Notification.dart';
+import 'package:openspace_mobile_app/service/auth_service.dart';
 
-import 'auth_service.dart';
 
 class NotificationService {
-  // 🔹 Full URL for your REST notifications endpoint
-  static const String _notificationsUrl = 'https://127.0.0.1:8001/api/v1/notifications/';
+  static const String _baseUrl = 'https://127.0.0.1:8001/api/v1';
+  static const String _notificationsUrl = '$_baseUrl/notifications/';
+  static const String _markReadUrl = '$_baseUrl/notifications/mark-read/';
 
-  /// 🔹 Fetch notifications for the logged-in user
   Future<List<ReportNotification>> fetchNotifications() async {
     try {
       final token = await AuthService.getToken();
@@ -34,6 +34,30 @@ class NotificationService {
       }
     } catch (e) {
       debugPrint('NotificationService error: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> markNotificationAsRead(int notificationId) async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) throw Exception('User not logged in.');
+
+      final url = Uri.parse('$_markReadUrl$notificationId/');
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'is_read': true}),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to mark notification as read. (${response.statusCode})');
+      }
+    } catch (e) {
+      debugPrint('NotificationService mark as read error: $e');
       rethrow;
     }
   }
