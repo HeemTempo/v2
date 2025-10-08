@@ -5,18 +5,22 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openspace_mobile_app/screens/file_attachment_section.dart';
 import 'package:openspace_mobile_app/service/report_service.dart';
+import 'package:quickalert/models/quickalert_type.dart';
+import 'package:quickalert/widgets/quickalert_dialog.dart';
 import '../l10n/app_localizations.dart';
 
 class ReportIssuePage extends StatefulWidget {
   final String? spaceName;
   final double? latitude;
   final double? longitude;
+   final String? district;
 
   const ReportIssuePage({
     super.key,
     this.spaceName,
     this.latitude,
     this.longitude,
+    this.district,
   });
 
   @override
@@ -24,8 +28,8 @@ class ReportIssuePage extends StatefulWidget {
 }
 
 class _ReportIssuePageState extends State<ReportIssuePage> {
-  List<String> _attachedFiles = []; // For showing file names
-  List<File> _selectedFiles = []; // For uploading actual files
+  final List<String> _attachedFiles = []; // For showing file names
+  final List<File> _selectedFiles = []; // For uploading actual files
 
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
@@ -39,10 +43,61 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
   bool _isSubmitting = false;
   bool _guidelinesExpanded = false;
 
+  void _showAlert(
+    QuickAlertType type,
+    String message, {
+    VoidCallback? onConfirmed,
+  }) {
+    if (!mounted) return;
+    QuickAlert.show(
+      context: context,
+      type: type,
+      text: message,
+      showConfirmBtn: true,
+      confirmBtnText: AppLocalizations.of(context)!.okButton,
+      onConfirmBtnTap: () {
+        Navigator.of(context).pop();
+        if (onConfirmed != null) onConfirmed();
+      },
+    );
+  }
+
+  void _showReportSuccessAlert(Map<String, dynamic> reportData) {
+    final district = reportData['district'] ?? 'Not specified';
+    final spaceName = reportData['spaceName'] ?? 'Not specified';
+    final reportId = reportData['reportId'] ?? '';
+    final createdAt =
+        reportData['createdAt'] != null
+            ? DateTime.parse(
+              reportData['createdAt'],
+            ).toLocal().toString().split('.')[0]
+            : DateTime.now().toLocal().toString().split('.')[0];
+
+    final message = '''
+                Your report has been successfully received.
+
+                Report ID: $reportId
+                Mtaa: $district
+                Submission Date: $createdAt
+                Location: $spaceName
+
+                Thank you for taking the time to report an environmental issue.
+                Our team will review your report and take the appropriate action as soon as possible.
+
+                Please use the Report ID above to track the progress of your report.
+                ''';
+
+    _showAlert(
+      QuickAlertType.success,
+      message,
+      onConfirmed: _clearForm, // clear the form on confirm
+    );
+  }
+
   Future<void> _pickImages() async {
     try {
       final ImagePicker picker = ImagePicker();
-      final List<XFile>? pickedFiles = await picker.pickMultiImage(
+      final List<XFile> pickedFiles = await picker.pickMultiImage(
         imageQuality: 80,
       );
 
@@ -166,7 +221,7 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                           r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
                         );
                         if (!emailRegex.hasMatch(value)) {
-                          return loc.emailLabel + ' is invalid';
+                          return '${loc.emailLabel} is invalid';
                         }
                         return null;
                       },
@@ -201,7 +256,7 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return loc.issueDescriptionTitle + ' is required';
+                          return '${loc.issueDescriptionTitle} is required';
                         }
                         return null;
                       },
@@ -378,7 +433,7 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
       final result = await ReportingService.createReport(
         description: _descriptionController.text,
         email: _emailController.text.isNotEmpty ? _emailController.text : null,
-        file: _selectedFile, // File? picked from image picker
+        file: _selectedFile,
         spaceName:
             _spaceNameController.text.isNotEmpty
                 ? _spaceNameController.text
@@ -391,24 +446,20 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
         _isSubmitting = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            result['message'] ??
-                'Report submitted successfully! ID: ${result['reportId']}',
-          ),
-        ),
-      );
-
-      _clearForm(); // Reset the form fields
+      // Show success alert
+      _showReportSuccessAlert({
+        'reportId': result['reportId'],
+        'district': widget.district ?? 'Not specified',
+        'spaceName': _spaceNameController.text,
+        'createdAt': DateTime.now().toIso8601String(),
+      });
     } catch (e) {
       setState(() {
         _isSubmitting = false;
       });
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to submit report: $e')));
+      // Show error alert
+      _showAlert(QuickAlertType.error, 'Failed to submit report: $e');
     }
   }
 

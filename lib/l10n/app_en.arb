@@ -301,7 +301,10 @@
   "offlineNoCachedToken": "No offline login available. Please connect to the internet.",
   "offlineLoginSuccess": "You have successfully logged in offline",
   "offlineLoginHint": "You are offline. Tap below to continue with your saved session",
-  "invalidCredentials": "Invalid username or password"
+  "invalidCredentials": "Invalid username or password",
+  "adminNotAllowed": "Admins are not allowed to login here.",
+  "streetLabel": "Street",
+  "streetRequired": "Please select a street"
 
   
 

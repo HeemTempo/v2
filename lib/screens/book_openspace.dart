@@ -2,12 +2,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:openspace_mobile_app/data/repository/booking_repository.dart';
+import 'package:openspace_mobile_app/service/auth_service.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:openspace_mobile_app/utils/constants.dart';
-
-
 
 class BookingPage extends StatefulWidget {
   final int spaceId;
@@ -23,19 +22,15 @@ class _BookingPageState extends State<BookingPage> {
   final BookingRepository _bookingRepository = BookingRepository();
   bool _isSubmitting = false;
 
-  // Single user fields
+  // User input fields
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
-
-  // Common fields
   final _locationController = TextEditingController();
   final _activitiesController = TextEditingController();
+
   DateTime? _startDate;
   DateTime? _endDate;
-  TimeOfDay? _startTime;
-  TimeOfDay? _endTime;
-
   File? _selectedFile;
 
   @override
@@ -47,18 +42,20 @@ class _BookingPageState extends State<BookingPage> {
   }
 
   Future<void> _selectDate(BuildContext context, bool isStart) async {
-    final DateTime? picked = await showDatePicker(
+    final picked = await showDatePicker(
       context: context,
       initialDate: (isStart ? _startDate : _endDate) ?? DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime(DateTime.now().year + 5),
     );
+
     if (picked != null) {
       setState(() {
         if (isStart) {
           _startDate = picked;
-          if (_endDate != null && _endDate!.isBefore(_startDate!))
+          if (_endDate != null && _endDate!.isBefore(_startDate!)) {
             _endDate = null;
+          }
         } else {
           _endDate = picked;
         }
@@ -66,18 +63,19 @@ class _BookingPageState extends State<BookingPage> {
     }
   }
 
-
   Future<void> _pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['jpg', 'pdf', 'doc', 'png'],
     );
-    if (result != null) {
+
+    if (result != null && result.files.single.path != null) {
       setState(() => _selectedFile = File(result.files.single.path!));
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No file selected.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('No file selected.')));
+      }
     }
   }
 
@@ -94,86 +92,73 @@ class _BookingPageState extends State<BookingPage> {
       return;
     }
 
-    if (_endDate != null &&
-        _startDate != null &&
-        _endDate!.isBefore(_startDate!)) {
+    if (_endDate != null && _endDate!.isBefore(_startDate!)) {
       QuickAlert.show(
         context: context,
         type: QuickAlertType.error,
         title: 'Validation Error',
-        text: 'End date cannot be before the start date.',
+        text: 'End date cannot be before start date.',
       );
       return;
     }
 
+    final token = await AuthService.getToken();
+    if (token == null) {
+      QuickAlert.show(
+        context: context,
+        type: QuickAlertType.error,
+        title: 'Authentication Error',
+        text: 'Please log in to submit a booking.',
+      );
+      return;
+    }
 
     setState(() => _isSubmitting = true);
 
     try {
-      final username = _nameController.text.trim();
-      final contact = _phoneController.text.trim();
-      final formattedStartDate = DateFormat('yyyy-MM-dd').format(_startDate!);
-      final formattedEndDate =
+      final formattedStart = DateFormat('yyyy-MM-dd').format(_startDate!);
+      final formattedEnd =
           _endDate != null ? DateFormat('yyyy-MM-dd').format(_endDate!) : null;
-      final district =
-          _locationController.text.isNotEmpty
-              ? _locationController.text
-              : "Kinondoni";
-      final purpose = _activitiesController.text.trim();
 
-      final startDateTime =
-          '$formattedStartDate ${_startTime!.format(context)}';
-      final endDateTime =
-          formattedEndDate != null
-              ? '$formattedEndDate ${_endTime!.format(context)}'
-              : null;
-
-      debugPrint(
-        'Submitting Booking: '
-        'Space ID: ${widget.spaceId}, Username: $username, Contact: $contact, '
-        'Start: $startDateTime, End: $endDateTime, Purpose: $purpose, '
-        'District: $district, File: ${_selectedFile?.path ?? "None"}',
-      );
-
-      // Attempt to create booking online or save offline
       final success = await _bookingRepository.createBooking(
         spaceId: widget.spaceId,
-        username: username,
-        contact: contact,
-        startDate: formattedStartDate,
-        endDate: formattedEndDate,
-        purpose: purpose,
-        district: district,
+        username: _nameController.text.trim(),
+        contact: _phoneController.text.trim(),
+        startDate: formattedStart,
+        endDate: formattedEnd,
+        purpose: _activitiesController.text.trim(),
+        district: _locationController.text.isNotEmpty
+            ? _locationController.text
+            : "Kinondoni",
         file: _selectedFile,
       );
 
       if (success) {
-        // Check if there are pending offline bookings
         final pendingBookings = await _bookingRepository.getPendingBookings();
-        final successMessage =
+        final message =
             'Your booking has been saved successfully.${pendingBookings.isNotEmpty
-                ? '\nIt will be synced once online.'
-                : ''}';
+                    ? '\nIt will be synced once online.'
+                    : ''}';
 
         QuickAlert.show(
           context: context,
           type: QuickAlertType.success,
           title: 'Booking Submitted!',
-          text: successMessage,
+          text: message,
           confirmBtnText: 'OK',
           onConfirmBtnTap: () {
-            Navigator.of(context).pop(); // Close dialog
-            Navigator.of(context).pop(); // Go back
+            Navigator.of(context).pop();
+            Navigator.of(context).pop();
           },
         );
       }
-    } catch (e) {
-      debugPrint('Booking Error: $e');
+    } catch (e, stackTrace) {
+      debugPrint('Booking Error: $e\nStackTrace: $stackTrace');
       QuickAlert.show(
         context: context,
         type: QuickAlertType.error,
         title: 'Booking Error',
-        text: e.toString().replaceFirst('Exception: ', ''),
+        text: e.toString(),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -190,7 +175,7 @@ class _BookingPageState extends State<BookingPage> {
       ),
       filled: true,
       fillColor: Colors.white,
-      prefixIcon: Icon(icon, color: AppConstants.primaryBlue ),
+      prefixIcon: Icon(icon, color: AppConstants.primaryBlue),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     );
   }
@@ -219,7 +204,7 @@ class _BookingPageState extends State<BookingPage> {
   Widget _buildDateTimeField({
     required String label,
     required IconData icon,
-    required String text,
+    required DateTime? date,
     required VoidCallback onTap,
     bool isRequired = false,
   }) {
@@ -228,19 +213,11 @@ class _BookingPageState extends State<BookingPage> {
       child: InkWell(
         onTap: _isSubmitting ? null : onTap,
         child: InputDecorator(
-          decoration: _buildInputDecoration(
-            label + (isRequired ? ' *' : ''),
-            icon,
-          ),
+          decoration: _buildInputDecoration(label + (isRequired ? ' *' : ''), icon),
           child: Text(
-            text,
+            date != null ? DateFormat('yyyy-MM-dd').format(date) : 'YYYY-MM-DD',
             style: TextStyle(
-              color:
-                  text.startsWith("Select") ||
-                          text == "YYYY-MM-DD" ||
-                          text == "HH:MM"
-                      ? Colors.grey
-                      : Colors.black87,
+              color: date != null ? Colors.black87 : Colors.grey,
             ),
           ),
         ),
@@ -282,47 +259,33 @@ class _BookingPageState extends State<BookingPage> {
                 controller: _nameController,
                 label: 'Full Name *',
                 icon: Icons.person_outline,
-                validator:
-                    (value) =>
-                        value == null || value.isEmpty
-                            ? 'Please enter your name'
-                            : null,
+                validator: (v) => v == null || v.isEmpty ? 'Please enter your name' : null,
               ),
               _buildFormField(
                 controller: _phoneController,
                 label: 'Phone Number *',
                 icon: Icons.phone,
                 keyboardType: TextInputType.phone,
-                validator:
-                    (value) =>
-                        value == null || value.isEmpty
-                            ? 'Please enter your phone number'
-                            : null,
+                validator: (v) => v == null || v.isEmpty ? 'Please enter phone number' : null,
               ),
               _buildFormField(
                 controller: _emailController,
-                label: 'Email Address (Optional)',
+                label: 'Email (Optional)',
                 icon: Icons.email,
                 keyboardType: TextInputType.emailAddress,
-                validator:
-                    (value) =>
-                        value != null &&
-                                value.isNotEmpty &&
-                                !RegExp(
-                                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                                ).hasMatch(value)
-                            ? 'Please enter a valid email'
-                            : null,
+                validator: (v) {
+                  if (v != null && v.isNotEmpty) {
+                    final valid = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v);
+                    if (!valid) return 'Enter a valid email';
+                  }
+                  return null;
+                },
               ),
               _buildFormField(
                 controller: _locationController,
                 label: 'Space Name / District *',
                 icon: Icons.location_on,
-                validator:
-                    (value) =>
-                        value == null || value.isEmpty
-                            ? 'Please specify the location/district'
-                            : null,
+                validator: (v) => v == null || v.isEmpty ? 'Specify location/district' : null,
               ),
               Row(
                 children: [
@@ -330,10 +293,7 @@ class _BookingPageState extends State<BookingPage> {
                     child: _buildDateTimeField(
                       label: 'Start Date *',
                       icon: Icons.calendar_today,
-                      text:
-                          _startDate == null
-                              ? 'YYYY-MM-DD'
-                              : DateFormat('yyyy-MM-dd').format(_startDate!),
+                      date: _startDate,
                       onTap: () => _selectDate(context, true),
                       isRequired: true,
                     ),
@@ -343,10 +303,7 @@ class _BookingPageState extends State<BookingPage> {
                     child: _buildDateTimeField(
                       label: 'End Date',
                       icon: Icons.calendar_today,
-                      text:
-                          _endDate == null
-                              ? 'YYYY-MM-DD'
-                              : DateFormat('yyyy-MM-dd').format(_endDate!),
+                      date: _endDate,
                       onTap: () => _selectDate(context, false),
                     ),
                   ),
@@ -357,80 +314,71 @@ class _BookingPageState extends State<BookingPage> {
                 label: 'Activities Planned *',
                 icon: Icons.description,
                 maxLines: 3,
-                validator:
-                    (value) =>
-                        value == null || value.isEmpty
-                            ? 'Please describe your planned activities'
-                            : null,
+                validator: (v) => v == null || v.isEmpty ? 'Describe planned activities' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
+
+              // File picker widget
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Attachment (Optional)',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppConstants.primaryBlue,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: _isSubmitting ? null : _pickFile,
+                          icon: const Icon(Icons.attach_file),
+                          label: const Text('Select File'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppConstants.primaryBlue,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _selectedFile != null
+                                ? _selectedFile!.path.split(Platform.pathSeparator).last
+                                : 'No file selected',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: _selectedFile != null ? Colors.black87 : Colors.grey,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppConstants.primaryBlue,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 onPressed: _isSubmitting ? null : _submitForm,
-                child:
-                    _isSubmitting
-                        ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 3,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                        : const Text('Submit Booking Request'),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
-                      blurRadius: 5,
-                    ),
-                  ],
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Booking Terms',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppConstants.primaryBlue,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      '• Bookings are subject to availability',
-                      style: TextStyle(color: Colors.black87),
-                    ),
-                    Text(
-                      '• Please arrive on time for your scheduled slot',
-                      style: TextStyle(color: Colors.black87),
-                    ),
-                    Text(
-                      '• Cancellations must be made at least 24 hours in advance',
-                      style: TextStyle(color: Colors.black87),
-                    ),
-                    Text(
-                      '• Keep the space clean and follow all facility rules',
-                      style: TextStyle(color: Colors.black87),
-                    ),
-                  ],
-                ),
+                child: _isSubmitting
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text('Submit Booking Request'),
               ),
             ],
           ),

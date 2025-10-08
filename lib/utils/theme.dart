@@ -8,6 +8,19 @@ class AppTheme {
       primaryColor: AppConstants.primaryBlue,
       scaffoldBackgroundColor: AppConstants.lightGrey,
       cardColor: AppConstants.white,
+      shadowColor: AppConstants.black.withOpacity(0.1),
+      colorScheme: const ColorScheme.light(
+        primary: AppConstants.primaryBlue,
+        onPrimary: AppConstants.white,
+        secondary: AppConstants.lightAccent,
+        onSecondary: AppConstants.white,
+        tertiary: Color(0xFF4CAF50),
+        onTertiary: AppConstants.white,
+        error: Color(0xFFD32F2F),
+        onError: AppConstants.white,
+        surface: AppConstants.white,
+        onSurface: AppConstants.black,
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppConstants.primaryBlue,
         foregroundColor: AppConstants.white,
@@ -23,6 +36,21 @@ class AppTheme {
           fontSize: 28,
           fontWeight: FontWeight.bold,
           color: AppConstants.white,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: AppConstants.black,
+        ),
+        titleMedium: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AppConstants.black,
+        ),
+        titleSmall: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: AppConstants.black,
         ),
         bodyMedium: TextStyle(
           fontSize: 16,
@@ -66,12 +94,26 @@ class AppTheme {
 
   static ThemeData get darkTheme {
     return ThemeData(
+      useMaterial3: true,
       brightness: Brightness.dark,
-      primaryColor: AppConstants.lightAccent,
-      scaffoldBackgroundColor: AppConstants.darkBackground,
+      primaryColor: AppConstants.primaryBlue,
+      scaffoldBackgroundColor: Colors.black, // Changed to pure black
       cardColor: AppConstants.darkCard,
+      shadowColor: AppConstants.white.withOpacity(0.1),
+      colorScheme: const ColorScheme.dark(
+        primary: AppConstants.primaryBlue,
+        onPrimary: Colors.black,
+        secondary: AppConstants.lightAccent,
+        onSecondary: Colors.black,
+        tertiary: Color(0xFF81C784),
+        onTertiary: Colors.black,
+        error: Color(0xFFEF5350),
+        onError: Colors.black,
+        surface: AppConstants.darkCard,
+        onSurface: AppConstants.darkText,
+      ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppConstants.darkCard,
+        backgroundColor: Colors.black, // Changed to pure black
         foregroundColor: AppConstants.darkText,
         elevation: 0,
       ),
@@ -84,6 +126,21 @@ class AppTheme {
         headlineMedium: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.bold,
+          color: AppConstants.darkText,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: AppConstants.darkText,
+        ),
+        titleMedium: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AppConstants.darkText,
+        ),
+        titleSmall: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
           color: AppConstants.darkText,
         ),
         bodyMedium: TextStyle(
@@ -100,13 +157,13 @@ class AppTheme {
         fillColor: AppConstants.darkCard,
         border: OutlineInputBorder(),
         focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: AppConstants.lightAccent),
+          borderSide: BorderSide(color: AppConstants.primaryBlue),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppConstants.lightAccent,
-          foregroundColor: AppConstants.darkBackground,
+          backgroundColor: AppConstants.primaryBlue,
+          foregroundColor: Colors.black,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),

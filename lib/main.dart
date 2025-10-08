@@ -9,17 +9,17 @@ import 'package:openspace_mobile_app/providers/user_provider.dart';
 import 'package:openspace_mobile_app/screens/Forget_password.dart';
 import 'package:openspace_mobile_app/screens/NotificationScreen.dart';
 import 'package:openspace_mobile_app/screens/Reset_Password.dart';
+import 'package:openspace_mobile_app/screens/helps_and_Faqs.dart';
 import 'package:openspace_mobile_app/screens/book_openspace.dart';
 import 'package:openspace_mobile_app/screens/bookings.dart';
 import 'package:openspace_mobile_app/screens/edit_profile.dart';
-import 'package:openspace_mobile_app/screens/helps_and_Faqs.dart';
 import 'package:openspace_mobile_app/screens/home_page.dart';
 import 'package:openspace_mobile_app/screens/intro_slider_screen.dart';
 import 'package:openspace_mobile_app/screens/language_change.dart';
 import 'package:openspace_mobile_app/screens/map_screen.dart';
 import 'package:openspace_mobile_app/screens/profile.dart';
-import 'package:openspace_mobile_app/screens/report_screen.dart'; // Assuming this is ReportedIssuesPage
-import 'package:openspace_mobile_app/screens/reported_issue.dart'; // This is your ReportIssuePage
+import 'package:openspace_mobile_app/screens/report_screen.dart';
+import 'package:openspace_mobile_app/screens/reported_issue.dart';
 import 'package:openspace_mobile_app/screens/settings_page.dart';
 import 'package:openspace_mobile_app/screens/sign_in.dart';
 import 'package:openspace_mobile_app/screens/sign_up.dart';
@@ -40,30 +40,43 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await requestNotificationPermission();
 
-    SyncService().init();
-  runApp(const MyApp(),
-  );
+  // Initialize ThemeProvider and load saved theme
+  final themeProvider = ThemeProvider();
+  await themeProvider.loadTheme().catchError((e) {
+    print('Failed to load theme: $e');
+    // Fallback to light mode if loading fails
+  });
+
+  SyncService().init();
+
+  runApp(MyApp(themeProvider: themeProvider));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final ThemeProvider themeProvider;
+
+  const MyApp({super.key, required this.themeProvider});
 
   @override
   Widget build(BuildContext context) {
     final client = GraphQLService().client;
+
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
-         ChangeNotifierProvider(create: (_) => ConnectivityService()),
-        
+        ChangeNotifierProvider(create: (_) => ConnectivityService()),
         Provider<ValueNotifier<GraphQLClient>>(
-            create: (_) => ValueNotifier(client)),
-        Provider(create: (_) => SharedPreferences.getInstance()),
+          create: (_) => ValueNotifier(client),
+        ),
+        Provider<Future<SharedPreferences>>(
+          create: (_) => SharedPreferences.getInstance(),
+          lazy: false, // Ensure SharedPreferences is initialized early
+        ),
       ],
       child: Consumer2<ThemeProvider, LocaleProvider>(
-        builder: (context, themeProvider,localeProvider, _) {
+        builder: (context, themeProvider, localeProvider, _) {
           return GraphQLProvider(
             client: ValueNotifier(client),
             child: MaterialApp(
@@ -72,7 +85,7 @@ class MyApp extends StatelessWidget {
               theme: AppTheme.lightTheme,
               darkTheme: AppTheme.darkTheme,
               themeMode: themeProvider.themeMode,
-                // Localization
+              // Localization
               locale: localeProvider.locale,
               supportedLocales: AppLocalizations.supportedLocales,
               localizationsDelegates: const [
@@ -99,11 +112,16 @@ class MyApp extends StatelessWidget {
                 if (protectedRoutes.contains(settings.name) &&
                     userProvider.user.isAnonymous) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                   showAccessDeniedDialog(context, featureName: settings.name!.split('/').last);
+                    showAccessDeniedDialog(context,
+                        featureName: settings.name!.split('/').last);
                   });
-                  // Return a valid route (e.g., a placeholder, a login screen, or an access denied screen)
-                  return MaterialPageRoute(builder: (_) => const Scaffold(body: Center(child: Text("Access Denied. Please log in."))));
+                  return MaterialPageRoute(
+                    builder: (_) => const Scaffold(
+                      body: Center(child: Text("Access Denied. Please log in.")),
+                    ),
+                  );
                 }
+
                 if (settings.name == '/report-issue') {
                   final args = settings.arguments as Map<String, dynamic>?;
                   print("onGenerateRoute for /report-issue, args: $args");
@@ -134,17 +152,16 @@ class MyApp extends StatelessWidget {
                     print(
                         "Extracted for ResetPasswordPage - uid: $uid, token: $token");
                     return MaterialPageRoute(
-                      builder: (context) =>
-                          ResetPasswordPage(uid: uid, token: token),
+                      builder: (context) => ResetPasswordPage(uid: uid, token: token),
                     );
                   }
                 }
+
                 if (settings.name != null && settings.name!.startsWith('/book')) {
                   final uri = Uri.parse(settings.name!);
                   int? spaceId;
                   String? spaceName;
-                  if (uri.pathSegments.length == 2 &&
-                      uri.pathSegments[0] == 'book') {
+                  if (uri.pathSegments.length == 2 && uri.pathSegments[0] == 'book') {
                     try {
                       spaceId = int.parse(uri.pathSegments[1]);
                     } catch (e) {
@@ -175,31 +192,30 @@ class MyApp extends StatelessWidget {
                       ),
                     );
                   } else {
-                    print("Error: Navigating to /book without a valid spaceId. Arguments: ${settings.arguments}, Path: ${settings.name}");
+                    print(
+                        "Error: Navigating to /book without a valid spaceId. Arguments: ${settings.arguments}, Path: ${settings.name}");
                     return MaterialPageRoute(
                       builder: (context) => Scaffold(
                         appBar: AppBar(title: const Text("Booking Error")),
                         body: const Center(
-                            child: Text("Invalid or missing space ID for booking.")),
+                          child: Text("Invalid or missing space ID for booking."),
+                        ),
                       ),
                     );
                   }
                 }
 
-
-                // --- General Routes Map ---
-                // (Routes not handled by specific handlers above)
+                // General Routes Map
                 final routes = <String, WidgetBuilder>{
                   '/': (context) => const IntroSliderScreen(),
                   '/home': (context) => const HomePage(),
                   '/login': (context) => const SignInScreen(),
-                  '/register': (context) => const SignUpScreen(), // Assuming same as login for now
-                  // '/report-issue' is handled above
+                  '/register': (context) => const SignUpScreen(),
                   '/track-progress': (context) => const TrackProgressScreen(),
                   '/user-profile': (context) => const UserProfilePage(),
                   '/edit-profile': (context) => const EditProfilePage(),
                   '/map': (context) => const MapScreen(),
-                  '/reported-issue': (context) => const ReportedIssuesPage(), // List of reported issues
+                  '/reported-issue': (context) => const ReportedIssuesPage(),
                   '/setting': (context) => const SettingsPage(),
                   '/change-theme': (context) => const ThemeChangePage(),
                   '/change-language': (context) => const LanguageSettings(),
@@ -214,11 +230,9 @@ class MyApp extends StatelessWidget {
                 final WidgetBuilder? routeBuilder = routes[settings.name];
 
                 if (routeBuilder != null) {
-                  // This will build the route if it's found in the map and
-                  // not an anonymous user trying to access a protected route (handled above).
                   return MaterialPageRoute(
                     builder: routeBuilder,
-                    settings: settings, // Pass along settings
+                    settings: settings,
                   );
                 }
 
@@ -228,14 +242,14 @@ class MyApp extends StatelessWidget {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   showErrorDialog(context, routeName: settings.name ?? "unknown route");
                 });
-                // Return a valid route for "Page Not Found"
                 return MaterialPageRoute(
-                    builder: (_) => Scaffold(
-                      appBar: AppBar(title: const Text("Page Not Found")),
-                      body: Center(
-                          child: Text(
-                              "Sorry, the page '${settings.name}' could not be found.")),
-                    ));
+                  builder: (_) => Scaffold(
+                    appBar: AppBar(title: const Text("Page Not Found")),
+                    body: Center(
+                      child: Text("Sorry, the page '${settings.name}' could not be found."),
+                    ),
+                  ),
+                );
               },
             ),
           );

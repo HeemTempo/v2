@@ -1,7 +1,6 @@
 import 'package:openspace_mobile_app/model/Booking.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../core/storage/local_db.dart';
-import 'dart:convert';
 
 class BookingLocal {
   Future<void> saveBookings(List<Booking> bookings) async {
@@ -37,11 +36,15 @@ class BookingLocal {
             userId: e['userId'] as String?,
             username: e['username'] as String,
             contact: e['contact'] as String,
-            startDate: DateTime.parse(e['startDate'] as String),
+            startDate:
+                e['startDate'] != null && (e['startDate'] as String).isNotEmpty
+                    ? DateTime.parse(e['startDate'] as String)
+                    : DateTime.now(),
             endDate:
-                e['endDate'] != null
+                e['endDate'] != null && (e['endDate'] as String).isNotEmpty
                     ? DateTime.parse(e['endDate'] as String)
                     : null,
+
             purpose: e['purpose'] as String,
             district: e['district'] as String,
             fileUrl: e['fileUrl'] as String?,
@@ -86,11 +89,15 @@ class BookingLocal {
             userId: e['userId'] as String?,
             username: e['username'] as String,
             contact: e['contact'] as String,
-            startDate: DateTime.parse(e['startDate'] as String),
+            startDate:
+                e['startDate'] != null && (e['startDate'] as String).isNotEmpty
+                    ? DateTime.parse(e['startDate'] as String)
+                    : DateTime.now(),
             endDate:
-                e['endDate'] != null
+                e['endDate'] != null && (e['endDate'] as String).isNotEmpty
                     ? DateTime.parse(e['endDate'] as String)
                     : null,
+
             purpose: e['purpose'] as String,
             district: e['district'] as String,
             fileUrl: e['fileUrl'] as String?,

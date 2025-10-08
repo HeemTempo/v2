@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:openspace_mobile_app/screens/side_bar.dart';
-import 'package:openspace_mobile_app/utils/constants.dart';
-import 'package:openspace_mobile_app/widget/custom_navigation_bar.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/theme_provider.dart';
+import '../utils/constants.dart';
+import '../widget/custom_navigation_bar.dart';
+import 'side_bar.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -106,6 +107,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     final locale = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
 
     final heroTitles = [
       locale.heroTitle1,
@@ -149,33 +152,37 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? AppConstants.darkBackground : AppConstants.white,
       drawer: const Sidebar(),
-      appBar: _buildAppBar(locale),
+      appBar: _buildAppBar(locale, theme, isDarkMode),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeroSection(heroTitles, heroSubtitles),
-              const SizedBox(height: 16),
-              _buildInfoCard(locale),
-              const SizedBox(height: 24),
-              _buildSectionTitle(locale.quickStats),
-              const SizedBox(height: 12),
-              _buildQuickStats(locale),
-              const SizedBox(height: 24),
-              _buildSectionTitle(locale.quickActions),
-              const SizedBox(height: 12),
-              _buildActionCards(cards),
-              const SizedBox(height: 24),
-              _buildSectionTitle(locale.recentActivities),
-              const SizedBox(height: 12),
-              _buildRecentActivities(locale),
-              const SizedBox(height: 100),
-            ],
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeroSection(heroTitles, heroSubtitles, theme, isDarkMode),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildInfoCard(locale, theme, isDarkMode),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle(locale.quickStats, theme, isDarkMode),
+                  const SizedBox(height: 12),
+                  _buildQuickStats(locale, theme, isDarkMode),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle(locale.quickActions, theme, isDarkMode),
+                  const SizedBox(height: 12),
+                  _buildActionCards(cards, theme, isDarkMode),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle(locale.recentActivities, theme, isDarkMode),
+                  const SizedBox(height: 12),
+                  _buildRecentActivities(locale, theme, isDarkMode),
+                  const SizedBox(height: 100),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: CustomBottomNavBar(
@@ -185,30 +192,30 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppConstants.primaryBlue,
         child: const Icon(Icons.emergency_outlined, color: Colors.white),
-        onPressed: () => _showEmergencyDialog(locale),
+        onPressed: () => _showEmergencyDialog(locale, theme, isDarkMode),
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(AppLocalizations locale) {
+  PreferredSizeWidget _buildAppBar(AppLocalizations locale, ThemeData theme, bool isDarkMode) {
     return AppBar(
-      backgroundColor: AppConstants.primaryBlue,
+      backgroundColor: isDarkMode ? AppConstants.darkBackground : AppConstants.primaryBlue,
       elevation: 0,
       leading: Builder(
         builder: (context) => IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white),
+          icon: Icon(Icons.menu, color: isDarkMode ? Colors.white : Colors.white),
           onPressed: () => Scaffold.of(context).openDrawer(),
         ),
       ),
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.account_balance, color: Colors.white, size: 20),
+          Icon(Icons.account_balance, color: isDarkMode ? Colors.white : Colors.white, size: 20),
           const SizedBox(width: 8),
           Text(
             locale.appName,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: isDarkMode ? Colors.white : Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.w600,
             ),
@@ -217,10 +224,17 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       ),
       centerTitle: true,
       actions: [
+        Consumer<ThemeProvider>(
+          builder: (context, themeProvider, _) => Switch(
+            value: themeProvider.isDarkMode,
+            activeThumbColor: AppConstants.lightAccent,
+            onChanged: (value) => themeProvider.toggleTheme(value),
+          ),
+        ),
         Stack(
           children: [
             IconButton(
-              icon: const Icon(Icons.notifications, color: Colors.white),
+              icon: Icon(Icons.notifications, color: isDarkMode ? Colors.white : Colors.white),
               onPressed: () {
                 Navigator.pushNamed(context, '/user-notification');
                 if (_notificationCount > 0) {
@@ -234,8 +248,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 top: 8,
                 child: Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent,
                     shape: BoxShape.circle,
                   ),
                   child: Text(
@@ -254,7 +268,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildHeroSection(List<String> titles, List<String> subtitles) {
+  Widget _buildHeroSection(List<String> titles, List<String> subtitles, ThemeData theme, bool isDarkMode) {
     return Container(
       margin: const EdgeInsets.all(16),
       height: 180,
@@ -262,7 +276,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: isDarkMode ? Colors.black.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -281,6 +295,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   _horizontalImages[index],
                   fit: BoxFit.cover,
                   filterQuality: FilterQuality.high,
+                  color: isDarkMode ? Colors.black.withOpacity(0.3) : null,
+                  colorBlendMode: isDarkMode ? BlendMode.darken : null,
                 );
               },
             ),
@@ -293,22 +309,22 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 children: [
                   Text(
                     titles[_carouselIndex],
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.white : Colors.black,
                       fontWeight: FontWeight.bold,
+                      fontSize: 20,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitles[_carouselIndex],
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: isDarkMode ? Colors.white70 : Colors.black54,
                       fontSize: 14,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  _buildDots(),
+                  _buildDots(theme, isDarkMode),
                 ],
               ),
             ),
@@ -318,7 +334,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildDots() {
+  Widget _buildDots(ThemeData theme, bool isDarkMode) {
     return Row(
       children: List.generate(
         _horizontalImages.length,
@@ -328,8 +344,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           height: 8,
           decoration: BoxDecoration(
             color: index == _carouselIndex
-                ? Colors.white
-                : Colors.white.withOpacity(0.5),
+                ? (isDarkMode ? Colors.white : AppConstants.primaryBlue)
+                : (isDarkMode ? Colors.white38 : Colors.grey),
             shape: BoxShape.circle,
           ),
         ),
@@ -337,20 +353,30 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildInfoCard(AppLocalizations locale) {
+  Widget _buildInfoCard(AppLocalizations locale, ThemeData theme, bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
+        color: isDarkMode ? AppConstants.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: isDarkMode ? Colors.black.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.account_balance,
-            color: AppConstants.primaryBlue,
-            size: 24,
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: isDarkMode ? AppConstants.primaryBlue.withOpacity(0.1) : AppConstants.primaryBlue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.account_balance, color: AppConstants.primaryBlue, size: 24),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -359,19 +385,18 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               children: [
                 Text(
                   locale.heroTitle1,
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    fontSize: 16,
+                    color: isDarkMode ? Colors.white : AppConstants.black,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   locale.splashTagline,
                   style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                    height: 1.4,
+                    fontSize: 14,
+                    color: isDarkMode ? Colors.white70 : AppConstants.grey,
                   ),
                 ),
               ],
@@ -382,42 +407,62 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, ThemeData theme, bool isDarkMode) {
     return Text(
       title,
-      style: const TextStyle(
-        fontSize: 18,
+      style: TextStyle(
         fontWeight: FontWeight.w600,
-        color: Colors.black87,
+        fontSize: 18,
+        color: isDarkMode ? Colors.white : AppConstants.black,
       ),
     );
   }
 
-  Widget _buildQuickStats(AppLocalizations locale) {
+  Widget _buildQuickStats(AppLocalizations locale, ThemeData theme, bool isDarkMode) {
     return Row(
       children: [
         Expanded(
-            child: _buildStatCard(locale.openSpaces, '47', Icons.park_outlined)),
+          child: _buildStatCard(
+            locale.openSpaces,
+            '47',
+            Icons.park_outlined,
+            theme,
+            isDarkMode,
+          ),
+        ),
         const SizedBox(width: 12),
         Expanded(
-            child:
-                _buildStatCard(locale.activeReports, '12', Icons.report_outlined)),
+          child: _buildStatCard(
+            locale.activeReports,
+            '12',
+            Icons.report_outlined,
+            theme,
+            isDarkMode,
+          ),
+        ),
         const SizedBox(width: 12),
         Expanded(
-            child: _buildStatCard(locale.bookings, '8', Icons.event_outlined)),
+          child: _buildStatCard(
+            locale.bookings,
+            '8',
+            Icons.event_outlined,
+            theme,
+            isDarkMode,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon) {
+  Widget _buildStatCard(String title, String value, IconData icon, ThemeData theme, bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDarkMode ? AppConstants.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: isDarkMode ? Colors.black.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -425,27 +470,37 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       ),
       child: Column(
         children: [
-          Icon(icon, color: AppConstants.primaryBlue, size: 28),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: isDarkMode ? AppConstants.primaryBlue.withOpacity(0.1) : AppConstants.primaryBlue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: AppConstants.primaryBlue, size: 28),
+          ),
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 20,
+            style: TextStyle(
               fontWeight: FontWeight.bold,
+              fontSize: 20,
+              color: isDarkMode ? Colors.white : AppConstants.black,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             title,
-            style: TextStyle(color: Colors.grey[600], fontSize: 14),
-            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: isDarkMode ? Colors.white70 : AppConstants.grey,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionCards(List<_CardData> cards) {
+  Widget _buildActionCards(List<_CardData> cards, ThemeData theme, bool isDarkMode) {
     return SizedBox(
       height: 140,
       child: ListView.separated(
@@ -460,11 +515,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               width: 180,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDarkMode ? AppConstants.darkCard : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: isDarkMode ? Colors.black.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -473,17 +528,30 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(card.icon, color: AppConstants.primaryBlue, size: 28),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? AppConstants.primaryBlue.withOpacity(0.1) : AppConstants.primaryBlue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(card.icon, color: AppConstants.primaryBlue, size: 28),
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     card.title,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: isDarkMode ? Colors.white : AppConstants.black,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     card.subtitle,
-                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDarkMode ? Colors.white70 : AppConstants.grey,
+                    ),
                   ),
                 ],
               ),
@@ -494,7 +562,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildRecentActivities(AppLocalizations locale) {
+  Widget _buildRecentActivities(AppLocalizations locale, ThemeData theme, bool isDarkMode) {
     return Column(
       children: [
         _buildActivityItem(
@@ -503,64 +571,121 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           'Magomeni Open Space',
           '2 hours ago',
           AppConstants.primaryBlue,
+          theme,
+          isDarkMode,
         ),
         _buildActivityItem(
           Icons.event_available,
           locale.spaceBooked,
           'Mwenge Park',
           '5 hours ago',
-          Colors.green,
+          AppConstants.lightAccent,
+          theme,
+          isDarkMode,
         ),
         _buildActivityItem(
           Icons.check_circle,
           locale.issueResolved,
           'Ilala Open Space',
           '1 day ago',
-          Colors.orange,
+          AppConstants.purple,
+          theme,
+          isDarkMode,
         ),
       ],
     );
   }
 
   Widget _buildActivityItem(
-      IconData icon, String title, String subtitle, String time, Color color) {
+    IconData icon,
+    String title,
+    String subtitle,
+    String time,
+    Color iconColor,
+    ThemeData theme,
+    bool isDarkMode,
+  ) {
     return ListTile(
-      leading: Icon(icon, color: color),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text('$subtitle • $time'),
+      leading: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: iconColor.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: iconColor),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+          color: isDarkMode ? Colors.white : AppConstants.black,
+        ),
+      ),
+      subtitle: Text(
+        "$subtitle • $time",
+        style: TextStyle(
+          fontSize: 14,
+          color: isDarkMode ? Colors.white70 : AppConstants.grey,
+        ),
+      ),
     );
   }
 
-  void _showEmergencyDialog(AppLocalizations locale) {
+  void _showEmergencyDialog(AppLocalizations locale, ThemeData theme, bool isDarkMode) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(locale.emergencyContacts),
+        backgroundColor: isDarkMode ? AppConstants.darkCard : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Text(
+          locale.emergencyContacts,
+          style: TextStyle(
+            color: Colors.redAccent,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildEmergencyContact(locale.police, '112'),
-            _buildEmergencyContact(locale.fire, '114'),
-            _buildEmergencyContact(locale.ambulance, '115'),
+            _buildEmergencyContact(locale.police, '112', theme, isDarkMode),
+            _buildEmergencyContact(locale.fire, '114', theme, isDarkMode),
+            _buildEmergencyContact(locale.ambulance, '115', theme, isDarkMode),
           ],
         ),
         actions: [
           TextButton(
-            child: Text(locale.close),
             onPressed: () => Navigator.pop(context),
+            child: Text(
+              locale.close,
+              style: TextStyle(color: AppConstants.primaryBlue),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEmergencyContact(String title, String number) {
+  Widget _buildEmergencyContact(String title, String number, ThemeData theme, bool isDarkMode) {
     return ListTile(
-      leading: const Icon(Icons.phone, color: Colors.red),
-      title: Text(title),
-      subtitle: Text(number),
+      leading: const Icon(Icons.phone, color: Colors.redAccent),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 16,
+          color: isDarkMode ? Colors.white : AppConstants.black,
+        ),
+      ),
+      subtitle: Text(
+        number,
+        style: TextStyle(
+          fontSize: 14,
+          color: isDarkMode ? Colors.white70 : AppConstants.grey,
+        ),
+      ),
       onTap: () {
-        // Implement dialer integration here if needed
+        // TODO: Integrate dialer functionality here
       },
     );
   }

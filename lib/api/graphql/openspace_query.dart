@@ -2,12 +2,13 @@ const String getAllOpenSpacesQuery = """
   query MyQuery {
     allOpenSpacesUser {
       id
-      district
+      isActive
       name
-      status
       longitude
       latitude
-      isActive
+      district
+      status
+      street
     }
   }
 """;

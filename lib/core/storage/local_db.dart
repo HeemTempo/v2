@@ -22,7 +22,7 @@ class LocalDb {
             startDate TEXT,
             endDate TEXT,
             purpose TEXT,
-            district TEXT,
+            district TEXT, 
             fileUrl TEXT,
             createdAt TEXT,
             status TEXT
@@ -50,6 +50,7 @@ class LocalDb {
             id TEXT PRIMARY KEY,
             name TEXT,
             district TEXT,
+            street TEXT,
             latitude REAL,
             longitude REAL,
             isActive INTEGER,
@@ -59,18 +60,18 @@ class LocalDb {
           )
         ''');
 
-
-       await ProfileLocalDataSource.createTable(db);
+        await ProfileLocalDataSource.createTable(db);
       },
 
-       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
-          // only create the profile table if upgrading from older version
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 3) {
+          // Add street column if upgrading
+          await db.execute(
+            'ALTER TABLE open_spaces ADD COLUMN street TEXT DEFAULT ""',
+          );
           await ProfileLocalDataSource.createTable(db);
         }
       },
-
-
     );
     return _db!;
   }

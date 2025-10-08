@@ -4,7 +4,6 @@ import 'package:quickalert/quickalert.dart';
 import 'package:provider/provider.dart';
 import '../service/auth_service.dart';
 import '../utils/constants.dart';
-import '../model/user_model.dart';
 import '../providers/user_provider.dart';
 import '../l10n/app_localizations.dart';
 
@@ -91,102 +90,69 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  void _signIn() async {
-    final loc = AppLocalizations.of(context)!;
+ void _signIn() async {
+  final loc = AppLocalizations.of(context)!;
+  final connectivityService = Provider.of<ConnectivityService>(context, listen: false);
 
-    // Get connectivity status
-    final connectivityService = Provider.of<ConnectivityService>(
-      context,
-      listen: false,
-    );
-
-    // OFFLINE MODE: Try to use cached credentials
-    if (!connectivityService.isOnline) {
-      setState(() => _isLoading = true);
-      
-      try {
-        final offlineUser = await _authService.getOfflineUser();
-        
-        if (offlineUser == null) {
-          throw Exception(loc.offlineNoCachedToken);
-        }
-
-        if (!mounted) return;
-        setState(() => _isLoading = false);
-
-        // Set user in provider
-        final userProvider = Provider.of<UserProvider>(context, listen: false);
-        userProvider.setUser(offlineUser);
-
-        // Show success and navigate
-        _showAlert(
-          QuickAlertType.success,
-          loc.offlineLoginSuccess,
-          onConfirmed: () {
-            if (mounted) Navigator.pushReplacementNamed(context, '/home');
-          },
-        );
-      } catch (e) {
-        if (!mounted) return;
-        setState(() => _isLoading = false);
-
-        _showAlert(
-          QuickAlertType.error,
-          loc.offlineNoCachedToken,
-        );
-      }
-      return;
-    }
-
-    // ONLINE MODE: Validate form and login with credentials
-    if (!_formKey.currentState!.validate()) return;
-
+  // Offline mode
+  if (!connectivityService.isOnline) {
     setState(() => _isLoading = true);
-
     try {
-      final user = await _authService.login(
-        _usernameController.text.trim(),
-        _passwordController.text.trim(),
-      );
+      final offlineUser = await _authService.getOfflineUser();
+      if (offlineUser == null) throw Exception(loc.offlineNoCachedToken);
 
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
-      // Set user in provider
       final userProvider = Provider.of<UserProvider>(context, listen: false);
-      userProvider.setUser(user);
+      userProvider.setUser(offlineUser);
 
-      // Show success alert
       _showAlert(
         QuickAlertType.success,
-        loc.loginSuccess,
+        loc.offlineLoginSuccess,
         onConfirmed: () {
           if (mounted) Navigator.pushReplacementNamed(context, '/home');
         },
       );
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
-      final errorMessage = e.toString().replaceFirst('Exception: ', '');
-
-      _showAlert(
-        QuickAlertType.error,
-        _getErrorMessage(errorMessage, loc),
-      );
+      _showAlert(QuickAlertType.error, loc.offlineNoCachedToken);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
+    return;
   }
 
-  String _getErrorMessage(String error, AppLocalizations loc) {
-    if (error.contains('timeout') || error.contains('network')) {
-      return loc.connectionTimeout;
-    } else if (error.contains('Invalid credentials') || 
-               error.contains('invalid username') ||
-               error.contains('invalid password')) {
-      return loc.invalidCredentials ?? 'Invalid username or password';
-    }
-    return error.isNotEmpty ? error : loc.loginFailed;
+  // Online login
+  if (!_formKey.currentState!.validate()) return;
+  setState(() => _isLoading = true);
+
+  try {
+    final user = await _authService.login(
+      _usernameController.text.trim(),
+      _passwordController.text.trim(),
+    );
+
+    
+    if (_rememberMe) await _authService.cacheUserCredentials(user);
+
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    userProvider.setUser(user);
+
+    _showAlert(
+      QuickAlertType.success,
+      loc.loginSuccess,
+      onConfirmed: () {
+        if (mounted) Navigator.pushReplacementNamed(context, '/home');
+      },
+    );
+  } catch (e) {
+    final errorMessage = e.toString().replaceFirst('Exception: ', '');
+    _showAlert(
+      QuickAlertType.error,
+      errorMessage.isNotEmpty ? errorMessage : loc.loginFailed,
+    );
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -256,8 +222,8 @@ class _SignInScreenState extends State<SignInScreen> {
                                   const SizedBox(width: 4),
                                   Text(
                                     connectivityService.isOnline
-                                        ? loc.onlineMode ?? 'Online'
-                                        : loc.offlineMode ?? 'Offline',
+                                        ? loc.onlineMode
+                                        : loc.offlineMode,
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: connectivityService.isOnline
@@ -390,8 +356,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                     ),
                                     const SizedBox(height: 12),
                                     Text(
-                                      loc.offlineLoginHint ??
-                                          'You are offline. Tap below to continue with your saved session.',
+                                      loc.offlineLoginHint,
                                       style: const TextStyle(
                                         fontSize: 14,
                                         color: Colors.orange,

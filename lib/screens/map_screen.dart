@@ -6,14 +6,12 @@ import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:openspace_mobile_app/api/graphql/graphql_service.dart';
 import 'package:openspace_mobile_app/data/local/openspace_local.dart';
 import 'package:openspace_mobile_app/data/repository/openspace_repository.dart';
 import 'package:openspace_mobile_app/service/openspace_service.dart';
 import 'package:provider/provider.dart';
 import '../model/openspace.dart';
 
-import '../utils/constants.dart';
 import '../utils/location_service.dart';
 import '../utils/alert/access_denied_dialog.dart';
 import '../providers/user_provider.dart';
@@ -49,6 +47,19 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   bool _isLoading = true;
   String? _errorMessage;
   int _currentIndex = 1;
+
+  OpenSpaceMarker _emptyMarker(LatLng point) {
+    return OpenSpaceMarker(
+      id: '',
+      name: '',
+      district: '',
+      street: '', // <-- added
+      latitude: point.latitude,
+      longitude: point.longitude,
+      isActive: false,
+      status: '',
+    );
+  }
 
   // --- Add these inside MapScreenState ---
   final List<MapLayerOption> tileLayers = [
@@ -243,17 +254,19 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     if (!mounted) return;
 
     setState(() {
-      _selectedSpace = openSpace;
+      _selectedSpace = openSpace ?? _emptyMarker(position);
       _selectedPosition = position;
     });
 
     try {
       final areaName =
           await _locationService.getAreaName(position) ?? "Unknown Area";
+
       if (mounted) {
         setState(() {
           _selectedAreaName = areaName;
         });
+
         await showModalBottomSheet(
           context: context,
           shape: const RoundedRectangleBorder(
@@ -263,22 +276,17 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           isScrollControlled: true,
           builder: (context) => _buildBottomSheetContent(),
         );
-        if (mounted) {
-          _closePopup();
-        }
+
+        if (mounted) _closePopup();
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _selectedAreaName = "Unknown Area";
-        });
+        setState(() => _selectedAreaName = "Unknown Area");
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text("Error fetching area name")));
       }
-      if (kDebugMode) {
-        print('Error showing location popup: $e');
-      }
+      if (kDebugMode) print('Error showing location popup: $e');
     }
   }
 
@@ -396,7 +404,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildBottomSheetContent() {
-    final isOpenSpace = _selectedSpace != null;
+    final isOpenSpace = _selectedSpace != null && _selectedSpace!.id.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -414,7 +422,6 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               borderRadius: BorderRadius.circular(2.5),
             ),
           ),
-          // Close button
           Align(
             alignment: Alignment.topRight,
             child: IconButton(
@@ -422,7 +429,6 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               onPressed: () => Navigator.pop(context),
             ),
           ),
-          // Place or Open Space title
           Text(
             isOpenSpace
                 ? _selectedSpace!.name
@@ -436,16 +442,16 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 12),
 
-          // Show details only for open space
-          if (isOpenSpace) ...[
-            _buildDetailRow("District", _selectedSpace!.district),
+          // Details for OpenSpace or normal point
+          _buildDetailRow("District", _selectedSpace?.district ?? "Unknown"),
+          _buildDetailRow("Street", _selectedSpace?.street ?? "Unknown"),
+          if (isOpenSpace)
             _buildDetailRow(
               "Status",
               _selectedSpace!.status,
               valueColor:
                   _selectedSpace!.isAvailable ? Colors.green : Colors.red,
             ),
-          ],
 
           const SizedBox(height: 16),
           // Action Buttons
@@ -591,6 +597,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                         id: '',
                         name: '',
                         district: '',
+                        street: '',
                         latitude: point.latitude,
                         longitude: point.longitude,
                         isActive: false,

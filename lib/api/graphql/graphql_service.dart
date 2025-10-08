@@ -3,15 +3,18 @@ import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:http/http.dart' as http;
 
 class GraphQLService {
-  late GraphQLClient client;
+  late final GraphQLClient client;
+  final bool debugMode;
 
-  GraphQLService({String endpoint ='http://127.0.0.1:8001/graphql/'}) {
+  GraphQLService({
+    String endpoint = 'http://127.0.0.1:8001/graphql/',
+    Duration timeout = const Duration(seconds: 30),
+    this.debugMode = false,
+  }) {
     final httpLink = HttpLink(
       endpoint,
-      httpClient: TimeoutHttpClient(const Duration(seconds: 60)),
-      defaultHeaders: {
-        'Content-Type': 'application/json',
-      },
+      httpClient: TimeoutHttpClient(timeout),
+      defaultHeaders: {'Content-Type': 'application/json'},
     );
 
     client = GraphQLClient(
@@ -22,73 +25,58 @@ class GraphQLService {
         mutate: Policies(fetch: FetchPolicy.networkOnly),
       ),
     );
-  }
 
-  Future<QueryResult> query(String queryString, {Map<String, dynamic>? variables}) async {
-    final startTime = DateTime.now();
-    print('GraphQLService: Starting query at $startTime with query: $queryString, variables: $variables');
-
-    try {
-      final options = QueryOptions(
-        document: gql(queryString),
-        variables: variables ?? {},
-        fetchPolicy: FetchPolicy.networkOnly,
-      );
-
-      final result = await client.query(options).timeout(
-        const Duration(seconds: 60),
-        onTimeout: () {
-          print('GraphQLService: Query timed out after 60 seconds');
-          throw TimeoutException('GraphQL query timed out after 60 seconds');
-        },
-      );
-
-      final duration = DateTime.now().difference(startTime);
-      print('GraphQLService: Query completed in ${duration.inMilliseconds}ms');
-
-      if (result.hasException) {
-        print('[GraphQL QUERY ERROR]: ${result.exception.toString()}');
-        throw result.exception!;
-      }
-
-      return result;
-    } catch (e) {
-      print('[GraphQL QUERY ERROR]: $e');
-      throw Exception('Query failed');
+    if (debugMode) {
+      print('GraphQLService initialized → $endpoint (timeout: ${timeout.inSeconds}s)');
     }
   }
 
-  Future<QueryResult> mutate(String mutationString, {Map<String, dynamic>? variables}) async {
-    final startTime = DateTime.now();
-    print('GraphQLService: Starting mutation at $startTime with mutation: $mutationString, variables: $variables');
+  Future<QueryResult> query(
+    String queryString, {
+    Map<String, dynamic>? variables,
+  }) async {
+    return _execute(
+      () => client.query(QueryOptions(
+        document: gql(queryString),
+        variables: variables ?? {},
+        fetchPolicy: FetchPolicy.networkOnly,
+      )),
+      label: 'QUERY',
+    );
+  }
 
-    try {
-      final options = MutationOptions(
+  Future<QueryResult> mutate(
+    String mutationString, {
+    Map<String, dynamic>? variables,
+  }) async {
+    return _execute(
+      () => client.mutate(MutationOptions(
         document: gql(mutationString),
         variables: variables ?? {},
         fetchPolicy: FetchPolicy.networkOnly,
-      );
+      )),
+      label: 'MUTATION',
+    );
+  }
 
-      final result = await client.mutate(options).timeout(
-        const Duration(seconds: 60),
-        onTimeout: () {
-          print('GraphQLService: Mutation timed out after 60 seconds');
-          throw TimeoutException('GraphQL mutation timed out after 60 seconds');
-        },
-      );
+  Future<QueryResult> _execute(
+    Future<QueryResult> Function() action, {
+    required String label,
+  }) async {
+    final start = DateTime.now();
+    try {
+      final result = await action();
 
-      final duration = DateTime.now().difference(startTime);
-      print('GraphQLService: Mutation completed in ${duration.inMilliseconds}ms');
-
-      if (result.hasException) {
-        print('[GraphQL MUTATION ERROR]: ${result.exception.toString()}');
-        throw result.exception!;
+      if (debugMode) {
+        final duration = DateTime.now().difference(start);
+        print('GraphQL $label completed in ${duration.inMilliseconds}ms');
       }
 
+      if (result.hasException) throw result.exception!;
       return result;
     } catch (e) {
-      print('[GraphQL MUTATION ERROR]: $e');
-      throw Exception('Mutation failed: $e');
+      if (debugMode) print('GraphQL $label ERROR: $e');
+      rethrow;
     }
   }
 }
@@ -100,27 +88,15 @@ class TimeoutHttpClient extends http.BaseClient {
   TimeoutHttpClient(this.timeout);
 
   @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    print('TimeoutHttpClient: Sending request to ${request.url} with timeout: $timeout');
-    try {
-      final response = await _inner.send(request).timeout(
-        timeout,
-        onTimeout: () {
-          print('TimeoutHttpClient: Request timed out after $timeout');
-          throw TimeoutException('Request to GraphQL API timed out after $timeout');
-        },
-      );
-      print('TimeoutHttpClient: Received response with status: ${response.statusCode}');
-      return response;
-    } catch (e) {
-      print('TimeoutHttpClient: Error sending request: $e');
-      rethrow;
-    }
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    return _inner.send(request).timeout(
+      timeout,
+      onTimeout: () => throw TimeoutException(
+        'Request to ${request.url} timed out after $timeout',
+      ),
+    );
   }
 
   @override
-  void close() {
-    print('TimeoutHttpClient: Closing client');
-    _inner.close();
-  }
+  void close() => _inner.close();
 }
