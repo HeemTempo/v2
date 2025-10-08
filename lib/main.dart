@@ -7,6 +7,7 @@ import 'package:openspace_mobile_app/data/local/report_local.dart';
 import 'package:openspace_mobile_app/data/repository/report_repository.dart';
 import 'package:openspace_mobile_app/model/Notification.dart';
 import 'package:openspace_mobile_app/providers/locale_provider.dart';
+import 'package:openspace_mobile_app/providers/notification_provider.dart';
 import 'package:openspace_mobile_app/providers/report_provider.dart';
 import 'package:openspace_mobile_app/providers/theme_provider.dart';
 import 'package:openspace_mobile_app/providers/user_provider.dart';
@@ -82,6 +83,7 @@ class MyApp extends StatelessWidget {
         Provider<ValueNotifier<GraphQLClient>>(
           create: (_) => ValueNotifier(client),
         ),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
         Provider<Future<SharedPreferences>>(
           create: (_) => SharedPreferences.getInstance(),
           lazy: false, // Ensure SharedPreferences is initialized early

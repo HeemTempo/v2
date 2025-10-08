@@ -17,6 +17,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Fetch notifications on screen open
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<NotificationProvider>(context, listen: false).fetchNotifications();
+    });
+
+    // Listen to connectivity changes to sync notifications automatically
     Connectivity().onConnectivityChanged.listen((result) {
       if (result != ConnectivityResult.none) {
         Provider.of<NotificationProvider>(context, listen: false).syncNotifications();
@@ -26,59 +33,57 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => NotificationProvider()..fetchNotifications(),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Notifications'),
-          backgroundColor: AppConstants.primaryBlue,
-          centerTitle: true,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.sync),
-              onPressed: () {
-                Provider.of<NotificationProvider>(context, listen: false).syncNotifications();
-              },
-            ),
-          ],
-        ),
-        body: Consumer<NotificationProvider>(
-          builder: (context, provider, _) {
-            if (provider.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Notifications'),
+        backgroundColor: AppConstants.primaryBlue,
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.sync),
+            onPressed: () {
+              Provider.of<NotificationProvider>(context, listen: false)
+                  .syncNotifications();
+            },
+          ),
+        ],
+      ),
+      body: Consumer<NotificationProvider>(
+        builder: (context, provider, _) {
+          if (provider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            if (provider.error != null) {
-              return Center(child: Text(provider.error!));
-            }
+          if (provider.error != null) {
+            return Center(child: Text(provider.error!));
+          }
 
-            if (provider.notifications.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.notifications_off, size: 60, color: Colors.grey[400]),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'You have no notifications.',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: provider.notifications.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final notification = provider.notifications[index];
-                return NotificationTile(notification: notification);
-              },
+          if (provider.notifications.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.notifications_off, size: 60, color: Colors.grey[400]),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'You have no notifications.',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ],
+              ),
             );
-          },
-        ),
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(12),
+            itemCount: provider.notifications.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final notification = provider.notifications[index];
+              return NotificationTile(notification: notification);
+            },
+          );
+        },
       ),
     );
   }
@@ -122,7 +127,9 @@ class NotificationTile extends StatelessWidget {
           style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
         onTap: () {
-          Provider.of<NotificationProvider>(context, listen: false).markAsRead(notification.id);
+          Provider.of<NotificationProvider>(context, listen: false)
+              .markAsRead(notification.id);
+
           Navigator.push(
             context,
             MaterialPageRoute(
