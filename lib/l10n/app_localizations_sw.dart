@@ -733,4 +733,13 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get invalidCredentials => 'Jina la mtumiaji au nywila si sahihi';
+
+  @override
+  String get adminNotAllowed => 'Wasimamizi hawaruhusiwi kuingia hapa.';
+
+  @override
+  String get streetLabel => 'Mtaa';
+
+  @override
+  String get streetRequired => 'Tafadhali chagua mtaa';
 }

@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'auth_service.dart';
 
 class ReportingService {
-  static const String _baseUrl = 'http://127.0.0.1:8001/';
+  static const String _baseUrl = 'http://192.168.1.132:8001/';
   static const String _reportEndpoint = 'api/v1/reports/';
 
   /// Create a new report (supports optional file)

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:openspace_mobile_app/data/local/report_local.dart';
@@ -9,6 +10,13 @@ class ReportRepository {
 
   ReportRepository({required this.localService});
 
+  /// Check if device is online
+  Future<bool> _isConnected() async {
+    final connectivityResult = await Connectivity().checkConnectivity();
+    return connectivityResult != ConnectivityResult.none;
+  }
+
+  /// Submit a report - handles online/offline automatically
   Future<Report> submitReport({
     required String description,
     String? email,
@@ -16,27 +24,22 @@ class ReportRepository {
     String? spaceName,
     double? latitude,
     double? longitude,
-    bool isOnline = true,
   }) async {
+    final isOnline = await _isConnected();
+
     if (!isOnline) {
-      // offline → save locally
-      final offlineReport = Report(
-        id: 'local_${DateTime.now().millisecondsSinceEpoch}',
-        reportId: 'pending',
+      // Offline: save locally with pending status
+      return await _saveOfflineReport(
         description: description,
         email: email,
-        file: file?.path,
-        createdAt: DateTime.now(),
+        file: file,
+        spaceName: spaceName,
         latitude: latitude,
         longitude: longitude,
-        spaceName: spaceName,
-        user: null,
-        status: 'pending',
       );
-      await localService.saveReport(offlineReport);
-      return offlineReport;
     }
 
+    // Try online submission
     try {
       final response = await ReportingService.createReport(
         description: description,
@@ -48,34 +51,71 @@ class ReportRepository {
       );
 
       final report = Report.fromRestJson(response);
-      await localService.saveReport(report); // cache locally
+      
+      // Save synced report locally
+      await localService.saveReport(report.copyWith(status: 'submitted'));
       return report;
     } catch (e) {
-      // fallback offline
-      final offlineReport = Report(
-        id: 'local_${DateTime.now().millisecondsSinceEpoch}',
-        reportId: 'pending',
+      print('Online submission failed: $e. Saving offline.');
+      
+      // Fallback to offline if network request fails
+      return await _saveOfflineReport(
         description: description,
         email: email,
-        file: file?.path,
-        createdAt: DateTime.now(),
+        file: file,
+        spaceName: spaceName,
         latitude: latitude,
         longitude: longitude,
-        spaceName: spaceName,
-        user: null,
-        status: 'pending',
       );
-      await localService.saveReport(offlineReport);
-      return offlineReport;
     }
+  }
+
+  /// Save report offline with pending status
+  Future<Report> _saveOfflineReport({
+    required String description,
+    String? email,
+    File? file,
+    String? spaceName,
+    double? latitude,
+    double? longitude,
+  }) async {
+    final offlineReport = Report(
+      id: 'local_${DateTime.now().millisecondsSinceEpoch}',
+      reportId: 'pending',
+      description: description,
+      email: email,
+      file: file?.path,
+      createdAt: DateTime.now(),
+      latitude: latitude,
+      longitude: longitude,
+      spaceName: spaceName,
+      user: null,
+      status: 'pending',
+    );
+    
+    await localService.saveReport(offlineReport);
+    return offlineReport;
   }
 
   /// Sync all pending reports to backend
   Future<void> syncPendingReports() async {
-    final connectivity = await Connectivity().checkConnectivity();
-    if (connectivity == ConnectivityResult.none) return;
+    final isOnline = await _isConnected();
+    if (!isOnline) {
+      print('Device offline. Skipping sync.');
+      return;
+    }
 
     final pendingReports = await localService.getPendingReports();
+    
+    if (pendingReports.isEmpty) {
+      print('No pending reports to sync.');
+      return;
+    }
+    
+    print('Syncing ${pendingReports.length} pending reports...');
+
+    int successCount = 0;
+    int failCount = 0;
 
     for (final report in pendingReports) {
       try {
@@ -88,16 +128,33 @@ class ReportRepository {
           longitude: report.longitude,
         );
 
-        // Update local report with backend reportId & status
-        final syncedReport = Report.fromRestJson(response);
-        await localService.updateReportStatus(report.id, 'synced');
-        await localService.saveReport(syncedReport);
+        // Update with synced data from backend
+        final syncedReport = Report.fromRestJson(response, localId: report.id);
+        await localService.saveReport(syncedReport.copyWith(status: 'submitted'));
+        
+        successCount++;
+        print('✓ Successfully synced report: ${report.id}');
+      } on SocketException catch (e) {
+        failCount++;
+        print('✗ Network error syncing report ${report.id}: $e');
+        // Stop trying if we get network errors - we're not actually online
+        print('Stopping sync due to network errors. Server may be unreachable.');
+        break;
+      } on TimeoutException catch (e) {
+        failCount++;
+        print('✗ Timeout syncing report ${report.id}: $e');
+        break;
       } catch (e) {
-        // Ignore failures, leave report as pending
-        print('Failed to sync report ${report.id}: $e');
+        failCount++;
+        print('✗ Failed to sync report ${report.id}: $e');
+        // Continue to next report for non-network errors
       }
     }
+    
+    print('Sync complete: $successCount succeeded, $failCount failed');
   }
 
   Future<List<Report>> getPendingReports() => localService.getPendingReports();
+  
+  Future<List<Report>> getAllReports() => localService.getAllReports();
 }

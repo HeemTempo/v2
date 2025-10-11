@@ -6,7 +6,7 @@ import 'package:openspace_mobile_app/service/auth_service.dart';
 
 
 class NotificationService {
-  static const String _baseUrl = 'https://127.0.0.1:8001/api/v1';
+  static const String _baseUrl = 'http://192.168.1.132:8001/api/v1';
   static const String _notificationsUrl = '$_baseUrl/notifications/';
   static const String _markReadUrl = '$_baseUrl/notifications/mark-read/';
 

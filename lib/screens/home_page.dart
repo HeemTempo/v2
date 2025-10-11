@@ -224,13 +224,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       ),
       centerTitle: true,
       actions: [
-        Consumer<ThemeProvider>(
-          builder: (context, themeProvider, _) => Switch(
-            value: themeProvider.isDarkMode,
-            activeThumbColor: AppConstants.lightAccent,
-            onChanged: (value) => themeProvider.toggleTheme(value),
-          ),
-        ),
         Stack(
           children: [
             IconButton(

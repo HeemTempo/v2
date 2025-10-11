@@ -1534,6 +1534,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invalid username or password'**
   String get invalidCredentials;
+
+  /// No description provided for @adminNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Admins are not allowed to login here.'**
+  String get adminNotAllowed;
+
+  /// No description provided for @streetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Street'**
+  String get streetLabel;
+
+  /// No description provided for @streetRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a street'**
+  String get streetRequired;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

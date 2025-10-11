@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:openspace_mobile_app/data/repository/booking_repository.dart';
+import 'package:provider/provider.dart';
+import 'package:openspace_mobile_app/providers/booking_provider.dart';
 import 'package:openspace_mobile_app/service/auth_service.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
@@ -19,8 +20,6 @@ class BookingPage extends StatefulWidget {
 
 class _BookingPageState extends State<BookingPage> {
   final _formKey = GlobalKey<FormState>();
-  final BookingRepository _bookingRepository = BookingRepository();
-  bool _isSubmitting = false;
 
   // User input fields
   final _nameController = TextEditingController();
@@ -39,6 +38,12 @@ class _BookingPageState extends State<BookingPage> {
     if (widget.spaceName != null) {
       _locationController.text = widget.spaceName!;
     }
+
+    // Auto-sync pending bookings when page opens
+    Future.microtask(() {
+      final bookingProvider = context.read<BookingProvider>();
+      bookingProvider.syncPendingBookings();
+    });
   }
 
   Future<void> _selectDate(BuildContext context, bool isStart) async {
@@ -71,11 +76,6 @@ class _BookingPageState extends State<BookingPage> {
 
     if (result != null && result.files.single.path != null) {
       setState(() => _selectedFile = File(result.files.single.path!));
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('No file selected.')));
-      }
     }
   }
 
@@ -113,55 +113,61 @@ class _BookingPageState extends State<BookingPage> {
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    final bookingProvider = context.read<BookingProvider>();
 
     try {
       final formattedStart = DateFormat('yyyy-MM-dd').format(_startDate!);
       final formattedEnd =
           _endDate != null ? DateFormat('yyyy-MM-dd').format(_endDate!) : null;
 
-      final success = await _bookingRepository.createBooking(
+      final success = await bookingProvider.addBooking(
         spaceId: widget.spaceId,
         username: _nameController.text.trim(),
         contact: _phoneController.text.trim(),
         startDate: formattedStart,
         endDate: formattedEnd,
         purpose: _activitiesController.text.trim(),
-        district: _locationController.text.isNotEmpty
-            ? _locationController.text
-            : "Kinondoni",
+        district:
+            _locationController.text.isNotEmpty
+                ? _locationController.text
+                : "Kinondoni",
         file: _selectedFile,
       );
 
+      if (!mounted) return;
+
       if (success) {
-        final pendingBookings = await _bookingRepository.getPendingBookings();
-        final message =
-            'Your booking has been saved successfully.${pendingBookings.isNotEmpty
-                    ? '\nIt will be synced once online.'
-                    : ''}';
+        final pendingCount = bookingProvider.pendingBookingsCount;
+
+        // Check if this booking is offline
+        final isOffline = pendingCount > 0;
 
         QuickAlert.show(
           context: context,
-          type: QuickAlertType.success,
-          title: 'Booking Submitted!',
-          text: message,
+          type: isOffline ? QuickAlertType.info : QuickAlertType.success,
+          title: isOffline ? 'Booking Saved Offline' : 'Booking Submitted!',
+          text:
+              isOffline
+                  ? 'You are offline. Your booking has been saved locally and will be submitted automatically when you reconnect.\n\n$pendingCount pending booking(s) waiting to sync.'
+                  : 'Your booking has been successfully submitted!\n\nOur team will review your request shortly.',
           confirmBtnText: 'OK',
           onConfirmBtnTap: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(); // Close alert
+            Navigator.of(context).pop(); // Close booking page
           },
         );
       }
     } catch (e, stackTrace) {
       debugPrint('Booking Error: $e\nStackTrace: $stackTrace');
+
+      if (!mounted) return;
+
       QuickAlert.show(
         context: context,
         type: QuickAlertType.error,
         title: 'Booking Error',
         text: e.toString(),
       );
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -208,12 +214,17 @@ class _BookingPageState extends State<BookingPage> {
     required VoidCallback onTap,
     bool isRequired = false,
   }) {
+    final isSubmitting = context.watch<BookingProvider>().isSubmitting;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: _isSubmitting ? null : onTap,
+        onTap: isSubmitting ? null : onTap,
         child: InputDecorator(
-          decoration: _buildInputDecoration(label + (isRequired ? ' *' : ''), icon),
+          decoration: _buildInputDecoration(
+            label + (isRequired ? ' *' : ''),
+            icon,
+          ),
           child: Text(
             date != null ? DateFormat('yyyy-MM-dd').format(date) : 'YYYY-MM-DD',
             style: TextStyle(
@@ -227,16 +238,57 @@ class _BookingPageState extends State<BookingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isSubmitting = context.watch<BookingProvider>().isSubmitting;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Book Community Space'),
         centerTitle: true,
+        actions: [
+          Consumer<BookingProvider>(
+            builder: (context, provider, _) {
+              final count =
+                  provider.pendingBookingsCount; // You must expose this getter
+              if (count == 0) return const SizedBox.shrink();
+
+              return GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(context, '/pending-bookings');
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.orange,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '$count pending',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+
         backgroundColor: AppConstants.primaryBlue,
         foregroundColor: Colors.white,
         elevation: 2,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+          onPressed: isSubmitting ? null : () => Navigator.pop(context),
         ),
       ),
       body: Container(
@@ -259,14 +311,22 @@ class _BookingPageState extends State<BookingPage> {
                 controller: _nameController,
                 label: 'Full Name *',
                 icon: Icons.person_outline,
-                validator: (v) => v == null || v.isEmpty ? 'Please enter your name' : null,
+                validator:
+                    (v) =>
+                        v == null || v.isEmpty
+                            ? 'Please enter your name'
+                            : null,
               ),
               _buildFormField(
                 controller: _phoneController,
                 label: 'Phone Number *',
                 icon: Icons.phone,
                 keyboardType: TextInputType.phone,
-                validator: (v) => v == null || v.isEmpty ? 'Please enter phone number' : null,
+                validator:
+                    (v) =>
+                        v == null || v.isEmpty
+                            ? 'Please enter phone number'
+                            : null,
               ),
               _buildFormField(
                 controller: _emailController,
@@ -275,7 +335,9 @@ class _BookingPageState extends State<BookingPage> {
                 keyboardType: TextInputType.emailAddress,
                 validator: (v) {
                   if (v != null && v.isNotEmpty) {
-                    final valid = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v);
+                    final valid = RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    ).hasMatch(v);
                     if (!valid) return 'Enter a valid email';
                   }
                   return null;
@@ -285,7 +347,11 @@ class _BookingPageState extends State<BookingPage> {
                 controller: _locationController,
                 label: 'Space Name / District *',
                 icon: Icons.location_on,
-                validator: (v) => v == null || v.isEmpty ? 'Specify location/district' : null,
+                validator:
+                    (v) =>
+                        v == null || v.isEmpty
+                            ? 'Specify location/district'
+                            : null,
               ),
               Row(
                 children: [
@@ -314,11 +380,15 @@ class _BookingPageState extends State<BookingPage> {
                 label: 'Activities Planned *',
                 icon: Icons.description,
                 maxLines: 3,
-                validator: (v) => v == null || v.isEmpty ? 'Describe planned activities' : null,
+                validator:
+                    (v) =>
+                        v == null || v.isEmpty
+                            ? 'Describe planned activities'
+                            : null,
               ),
               const SizedBox(height: 20),
 
-              // File picker widget
+              // File picker
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Column(
@@ -335,7 +405,7 @@ class _BookingPageState extends State<BookingPage> {
                     Row(
                       children: [
                         ElevatedButton.icon(
-                          onPressed: _isSubmitting ? null : _pickFile,
+                          onPressed: isSubmitting ? null : _pickFile,
                           icon: const Icon(Icons.attach_file),
                           label: const Text('Select File'),
                           style: ElevatedButton.styleFrom(
@@ -347,11 +417,16 @@ class _BookingPageState extends State<BookingPage> {
                         Expanded(
                           child: Text(
                             _selectedFile != null
-                                ? _selectedFile!.path.split(Platform.pathSeparator).last
+                                ? _selectedFile!.path
+                                    .split(Platform.pathSeparator)
+                                    .last
                                 : 'No file selected',
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: _selectedFile != null ? Colors.black87 : Colors.grey,
+                              color:
+                                  _selectedFile != null
+                                      ? Colors.black87
+                                      : Colors.grey,
                             ),
                           ),
                         ),
@@ -361,24 +436,37 @@ class _BookingPageState extends State<BookingPage> {
                 ),
               ),
 
+              const SizedBox(height: 8),
+
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppConstants.primaryBlue,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-                onPressed: _isSubmitting ? null : _submitForm,
-                child: _isSubmitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 3,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                onPressed: isSubmitting ? null : _submitForm,
+                child:
+                    isSubmitting
+                        ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                        : const Text(
+                          'Submit Booking Request',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      )
-                    : const Text('Submit Booking Request'),
               ),
             ],
           ),

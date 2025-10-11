@@ -1,7 +1,6 @@
-// lib/repository/booking_repository.dart
 import 'dart:io';
+import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:openspace_mobile_app/core/storage/local_db.dart';
 import 'package:openspace_mobile_app/data/local/booking_local.dart';
 import 'package:openspace_mobile_app/model/Booking.dart';
 import 'package:openspace_mobile_app/service/bookingservice.dart';
@@ -10,6 +9,13 @@ class BookingRepository {
   final BookingService _service = BookingService();
   final BookingLocal _local = BookingLocal();
 
+  /// Check if device is online
+  Future<bool> _isConnected() async {
+    final connectivityResult = await Connectivity().checkConnectivity();
+    return connectivityResult != ConnectivityResult.none;
+  }
+
+  /// Create booking - handles online/offline automatically
   Future<bool> createBooking({
     required int spaceId,
     required String username,
@@ -20,161 +26,229 @@ class BookingRepository {
     required String district,
     File? file,
   }) async {
-    try {
-      final connectivity = await Connectivity().checkConnectivity();
-      final isOnline = connectivity != ConnectivityResult.none;
+    final isOnline = await _isConnected();
 
-      if (isOnline) {
-        print(
-          'BookingRepository: Attempting online booking with startDate=$startDate, endDate=$endDate',
-        );
-        final success = await _service.createBooking(
-          spaceId: spaceId,
-          username: username,
-          contact: contact,
-          startDate: startDate,
-          endDate: endDate,
-          purpose: purpose,
-          district: district,
-          file: file,
-        );
-        if (success) {
-          print(
-            'BookingRepository: Online booking successful, saving to local',
-          );
+    if (!isOnline) {
+      // Offline: save locally
+      return await _saveOfflineBooking(
+        spaceId: spaceId,
+        username: username,
+        contact: contact,
+        startDate: startDate,
+        endDate: endDate,
+        purpose: purpose,
+        district: district,
+        file: file,
+      );
+    }
+
+    // Try online submission
+    try {
+      print('BookingRepository: Attempting online booking');
+      final success = await _service.createBooking(
+        spaceId: spaceId,
+        username: username,
+        contact: contact,
+        startDate: startDate,
+        endDate: endDate,
+        purpose: purpose,
+        district: district,
+        file: file,
+      );
+
+      if (success) {
+        print('BookingRepository: Online booking successful');
+        // Fetch and cache the latest bookings
+        try {
           final bookings = await _service.fetchMyBookings();
           await _local.saveBookings(bookings);
-        }
-        return success;
-      } else {
-        print('BookingRepository: Saving offline booking');
-        // Validate date strings
-        if (startDate.isEmpty ||
-            !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(startDate)) {
-          throw Exception('Invalid start date format. Expected yyyy-MM-dd.');
-        }
-        if (endDate != null &&
-            (endDate.isEmpty ||
-                !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(endDate))) {
-          throw Exception('Invalid end date format. Expected yyyy-MM-dd.');
-        }
-
-        try {
-          final offlineBooking = Booking(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            spaceId: spaceId,
-            userId: null,
-            username: username,
-            contact: contact,
-            startDate:
-                startDate.isNotEmpty
-                    ? DateTime.parse(startDate)
-                    : DateTime.now(), // fallback if somehow null
-            endDate:
-                (endDate != null && endDate.isNotEmpty)
-                    ? DateTime.tryParse(endDate)
-                    : null,
-
-            purpose: purpose,
-            district: district,
-            fileUrl: file?.path,
-            createdAt: DateTime.now(),
-            status: "pending_offline",
-          );
-          await _local.addPendingBooking(offlineBooking);
-          print(
-            'BookingRepository: Offline booking saved with startDate=${offlineBooking.startDate.toIso8601String()}',
-          );
-          return true;
-        } catch (e, stackTrace) {
-          print(
-            'BookingRepository: Error parsing dates - $e\nStackTrace: $stackTrace',
-          );
-          throw Exception(
-            'Failed to save offline booking: Invalid date format.',
-          );
+        } catch (e) {
+          print('Failed to cache bookings after creation: $e');
         }
       }
+
+      return success;
+    } on SocketException catch (e) {
+      print('Network error creating booking: $e. Saving offline.');
+      // Fallback to offline if network fails
+      return await _saveOfflineBooking(
+        spaceId: spaceId,
+        username: username,
+        contact: contact,
+        startDate: startDate,
+        endDate: endDate,
+        purpose: purpose,
+        district: district,
+        file: file,
+      );
+    } on TimeoutException catch (e) {
+      print('Timeout creating booking: $e. Saving offline.');
+      return await _saveOfflineBooking(
+        spaceId: spaceId,
+        username: username,
+        contact: contact,
+        startDate: startDate,
+        endDate: endDate,
+        purpose: purpose,
+        district: district,
+        file: file,
+      );
+    } catch (e) {
+      print('Error creating booking: $e. Saving offline.');
+      return await _saveOfflineBooking(
+        spaceId: spaceId,
+        username: username,
+        contact: contact,
+        startDate: startDate,
+        endDate: endDate,
+        purpose: purpose,
+        district: district,
+        file: file,
+      );
+    }
+  }
+
+  /// Save booking offline with pending status
+  Future<bool> _saveOfflineBooking({
+    required int spaceId,
+    required String username,
+    required String contact,
+    required String startDate,
+    String? endDate,
+    required String purpose,
+    required String district,
+    File? file,
+  }) async {
+    try {
+      // Validate date strings
+      if (startDate.isEmpty ||
+          !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(startDate)) {
+        throw Exception('Invalid start date format. Expected yyyy-MM-dd.');
+      }
+      if (endDate != null &&
+          endDate.isNotEmpty &&
+          !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(endDate)) {
+        throw Exception('Invalid end date format. Expected yyyy-MM-dd.');
+      }
+
+      final offlineBooking = Booking(
+        id: 'local_${DateTime.now().millisecondsSinceEpoch}',
+        spaceId: spaceId,
+        userId: null,
+        username: username,
+        contact: contact,
+        startDate: DateTime.parse(startDate),
+        endDate:
+            (endDate != null && endDate.isNotEmpty)
+                ? DateTime.parse(endDate)
+                : null,
+        purpose: purpose,
+        district: district,
+        fileUrl: file?.path,
+        createdAt: DateTime.now(),
+        status: 'pending_offline',
+      );
+
+      await _local.addPendingBooking(offlineBooking);
+      print('BookingRepository: Offline booking saved');
+      return true;
     } catch (e, stackTrace) {
-      print('BookingRepository: Error - $e\nStackTrace: $stackTrace');
+      print(
+        'BookingRepository: Error saving offline booking - $e\nStackTrace: $stackTrace',
+      );
       rethrow;
     }
   }
 
+  /// Get all bookings (online/offline)
   Future<List<Booking>> getMyBookings() async {
-    try {
-      final connectivity = await Connectivity().checkConnectivity();
-      final isOnline = connectivity != ConnectivityResult.none;
+    final isOnline = await _isConnected();
 
-      if (isOnline) {
+    if (isOnline) {
+      try {
         final bookings = await _service.fetchMyBookings();
         await _local.saveBookings(bookings);
-        return bookings;
-      } else {
+
+        // Include pending offline bookings
+        final pending = await _local.getPendingBookings();
+        return [...bookings, ...pending];
+      } catch (e) {
+        print('Failed to fetch online bookings: $e');
         return _local.getBookings();
       }
-    } catch (e) {
+    } else {
       return _local.getBookings();
     }
   }
 
+  /// Get pending offline bookings
   Future<List<Booking>> getPendingBookings() async {
-    final db = await LocalDb.getDb();
-    final maps = await db.query(
-      'bookings',
-      where: 'status = ?',
-      whereArgs: ['pending_offline'],
-    );
-
-    return maps
-        .map(
-          (e) => Booking(
-            id: e['id'] as String,
-            spaceId: e['spaceId'] as int,
-            userId: e['userId'] as String?,
-            username: e['username'] as String,
-            contact: e['contact'] as String,
-            startDate: DateTime.parse(e['startDate'] as String),
-            endDate:
-                e['endDate'] != null
-                    ? DateTime.parse(e['endDate'] as String)
-                    : null,
-            purpose: e['purpose'] as String,
-            district: e['district'] as String,
-            fileUrl: e['fileUrl'] as String?,
-            createdAt: DateTime.parse(e['createdAt'] as String),
-            status: e['status'] as String,
-          ),
-        )
-        .toList();
+    return await _local.getPendingBookings();
   }
 
+  /// Sync all pending bookings to backend
   Future<void> syncPendingBookings() async {
-    final connectivity = await Connectivity().checkConnectivity();
-    final isOnline = connectivity != ConnectivityResult.none;
-    if (!isOnline) return;
+    final isOnline = await _isConnected();
+    if (!isOnline) {
+      print('Cannot sync bookings: device is offline');
+      return;
+    }
 
     final pending = await _local.getPendingBookings();
+
+    if (pending.isEmpty) {
+      print('No pending bookings to sync');
+      return;
+    }
+
+    print('Syncing ${pending.length} pending bookings...');
+
+    int successCount = 0;
+    int failCount = 0;
+
     for (var booking in pending) {
       try {
         final success = await _service.createBooking(
           spaceId: booking.spaceId,
           username: booking.username,
           contact: booking.contact,
-          startDate: booking.startDate.toIso8601String(),
-          endDate: booking.endDate?.toIso8601String(),
+          startDate:
+              booking.startDate.toIso8601String().split('T')[0], // yyyy-MM-dd
+          endDate: booking.endDate?.toIso8601String().split('T')[0],
           purpose: booking.purpose,
           district: booking.district,
           file: booking.fileUrl != null ? File(booking.fileUrl!) : null,
         );
 
         if (success) {
-          // After successful sync, refresh local bookings from server
-          final onlineBookings = await _service.fetchMyBookings();
-          await _local.saveBookings(onlineBookings);
+          // Remove from pending (it's now synced)
+          await _local.removeBooking(booking.id);
+          successCount++;
+          print('✓ Successfully synced booking: ${booking.id}');
         }
+      } on SocketException catch (e) {
+        failCount++;
+        print('✗ Network error syncing booking ${booking.id}: $e');
+        break; // Stop trying if we get network errors
+      } on TimeoutException catch (e) {
+        failCount++;
+        print('✗ Timeout syncing booking ${booking.id}: $e');
+        break;
       } catch (e) {
-        // If sync fails, keep it pending
+        failCount++;
+        print('✗ Failed to sync booking ${booking.id}: $e');
+      }
+    }
+
+    print('Sync complete: $successCount succeeded, $failCount failed');
+
+    // Refresh bookings from server after sync
+    if (successCount > 0) {
+      try {
+        final onlineBookings = await _service.fetchMyBookings();
+        await _local.saveBookings(onlineBookings);
+      } catch (e) {
+        print('Failed to refresh bookings after sync: $e');
       }
     }
   }

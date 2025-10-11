@@ -5,13 +5,13 @@ class Report {
   final String reportId;
   final String description;
   final String? email;
-  final String? file; // URL or identifier
+  final String? file;
   final DateTime createdAt;
   final double? latitude;
   final double? longitude;
   final String? spaceName;
-  final User? user; // Can be nullable if user isn't always present// From your getReportById
-  final String? status; // From your getReportById
+  final User? user;
+  final String? status;
 
   Report({
     required this.id,
@@ -27,53 +27,80 @@ class Report {
     this.status,
   });
 
-
+  /// Factory for REST API response (from createReport)
   factory Report.fromRestJson(Map<String, dynamic> json, {String? localId}) {
+    // Debug: print what we're receiving
+    print('DEBUG fromRestJson received: $json');
+    
+    // Backend returns report_id (snake_case) - handle both formats
+    String reportIdValue;
+    if (json['report_id'] != null) {
+      reportIdValue = json['report_id'].toString();
+    } else if (json['reportId'] != null) {
+      reportIdValue = json['reportId'].toString();
+    } else if (json['id'] != null) {
+      reportIdValue = json['id'].toString();
+    } else {
+      reportIdValue = 'PENDING';
+    }
+    
+    print('DEBUG Extracted reportId: $reportIdValue');
+    
+    // Parse created_at (backend uses snake_case)
+    DateTime parsedDate;
+    if (json['created_at'] != null) {
+      parsedDate = DateTime.parse(json['created_at']);
+    } else if (json['createdAt'] != null) {
+      parsedDate = DateTime.parse(json['createdAt']);
+    } else {
+      parsedDate = DateTime.now();
+    }
+    
     return Report(
-      id: localId ?? 'local_${DateTime.now().millisecondsSinceEpoch}',
-      reportId: json['reportId']!.toString(),
-      description: json['description'],
-      email: json['email'],
-      file: json['file'],
-      createdAt: DateTime.now(), // createdAt is local timestamp
-      latitude: (json['latitude'] as num?)?.toDouble(),
-      longitude: (json['longitude'] as num?)?.toDouble(),
-      spaceName: json['space_name'] ?? json['spaceName'],
-      status: 'submitted',
+      id: localId ?? json['id']?.toString() ?? 'local_${DateTime.now().millisecondsSinceEpoch}',
+      reportId: reportIdValue,
+      description: json['description']?.toString() ?? '',
+      email: json['email']?.toString(),
+      file: json['file']?.toString(),
+      createdAt: parsedDate,
+      latitude: json['latitude'] != null 
+          ? (json['latitude'] as num).toDouble()
+          : null,
+      longitude: json['longitude'] != null 
+          ? (json['longitude'] as num).toDouble()
+          : null,
+      spaceName: json['space_name']?.toString() ?? json['spaceName']?.toString(),
+      status: json['status']?.toString() ?? 'submitted',
+      user: null, // REST response typically doesn't include user
     );
   }
 
-
+  /// Factory for local database JSON
   factory Report.fromJson(Map<String, dynamic> json) {
-    // Basic validation for essential report fields
     if (json['id'] == null ||
         json['reportId'] == null ||
         json['description'] == null ||
         json['createdAt'] == null) {
-      print("Error: Report.fromJson missing essential report fields (id, reportId, description, createdAt). Data: $json");
-      throw FormatException("Report JSON is missing required fields (id, reportId, description, createdAt).");
+      print("Error: Report.fromJson missing essential fields. Data: $json");
+      throw FormatException("Report JSON is missing required fields");
     }
 
     User? reportUser;
     if (json['user'] != null && json['user'] is Map<String, dynamic>) {
       try {
-        // Use the specific factory constructor for parsing user data from a report
         reportUser = User.fromReportJson(json['user'] as Map<String, dynamic>);
-      } catch (e,s) {
-        print("Report.fromJson: Error parsing nested user object. Raw User Data: ${json['user']}. Error: $e\n$s");
+      } catch (e, s) {
+        print("Report.fromJson: Error parsing user. Error: $e\n$s");
         reportUser = null;
       }
-    } else if (json['user'] != null) {
-      print("Report.fromJson Warning: 'user' field is present but not a valid map (object). Actual type: ${json['user'].runtimeType}. Data: ${json['user']}");
-      reportUser = null;
     }
 
     DateTime? parsedCreatedAt;
     try {
       parsedCreatedAt = DateTime.parse(json['createdAt'] as String);
-    } catch (e,s) {
-      print("Error: Report.fromJson couldn't parse 'createdAt'. Value: ${json['createdAt']}. Error: $e\n$s");
-      throw FormatException("Invalid date format for 'createdAt': ${json['createdAt']}");
+    } catch (e, s) {
+      print("Error parsing createdAt: ${json['createdAt']}. Error: $e");
+      throw FormatException("Invalid date format for 'createdAt'");
     }
 
     return Report(
@@ -86,35 +113,52 @@ class Report {
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       spaceName: json['spaceName'] as String?,
-      user: reportUser, // Assign the parsed (or null) user object
+      user: reportUser,
       status: json['status'] as String?,
     );
   }
-  Report copyWith({
-  String? id,
-  String? reportId,
-  String? description,
-  String? email,
-  String? file,
-  DateTime? createdAt,
-  double? latitude,
-  double? longitude,
-  String? spaceName,
-  String? status,
-}) {
-  return Report(
-    id: id ?? this.id,
-    reportId: reportId ?? this.reportId,
-    description: description ?? this.description,
-    email: email ?? this.email,
-    file: file ?? this.file,
-    createdAt: createdAt ?? this.createdAt,
-    latitude: latitude ?? this.latitude,
-    longitude: longitude ?? this.longitude,
-    spaceName: spaceName ?? this.spaceName,
-    status: status ?? this.status,
-    user: this.user,
-  );
-}
 
+  Report copyWith({
+    String? id,
+    String? reportId,
+    String? description,
+    String? email,
+    String? file,
+    DateTime? createdAt,
+    double? latitude,
+    double? longitude,
+    String? spaceName,
+    String? status,
+    User? user,
+  }) {
+    return Report(
+      id: id ?? this.id,
+      reportId: reportId ?? this.reportId,
+      description: description ?? this.description,
+      email: email ?? this.email,
+      file: file ?? this.file,
+      createdAt: createdAt ?? this.createdAt,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      spaceName: spaceName ?? this.spaceName,
+      status: status ?? this.status,
+      user: user ?? this.user,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'reportId': reportId,
+      'description': description,
+      'email': email,
+      'file': file,
+      'createdAt': createdAt.toIso8601String(),
+      'latitude': latitude,
+      'longitude': longitude,
+      'spaceName': spaceName,
+      'status': status,
+      'user': user?.toJsonString(),
+    };
+  }
 }

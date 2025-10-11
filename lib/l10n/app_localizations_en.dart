@@ -733,4 +733,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get invalidCredentials => 'Invalid username or password';
+
+  @override
+  String get adminNotAllowed => 'Admins are not allowed to login here.';
+
+  @override
+  String get streetLabel => 'Street';
+
+  @override
+  String get streetRequired => 'Please select a street';
 }

@@ -4,8 +4,10 @@ import 'package:openspace_mobile_app/api/graphql/graphql_service.dart';
 import 'package:openspace_mobile_app/core/network/connectivity_service.dart';
 import 'package:openspace_mobile_app/core/sync/sync_service.dart';
 import 'package:openspace_mobile_app/data/local/report_local.dart';
+import 'package:openspace_mobile_app/data/repository/booking_repository.dart';
 import 'package:openspace_mobile_app/data/repository/report_repository.dart';
 import 'package:openspace_mobile_app/model/Notification.dart';
+import 'package:openspace_mobile_app/providers/booking_provider.dart';
 import 'package:openspace_mobile_app/providers/locale_provider.dart';
 import 'package:openspace_mobile_app/providers/notification_provider.dart';
 import 'package:openspace_mobile_app/providers/report_provider.dart';
@@ -23,6 +25,7 @@ import 'package:openspace_mobile_app/screens/home_page.dart';
 import 'package:openspace_mobile_app/screens/intro_slider_screen.dart';
 import 'package:openspace_mobile_app/screens/language_change.dart';
 import 'package:openspace_mobile_app/screens/map_screen.dart';
+import 'package:openspace_mobile_app/screens/pending_bookings.dart';
 import 'package:openspace_mobile_app/screens/profile.dart';
 import 'package:openspace_mobile_app/screens/report_screen.dart';
 import 'package:openspace_mobile_app/screens/reported_issue.dart';
@@ -66,6 +69,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final client = GraphQLService().client;
+      final connectivityService = ConnectivityService();
+      final reportLocal = ReportLocal();
+      final reportRepository = ReportRepository(localService: reportLocal);
 
     return MultiProvider(
       providers: [
@@ -75,10 +81,21 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
        
         ChangeNotifierProvider(
-          create:
-              (context) => ReportProvider(
-                repository: ReportRepository(localService: ReportLocal()),
-                connectivity: context.read<ConnectivityService>(),
+          create: (_) => ReportProvider(
+            repository: reportRepository,
+            connectivity: connectivityService,
+          ),
+        ),
+        ChangeNotifierProxyProvider<ConnectivityService, BookingProvider>(
+          create: (context) => BookingProvider(
+            repository: BookingRepository(),
+            connectivity: context.read<ConnectivityService>(),
+          ),
+          update: (context, connectivity, previous) =>
+              previous ??
+              BookingProvider(
+                repository: BookingRepository(),
+                connectivity: connectivity,
               ),
         ),
         Provider<ValueNotifier<GraphQLClient>>(
@@ -292,6 +309,8 @@ class MyApp extends StatelessWidget {
                   '/help-support': (context) => const HelpPage(),
                   '/terms': (context) => const TermsAndConditionsPage(),
                   '/bookings-list': (context) => const MyBookingsPage(),
+                  '/pending-bookings': (context) => const PendingBookingsPage(),
+
                   '/userReports': (context) => const UserReportsPage(),
                   '/forgot-password': (context) => const ForgotPasswordPage(),
                   '/user-notification': (context) => const NotificationScreen(),
