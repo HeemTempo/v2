@@ -10,6 +10,7 @@ class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _SignUpScreenState createState() => _SignUpScreenState();
 }
 
@@ -59,7 +60,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (user.isStaff == true || user.role?.toLowerCase() == "admin") {
         throw Exception(
-          loc.adminNotAllowed ?? "Admins are not allowed to register here.",
+          loc.adminNotAllowed,
         );
       }
 
@@ -82,6 +83,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       setState(() => _errorMessage = errorMessage);
 
       QuickAlert.show(
+        // ignore: use_build_context_synchronously
         context: context,
         type: QuickAlertType.error,
         text: _errorMessage!,
@@ -178,10 +180,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 ),
                               ),
                               validator: (value) {
-                                if (value == null || value.isEmpty)
+                                if (value == null || value.isEmpty) {
                                   return loc.emailRequired;
-                                if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value))
+                                }
+                                if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
                                   return loc.emailInvalid;
+                                }
                                 return null;
                               },
                             ),
@@ -205,10 +209,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 ),
                               ),
                               validator: (value) {
-                                if (value == null || value.isEmpty)
+                                if (value == null || value.isEmpty) {
                                   return loc.passwordRequired;
-                                if (value.length < 8)
+                                }
+                                if (value.length < 8) {
                                   return loc.passwordMinLength;
+                                }
                                 return null;
                               },
                             ),
@@ -232,10 +238,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 ),
                               ),
                               validator: (value) {
-                                if (value == null || value.isEmpty)
+                                if (value == null || value.isEmpty) {
                                   return loc.passwordConfirmRequired;
-                                if (value != _passwordController.text)
+                                }
+                                if (value != _passwordController.text) {
                                   return loc.passwordsDoNotMatch;
+                                }
                                 return null;
                               },
                             ),

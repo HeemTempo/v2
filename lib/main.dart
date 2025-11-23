@@ -10,6 +10,7 @@ import 'package:openspace_mobile_app/model/Notification.dart';
 import 'package:openspace_mobile_app/providers/booking_provider.dart';
 import 'package:openspace_mobile_app/providers/locale_provider.dart';
 import 'package:openspace_mobile_app/providers/notification_provider.dart';
+
 import 'package:openspace_mobile_app/providers/report_provider.dart';
 import 'package:openspace_mobile_app/providers/theme_provider.dart';
 import 'package:openspace_mobile_app/providers/user_provider.dart';
@@ -36,6 +37,9 @@ import 'package:openspace_mobile_app/screens/terms_and_conditions.dart';
 import 'package:openspace_mobile_app/screens/theme_change.dart';
 import 'package:openspace_mobile_app/screens/track_progress.dart';
 import 'package:openspace_mobile_app/screens/userreports.dart';
+import 'package:openspace_mobile_app/screens/pending_reports.dart';
+import 'package:openspace_mobile_app/screens/report_detail.dart';
+import 'package:openspace_mobile_app/model/Report.dart';
 import 'package:openspace_mobile_app/utils/alert/access_denied_dialog.dart';
 import 'package:openspace_mobile_app/utils/alert/error_dialog.dart';
 import 'package:openspace_mobile_app/utils/permission.dart';
@@ -53,9 +57,9 @@ Future<void> main() async {
   final themeProvider = ThemeProvider();
   await themeProvider.loadTheme().catchError((e) {
     print('Failed to load theme: $e');
-    // Fallback to light mode if loading fails
   });
 
+  // Initialize services
   SyncService().init();
 
   runApp(MyApp(themeProvider: themeProvider));
@@ -192,6 +196,16 @@ class MyApp extends StatelessWidget {
                   }
                 }
 
+                // Handle /report-detail route
+                if (settings.name == '/report-detail') {
+                  final args = settings.arguments;
+                  if (args is Report) {
+                    return MaterialPageRoute(
+                      builder: (context) => ReportDetailPage(report: args),
+                    );
+                  }
+                }
+
                 // Handle /report-issue route
                 if (settings.name == '/report-issue') {
                   final args = settings.arguments as Map<String, dynamic>?;
@@ -314,6 +328,7 @@ class MyApp extends StatelessWidget {
                   '/userReports': (context) => const UserReportsPage(),
                   '/forgot-password': (context) => const ForgotPasswordPage(),
                   '/user-notification': (context) => const NotificationScreen(),
+                  '/pending-reports': (context) => const PendingReportsPage(),
                 };
 
                 final WidgetBuilder? routeBuilder = routes[settings.name];

@@ -1,11 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../l10n/app_localizations.dart';
-import '../providers/theme_provider.dart';
 import '../utils/constants.dart';
 import '../widget/custom_navigation_bar.dart';
 import 'side_bar.dart';
+import '../data/repository/report_repository.dart';
+import '../data/repository/booking_repository.dart';
+import '../data/local/report_local.dart';
+import '../model/Report.dart';
+import '../model/Booking.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -27,14 +32,32 @@ class _CardData {
   });
 }
 
+class _ActivityItem {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final DateTime date;
+  final Color iconColor;
+
+  _ActivityItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.date,
+    required this.iconColor,
+  });
+}
+
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
   int _carouselIndex = 0;
   final PageController _pageController = PageController();
   int _notificationCount = 0;
   late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
   Timer? _autoScrollTimer;
+  
+  List<_ActivityItem> _recentActivities = [];
+  bool _isLoadingActivities = true;
 
   final List<String> _horizontalImages = [
     'assets/images/green_space.jpg',
@@ -50,20 +73,73 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
     _animationController.forward();
 
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _notificationCount = 1);
-    });
-
-    Future.delayed(const Duration(seconds: 5), () {
-      if (mounted) setState(() => _notificationCount = 0);
-    });
-
+    _fetchRecentActivities();
     _startAutoScroll();
+  }
+
+  Future<void> _fetchRecentActivities() async {
+    if (!mounted) return;
+    setState(() => _isLoadingActivities = true);
+
+    try {
+      final reportRepo = ReportRepository(localService: ReportLocal());
+      final bookingRepo = BookingRepository();
+
+      // Fetch reports and bookings (local/offline first or synced)
+      // Note: In a real app, you might want to fetch from API if online, 
+      // but here we use what's available via repositories which handle that logic.
+      // For simplicity, we'll fetch pending/local ones or you might want to add a method to fetch 'all' user activities.
+      // Assuming repositories have methods to get user's history.
+      
+      // Since the current repositories focus on 'pending' or 'create', we might need to rely on what's stored locally
+      // or add a method to fetch user history. For now, let's use local pending items as "Recent Activity" 
+      // to demonstrate the dynamic nature, or mock it if empty.
+      
+      final pendingReports = await reportRepo.getPendingReports();
+      final pendingBookings = await bookingRepo.getPendingBookings();
+
+      List<_ActivityItem> activities = [];
+
+      for (var report in pendingReports) {
+        activities.add(_ActivityItem(
+          icon: Icons.report_problem,
+          title: 'Report: ${report.spaceName ?? "Unknown Space"}',
+          subtitle: report.description,
+          date: report.createdAt ?? DateTime.now(),
+          iconColor: Colors.orange,
+        ));
+      }
+
+      for (var booking in pendingBookings) {
+        activities.add(_ActivityItem(
+          icon: Icons.event,
+          title: 'Booking: Space #${booking.spaceId}',
+          subtitle: 'Status: ${booking.status}',
+          date: booking.startDate,
+          iconColor: Colors.blue,
+        ));
+      }
+
+      // Sort by date descending
+      activities.sort((a, b) => b.date.compareTo(a.date));
+
+      // Take top 5
+      if (activities.length > 5) {
+        activities = activities.sublist(0, 5);
+      }
+
+      if (mounted) {
+        setState(() {
+          _recentActivities = activities;
+          _isLoadingActivities = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching activities: $e');
+      if (mounted) setState(() => _isLoadingActivities = false);
+    }
   }
 
   void _startAutoScroll() {
@@ -155,34 +231,38 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       backgroundColor: isDarkMode ? AppConstants.darkBackground : AppConstants.white,
       drawer: const Sidebar(),
       appBar: _buildAppBar(locale, theme, isDarkMode),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeroSection(heroTitles, heroSubtitles, theme, isDarkMode),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildInfoCard(locale, theme, isDarkMode),
-                  const SizedBox(height: 24),
-                  _buildSectionTitle(locale.quickStats, theme, isDarkMode),
-                  const SizedBox(height: 12),
-                  _buildQuickStats(locale, theme, isDarkMode),
-                  const SizedBox(height: 24),
-                  _buildSectionTitle(locale.quickActions, theme, isDarkMode),
-                  const SizedBox(height: 12),
-                  _buildActionCards(cards, theme, isDarkMode),
-                  const SizedBox(height: 24),
-                  _buildSectionTitle(locale.recentActivities, theme, isDarkMode),
-                  const SizedBox(height: 12),
-                  _buildRecentActivities(locale, theme, isDarkMode),
-                  const SizedBox(height: 100),
-                ],
+      body: RefreshIndicator(
+        onRefresh: _fetchRecentActivities,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeroSection(heroTitles, heroSubtitles, theme, isDarkMode),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildInfoCard(locale, theme, isDarkMode),
+                    const SizedBox(height: 24),
+                    _buildSectionTitle(locale.quickStats, theme, isDarkMode),
+                    const SizedBox(height: 12),
+                    _buildQuickStats(locale, theme, isDarkMode),
+                    const SizedBox(height: 24),
+                    _buildSectionTitle(locale.quickActions, theme, isDarkMode),
+                    const SizedBox(height: 12),
+                    _buildActionCards(cards, theme, isDarkMode),
+                    const SizedBox(height: 24),
+                    _buildSectionTitle(locale.recentActivities, theme, isDarkMode),
+                    const SizedBox(height: 12),
+                    _buildRecentActivities(locale, theme, isDarkMode),
+                    const SizedBox(height: 100),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: CustomBottomNavBar(
@@ -536,6 +616,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                       color: isDarkMode ? Colors.white : AppConstants.black,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -544,7 +625,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     style: TextStyle(
                       fontSize: 12,
                       color: isDarkMode ? Colors.white70 : AppConstants.grey,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    maxLines: 2,
                   ),
                 ],
               ),
@@ -556,37 +639,50 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   Widget _buildRecentActivities(AppLocalizations locale, ThemeData theme, bool isDarkMode) {
+    if (_isLoadingActivities) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_recentActivities.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            "No recent activities found.",
+            style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.grey),
+          ),
+        ),
+      );
+    }
+
     return Column(
-      children: [
-        _buildActivityItem(
-          Icons.info,
-          locale.newReportSubmitted,
-          'Magomeni Open Space',
-          '2 hours ago',
-          AppConstants.primaryBlue,
+      children: _recentActivities.map((activity) {
+        return _buildActivityItem(
+          activity.icon,
+          activity.title,
+          activity.subtitle,
+          _formatDate(activity.date),
+          activity.iconColor,
           theme,
           isDarkMode,
-        ),
-        _buildActivityItem(
-          Icons.event_available,
-          locale.spaceBooked,
-          'Mwenge Park',
-          '5 hours ago',
-          AppConstants.lightAccent,
-          theme,
-          isDarkMode,
-        ),
-        _buildActivityItem(
-          Icons.check_circle,
-          locale.issueResolved,
-          'Ilala Open Space',
-          '1 day ago',
-          AppConstants.purple,
-          theme,
-          isDarkMode,
-        ),
-      ],
+        );
+      }).toList(),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays} days ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} hours ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} minutes ago';
+    } else {
+      return 'Just now';
+    }
   }
 
   Widget _buildActivityItem(
@@ -598,28 +694,52 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     ThemeData theme,
     bool isDarkMode,
   ) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: iconColor.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: iconColor),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      color: isDarkMode ? AppConstants.darkCard : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: isDarkMode ? Colors.white10 : Colors.grey.shade200),
       ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 16,
-          color: isDarkMode ? Colors.white : AppConstants.black,
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: iconColor),
         ),
-      ),
-      subtitle: Text(
-        "$subtitle • $time",
-        style: TextStyle(
-          fontSize: 14,
-          color: isDarkMode ? Colors.white70 : AppConstants.grey,
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+            color: isDarkMode ? Colors.white : AppConstants.black,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 14,
+                color: isDarkMode ? Colors.white70 : AppConstants.grey,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              time,
+              style: TextStyle(
+                fontSize: 12,
+                color: isDarkMode ? Colors.white38 : Colors.grey,
+              ),
+            ),
+          ],
         ),
       ),
     );

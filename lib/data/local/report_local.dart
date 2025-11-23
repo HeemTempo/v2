@@ -50,9 +50,13 @@ class ReportLocal {
     await db.update('reports', {'status': status}, where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<List<Report>> getAllReports() async {
+  Future<List<Report>> getAllReports({int? limit}) async {
     final db = await LocalDb.getDb();
-    final maps = await db.query('reports');
+    final maps = await db.query(
+      'reports',
+      orderBy: 'createdAt DESC',
+      limit: limit ?? 50, // Default limit to 50 most recent
+    );
     return maps.map((e) => Report.fromJson({
       'id': e['id'],
       'reportId': e['reportId'],

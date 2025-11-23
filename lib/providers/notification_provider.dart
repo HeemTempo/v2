@@ -2,8 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:openspace_mobile_app/data/local/notification_local.dart';
 import 'package:openspace_mobile_app/data/repository/notification_repository.dart';
 import 'package:openspace_mobile_app/model/Notification.dart';
-import 'package:openspace_mobile_app/service/notification_service.dart';
-
 
 class NotificationProvider extends ChangeNotifier {
   final NotificationRepository _repository;
@@ -14,7 +12,6 @@ class NotificationProvider extends ChangeNotifier {
   NotificationProvider()
       : _repository = NotificationRepository(
           NotificationLocalDataSource(),
-          NotificationService(),
         );
 
   List<ReportNotification> get notifications => _notifications;

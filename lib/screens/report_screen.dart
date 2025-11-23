@@ -1,13 +1,8 @@
 import 'dart:io';
 
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:openspace_mobile_app/core/network/connectivity_service.dart';
-import 'package:openspace_mobile_app/data/local/report_local.dart';
-import 'package:openspace_mobile_app/data/repository/report_repository.dart';
-import 'package:openspace_mobile_app/model/Report.dart';
 import 'package:openspace_mobile_app/providers/report_provider.dart';
 import 'package:openspace_mobile_app/screens/file_attachment_section.dart';
 import 'package:provider/provider.dart';
@@ -41,11 +36,7 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _spaceNameController = TextEditingController();
-  double? _currentLatitude;
-  double? _currentLongitude;
-  File? _selectedFile; // For image/document upload
-  late final ReportRepository _repository;
+// For image/document upload
 
   bool _isSubmitting = false;
   bool _guidelinesExpanded = false;
@@ -55,14 +46,12 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
     super.initState();
     // Sync pending reports automatically when opening the screen
     Future.microtask(() {
+      // ignore: use_build_context_synchronously
       final reportProvider = context.read<ReportProvider>();
       reportProvider.syncPendingReports();
     });
   }
 
-  Future<void> _syncPendingReports() async {
-    await _repository.syncPendingReports();
-  }
 
   void _showAlert(
     QuickAlertType type,
@@ -90,7 +79,7 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
         imageQuality: 80,
       );
 
-      if (pickedFiles != null && pickedFiles.isNotEmpty) {
+      if (pickedFiles.isNotEmpty) {
         setState(() {
           for (var file in pickedFiles) {
             _attachedFiles.add(file.name);
@@ -151,24 +140,29 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
               final count = provider.pendingReportsCount;
               if (count == 0) return const SizedBox.shrink();
 
-              return Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.orange,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '$count pending',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+              return GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(context, '/pending-reports');
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.orange,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '$count pending',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -452,7 +446,6 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
     if (!_formKey.currentState!.validate()) return;
 
     final reportProvider = context.read<ReportProvider>();
-    final loc = AppLocalizations.of(context)!;
 
     setState(() {
       _isSubmitting = true;

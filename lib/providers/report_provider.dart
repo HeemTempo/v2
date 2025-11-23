@@ -7,6 +7,8 @@ import 'package:openspace_mobile_app/model/Report.dart';
 class ReportProvider with ChangeNotifier {
   final ReportRepository _repository;
   final ConnectivityService _connectivity;
+  
+  ReportRepository get repository => _repository;
 
   bool _isSubmitting = false;
   bool get isSubmitting => _isSubmitting;

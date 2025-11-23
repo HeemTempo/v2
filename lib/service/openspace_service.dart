@@ -1,6 +1,4 @@
 import 'dart:async';
-
-import 'package:flutter/cupertino.dart';
 import 'package:openspace_mobile_app/model/openspace.dart';
 
 import '../api/graphql/graphql_service.dart';
@@ -11,22 +9,17 @@ class OpenSpaceService {
   final GraphQLService _graphQLService = GraphQLService();
 
   Future<List<OpenSpaceMarker>> getAllOpenSpaces() async {
-  final result = await _graphQLService.query(getAllOpenSpacesQuery);
+    final result = await _graphQLService.query(getAllOpenSpacesQuery);
 
-  if (result.hasException) {
-    throw Exception(result.exception.toString());
+    if (result.hasException) {
+      throw Exception(result.exception.toString());
+    }
+
+    final spaces = result.data?['allOpenSpacesUser'] as List<dynamic>? ?? [];
+    return spaces
+        .map((e) => OpenSpaceMarker.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
-
-  final spaces = result.data?['allOpenSpacesUser'] as List<dynamic>? ?? [];
-  return spaces
-      .map((e) => OpenSpaceMarker.fromJson(e as Map<String, dynamic>))
-      .toList();
-}
-
-
-
-
-
 
   Future<List<Report>> getAllReports() async {
     const String getAllReportsQuery = """
@@ -145,9 +138,7 @@ class OpenSpaceService {
           throw Exception("A network error occurred while fetching report.");
         }
         if (exception.graphqlErrors.isNotEmpty) {
-          throw Exception(
-            "Error from server",
-          );
+          throw Exception("Error from server");
         }
         throw Exception(
           "Failed to fetch report due to an unexpected server error.",

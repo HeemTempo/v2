@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class FileUploadService {
-  final String _uploadUrl = "http://192.168.1.132:8001/api/v1/upload/";
+  final String _uploadUrl = "http://192.168.0.56:8001/api/v1/upload/";
 
 
   Future<String?> uploadFile({required String fileName, required Uint8List fileBytes, String? reportId}) async {

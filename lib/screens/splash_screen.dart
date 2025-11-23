@@ -37,13 +37,14 @@ class _SplashScreenContentState extends State<SplashScreenContent>
 
   @override
   Widget build(BuildContext context) {
-    final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
+    Provider.of<LocaleProvider>(context, listen: false);
 
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
             AppConstants.primaryBlue,
+            // ignore: deprecated_member_use
             AppConstants.primaryBlue.withOpacity(0.8),
           ],
           begin: Alignment.topCenter,

@@ -104,6 +104,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final user = Provider.of<UserProvider>(context).user;
+    final theme = Theme.of(context);
 
     if (user.isAnonymous) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -140,48 +141,192 @@ class _UserProfilePageState extends State<UserProfilePage> {
       );
     }
 
+    // Extract profile data safely
+    String name = _profile?['name'] ?? _profile?['username'] ?? loc.notAvailable;
+    String email = _profile?['email'] ?? loc.notAvailable;
+    String? photoUrl =
+        _profile?['photoUrl'] ?? _profile?['profile_picture'] ?? _profile?['user']?['profile_picture'];
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: AppConstants.primaryBlue,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppConstants.white),
-          onPressed: () {
-            Navigator.pushReplacementNamed(context, '/home');
-          },
-        ),
-        title: Text(
-          loc.profileTitle,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppConstants.white,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppConstants.white),
-            onPressed: _isLoading ? null : _fetchProfile,
-          ),
-          IconButton(
-            icon: const Icon(Icons.edit, color: AppConstants.white),
-            onPressed: _isLoading || _error != null
-                ? null
-                : () {
-                    if (_profile != null) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const EditProfilePage(),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 280.0,
+            floating: false,
+            pinned: true,
+            backgroundColor: AppConstants.primaryBlue,
+            flexibleSpace: FlexibleSpaceBar(
+              centerTitle: true,
+              title: Text(
+                name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppConstants.primaryBlue,
+                          AppConstants.primaryBlue.withOpacity(0.7),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 40),
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
                         ),
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.grey[200],
+                          backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
+                              ? NetworkImage(photoUrl)
+                              : null,
+                          child: (photoUrl == null || photoUrl.isEmpty)
+                              ? Icon(Icons.person, size: 50, color: Colors.grey[500])
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        email,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                onPressed: _isLoading ? null : _fetchProfile,
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.white),
+                onPressed: _isLoading || _error != null
+                    ? null
+                    : () {
+                        if (_profile != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const EditProfilePage(),
+                            ),
+                          );
+                        }
+                      },
+              ),
+            ],
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHeader(context, loc.generalSection),
+                  const SizedBox(height: 10),
+                  _buildSettingsItem(
+                    context,
+                    icon: Icons.settings_outlined,
+                    title: loc.profileSettings,
+                    subtitle: loc.profileSettingsSubtitle,
+                    onTap: () {
+                      if (_profile != null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const EditProfilePage(),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  _buildSettingsItem(
+                    context,
+                    icon: Icons.lock_outline,
+                    title: loc.privacy,
+                    subtitle: loc.privacySubtitle,
+                    onTap: () {
+                      _showPopup(
+                        context,
+                        title: loc.privacyPopupTitle,
+                        message: loc.privacyPopupMessage,
+                        buttonText: loc.privacyPopupButton,
+                        icon: Icons.lock_outline,
+                        iconColor: Colors.blueAccent,
+                        onConfirm: () => Navigator.pop(context),
                       );
-                    }
-                  },
+                    },
+                  ),
+                  _buildSettingsItem(
+                    context,
+                    icon: Icons.notifications_outlined,
+                    title: loc.notificationsTitle,
+                    subtitle: loc.notificationSettings,
+                    onTap: () {
+                      Navigator.pushNamed(context, '/user-notification');
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  _buildSectionHeader(context, loc.activitySection),
+                  const SizedBox(height: 10),
+                  _buildSettingsItem(
+                    context,
+                    icon: Icons.report_problem_outlined,
+                    title: loc.myReports,
+                    subtitle: loc.myReportsSubtitle,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const UserReportsPage(),
+                      ),
+                    ),
+                  ),
+                  _buildSettingsItem(
+                    context,
+                    icon: Icons.event_available_outlined,
+                    title: loc.myBookings,
+                    subtitle: loc.myBookingsSubtitle,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MyBookingsPage(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40), // Bottom padding
+                ],
+              ),
+            ),
           ),
         ],
       ),
-      body: _buildBody(loc),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: _currentIndex,
         onTap: _onNavTap,
@@ -189,197 +334,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-  Widget _buildBody(AppLocalizations loc) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.red, fontSize: 16),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _fetchProfile,
-                child: Text(loc.fetchProfile),
-              ),
-            ],
-          ),
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: AppConstants.primaryBlue,
+          letterSpacing: 1.1,
         ),
-      );
-    }
-    if (_profile == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                loc.profileNoData,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.orange, fontSize: 16),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _fetchProfile,
-                child: Text(loc.fetchProfile),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    String name = _profile?['name'] ?? _profile?['username'] ?? loc.notAvailable;
-    String email = _profile?['email'] ?? loc.notAvailable;
-    String? photoUrl =
-        _profile?['photoUrl'] ?? _profile?['profile_picture'] ?? _profile?['user']?['profile_picture'];
-
-    final theme = Theme.of(context);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              margin: const EdgeInsets.only(bottom: 24),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.grey[200],
-                      backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
-                          ? NetworkImage(photoUrl)
-                          : null,
-                      child: (photoUrl == null || photoUrl.isEmpty)
-                          ? Icon(Icons.person, size: 60, color: Colors.grey[500])
-                          : null,
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      name,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppConstants.primaryBlue,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      email,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[700],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            loc.generalSection,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppConstants.primaryBlue.withOpacity(0.85),
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _buildSettingsItem(
-            context,
-            icon: Icons.settings_outlined,
-            title: loc.profileSettings,
-            subtitle: loc.profileSettingsSubtitle,
-            onTap: () {
-              if (_profile != null) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const EditProfilePage(),
-                  ),
-                );
-              }
-            },
-          ),
-          _buildSettingsItem(
-            context,
-            icon: Icons.lock_outline,
-            title: loc.privacy,
-            subtitle: loc.privacySubtitle,
-            onTap: () {
-              _showPopup(
-                context,
-                title: loc.privacyPopupTitle,
-                message: loc.privacyPopupMessage,
-                buttonText: loc.privacyPopupButton,
-                icon: Icons.lock_outline,
-                iconColor: Colors.blueAccent,
-                onConfirm: () => Navigator.pop(context),
-              );
-            },
-          ),
-          _buildSettingsItem(
-            context,
-            icon: Icons.notifications_outlined,
-            title: loc.notificationsTitle,
-            subtitle: loc.notificationSettings,
-            onTap: () {
-              Navigator.pushNamed(context, '/user-notification');
-            },
-          ),
-          const SizedBox(height: 24),
-          Text(
-            loc.activitySection,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppConstants.primaryBlue.withOpacity(0.85),
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _buildSettingsItem(
-            context,
-            icon: Icons.report_problem_outlined,
-            title: loc.myReports,
-            subtitle: loc.myReportsSubtitle,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const UserReportsPage(),
-              ),
-            ),
-          ),
-          _buildSettingsItem(
-            context,
-            icon: Icons.event_available_outlined,
-            title: loc.myBookings,
-            subtitle: loc.myBookingsSubtitle,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const MyBookingsPage(),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

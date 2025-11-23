@@ -7,6 +7,8 @@ import 'package:openspace_mobile_app/service/report_service.dart';
 
 class ReportRepository {
   final ReportLocal localService;
+  List<Report>? _cachedReports;
+  DateTime? _lastFetch;
 
   ReportRepository({required this.localService});
 
@@ -156,5 +158,18 @@ class ReportRepository {
 
   Future<List<Report>> getPendingReports() => localService.getPendingReports();
   
-  Future<List<Report>> getAllReports() => localService.getAllReports();
+  Future<List<Report>> getAllReports({bool forceRefresh = false}) async {
+    // Return cached data if available and fresh (< 5 minutes old)
+    if (!forceRefresh && _cachedReports != null && _lastFetch != null) {
+      final age = DateTime.now().difference(_lastFetch!);
+      if (age.inMinutes < 5) {
+        return _cachedReports!;
+      }
+    }
+    
+    final reports = await localService.getAllReports();
+    _cachedReports = reports;
+    _lastFetch = DateTime.now();
+    return reports;
+  }
 }

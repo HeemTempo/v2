@@ -65,7 +65,7 @@ class _TrackProgressScreenState extends State<TrackProgressScreen> with SingleTi
       Report? matchingReport;
       try {
         matchingReport = reports.firstWhere(
-          (report) => report.reportId?.toLowerCase() == enteredRefId.toLowerCase(),
+          (report) => report.reportId.toLowerCase() == enteredRefId.toLowerCase(),
         );
       } catch (e) {
         matchingReport = null;

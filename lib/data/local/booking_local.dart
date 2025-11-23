@@ -32,10 +32,14 @@ class BookingLocal {
     await batch.commit(noResult: true);
   }
 
-  /// Get all bookings from local storage
-  Future<List<Booking>> getBookings() async {
+  /// Get all bookings from local storage with optional limit
+  Future<List<Booking>> getBookings({int? limit}) async {
     final db = await LocalDb.getDb();
-    final maps = await db.query('bookings', orderBy: 'createdAt DESC');
+    final maps = await db.query(
+      'bookings',
+      orderBy: 'createdAt DESC',
+      limit: limit ?? 50, // Default limit to 50 most recent
+    );
     
     return maps.map((e) => _bookingFromMap(e)).toList();
   }

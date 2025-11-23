@@ -79,7 +79,7 @@ class _UserReportsPageState extends State<UserReportsPage> with SingleTickerProv
             // Reporter
             if (report.user != null)
               Text(
-                "Reporter: ${report.user!.username ?? "User"}",
+                "Reporter: ${report.user!.username}",
                 style: const TextStyle(fontSize: 13, color: Colors.black87),
               ),
 

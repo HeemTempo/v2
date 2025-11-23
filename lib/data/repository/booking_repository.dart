@@ -8,6 +8,9 @@ import 'package:openspace_mobile_app/service/bookingservice.dart';
 class BookingRepository {
   final BookingService _service = BookingService();
   final BookingLocal _local = BookingLocal();
+  
+  List<Booking>? _cachedBookings;
+  DateTime? _lastFetch;
 
   /// Check if device is online
   Future<bool> _isConnected() async {
@@ -160,8 +163,16 @@ class BookingRepository {
     }
   }
 
-  /// Get all bookings (online/offline)
-  Future<List<Booking>> getMyBookings() async {
+  /// Get all bookings (online/offline) with caching
+  Future<List<Booking>> getMyBookings({bool forceRefresh = false}) async {
+    // Return cached data if available and fresh (< 5 minutes old)
+    if (!forceRefresh && _cachedBookings != null && _lastFetch != null) {
+      final age = DateTime.now().difference(_lastFetch!);
+      if (age.inMinutes < 5) {
+        return _cachedBookings!;
+      }
+    }
+
     final isOnline = await _isConnected();
 
     if (isOnline) {
@@ -171,13 +182,19 @@ class BookingRepository {
 
         // Include pending offline bookings
         final pending = await _local.getPendingBookings();
-        return [...bookings, ...pending];
+        _cachedBookings = [...bookings, ...pending];
+        _lastFetch = DateTime.now();
+        return _cachedBookings!;
       } catch (e) {
         print('Failed to fetch online bookings: $e');
-        return _local.getBookings();
+        final localData = await _local.getBookings();
+        _cachedBookings = localData;
+        return localData;
       }
     } else {
-      return _local.getBookings();
+      final localData = await _local.getBookings();
+      _cachedBookings = localData;
+      return localData;
     }
   }
 

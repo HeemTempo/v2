@@ -5,7 +5,7 @@ import 'package:openspace_mobile_app/model/Booking.dart';
 import 'auth_service.dart';
 
 class BookingService {
-  static const String _baseUrl = "http://192.168.1.132:8001"; // Update to HTTPS in production
+  static const String _baseUrl = "http://192.168.0.56:8001"; // Update to HTTPS in production
   static const String _createBookingEndpoint = "/api/v1/book-open-space/";
   static const String _myBookingsEndpoint = "/api/v1/my-bookings/";
 
@@ -173,11 +173,9 @@ class BookingService {
         jsonData.map((json) => Booking.fromJson(json)).toList();
         return bookings;
       } else {
-        String serverMessage = "Failed to fetch bookings.";
         try {
           final decoded = jsonDecode(response.body);
           if (decoded is Map && decoded.containsKey('detail')) {
-            serverMessage = decoded['detail'].toString();
           }
         } catch (_) {}
         _lastError = 'Fetch bookings failed';

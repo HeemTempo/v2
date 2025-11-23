@@ -90,6 +90,13 @@ class LocalDb {
 
         // CREATE profile table safely
         await ProfileLocalDataSource.createTable(db);
+
+        // Add indexes for better query performance
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_bookings_createdAt ON bookings(createdAt)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_reports_createdAt ON reports(createdAt)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_notifications_isRead ON notifications(isRead)');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 4) {
@@ -128,6 +135,13 @@ class LocalDb {
 
         // Ensure profile table exists
         await ProfileLocalDataSource.createTable(db);
+
+        // Add indexes if upgrading
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_bookings_createdAt ON bookings(createdAt)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_reports_createdAt ON reports(createdAt)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_notifications_isRead ON notifications(isRead)');
       },
     );
 

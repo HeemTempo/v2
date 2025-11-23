@@ -9,145 +9,174 @@ class Sidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = AppLocalizations.of(context)!;
 
+    // Define menu items here for extensibility
+    final List<Map<String, dynamic>> menuItems = [
+      {'icon': Icons.dashboard, 'title': locale.dashboard, 'route': '/home'},
+      {'icon': Icons.notifications, 'title': locale.notificationsTitle, 'route': '/user-notification'},
+      {'icon': Icons.person, 'title': locale.myProfile, 'route': '/user-profile'},
+      {'divider': true},
+      {'icon': Icons.help_outline, 'title': locale.helpFaqs, 'route': '/help-support'},
+      {'icon': Icons.description, 'title': locale.termsConditions, 'route': '/terms'},
+      {'icon': Icons.lock, 'title': locale.privacyPolicyMenu, 'route': '/privacy'}, // Assuming route exists or placeholder
+      {'icon': Icons.star, 'title': locale.rateApp, 'action': () {}}, // Custom action example
+      {'divider': true},
+      {'icon': Icons.info_outline, 'title': locale.about, 'action': () {}},
+    ];
+
     return Drawer(
       child: Column(
         children: [
-          // 🔹 Drawer Header with gradient + app info
+          // 🔹 Drawer Header
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-            decoration: const BoxDecoration(
+            padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
+                colors: [AppConstants.primaryBlue, AppConstants.primaryBlue.withOpacity(0.8)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
-            child: Stack(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children:[
+                Row(
+                  children: [
                     CircleAvatar(
-                      radius: 28,
-                      backgroundColor: Colors.white24,
-                      child: Icon(Icons.park, size: 30, color: Colors.white),
+                      radius: 30,
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.park, size: 32, color: AppConstants.primaryBlue),
                     ),
-                    SizedBox(height: 12),
-                    Text(
-                      locale.appName,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.greenAccent.shade700,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      locale.version,
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
+                      child: const Text(
+                        "Online",
+                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
                 ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
+                const SizedBox(height: 16),
+                Text(
+                  locale.appName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
                   ),
-                )
+                ),
+                Text(
+                  locale.version,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
 
-          // 🔹 Menu items
+          // 🔹 Menu Items List
           Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _buildMenuItem(Icons.dashboard, locale.dashboard, () {}),
-                _buildMenuItem(Icons.notifications, locale.notificationsTitle, () {}),
-                _buildMenuItem(Icons.person, locale.myProfile, () {
-                  Navigator.pushReplacementNamed(context, "/user-profile");
-                }),
-                const Divider(),
-                _buildMenuItem(Icons.help_outline, locale.helpFaqs, () {}),
-                _buildMenuItem(Icons.description, locale.termsConditions, () {}),
-                _buildMenuItem(Icons.lock, locale.privacyPolicyMenu, () {}),
-                _buildMenuItem(Icons.star, locale.rateApp, () {}),
-                const Divider(),
-                _buildMenuItem(Icons.info_outline, locale.about, () {}),
-              ],
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: menuItems.length,
+              itemBuilder: (context, index) {
+                final item = menuItems[index];
+
+                if (item.containsKey('divider')) {
+                  return const Divider(indent: 16, endIndent: 16);
+                }
+
+                return ListTile(
+                  leading: Icon(item['icon'] as IconData, color: Colors.grey[700]),
+                  title: Text(
+                    item['title'] as String,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                  ),
+                  onTap: () {
+                    if (item.containsKey('route')) {
+                      Navigator.pushReplacementNamed(context, item['route'] as String);
+                    } else if (item.containsKey('action')) {
+                      (item['action'] as VoidCallback)();
+                    }
+                  },
+                  dense: true,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                );
+              },
             ),
           ),
 
-          // 🔹 Footer with buttons
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-            child: Row(
+          // 🔹 Bottom Actions (Settings & Sign Out)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              border: Border(top: BorderSide(color: Colors.grey[200]!)),
+            ),
+            child: Column(
               children: [
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppConstants.primaryBlue,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(context, "/setting");
-                    },
-                    child: Text(locale.settings),
-                  ),
+                _buildBottomButton(
+                  context,
+                  icon: Icons.settings,
+                  label: locale.settings,
+                  color: Colors.grey[800]!,
+                  onTap: () => Navigator.pushReplacementNamed(context, "/setting"),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(context, "/login");
-                    },
-                    child: Text(locale.signOut),
-                  ),
+                const SizedBox(height: 8),
+                _buildBottomButton(
+                  context,
+                  icon: Icons.logout,
+                  label: locale.signOut,
+                  color: Colors.redAccent,
+                  onTap: () => Navigator.pushReplacementNamed(context, "/login"),
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title, VoidCallback onTap) {
-    return ListTile(
-      leading: Container(
-        decoration: BoxDecoration(
-          color: AppConstants.primaryBlue.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.all(6),
-        child: Icon(icon, color: AppConstants.primaryBlue),
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-      ),
-      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+  Widget _buildBottomButton(BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[300]!),
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.white,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

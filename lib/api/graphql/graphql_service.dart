@@ -7,7 +7,7 @@ class GraphQLService {
   final bool debugMode;
 
   GraphQLService({
-    String endpoint = 'http://192.168.1.132:8001/graphql/',
+    String endpoint = 'http://192.168.0.56:8001/graphql/',
     Duration timeout = const Duration(seconds: 30),
     this.debugMode = false,
   }) {
