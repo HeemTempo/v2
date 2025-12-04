@@ -1,15 +1,28 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../config/app_config.dart';
+import '../service/auth_service.dart';
 
 class FileUploadService {
-  final String _uploadUrl = "http://192.168.0.56:8001/api/v1/upload/";
+  final String _baseUrl = AppConfig.baseUrl;
+  final String _uploadEndpoint = 'api/v1/uploads/';
 
-
-  Future<String?> uploadFile({required String fileName, required Uint8List fileBytes, String? reportId}) async {
+  Future<String?> uploadFile({
+    required Uint8List fileBytes,
+    required String fileName,
+    String? reportId,
+  }) async {
     try {
-      var request = http.MultipartRequest('POST', Uri.parse(_uploadUrl));
+      final token = await AuthService.getToken();
+      if (token == null || token.isEmpty) {
+        throw Exception('Please log in to upload files.');
+      }
+
+      var uri = Uri.parse('$_baseUrl$_uploadEndpoint');
+      var request = http.MultipartRequest('POST', uri);
+      request.headers['Authorization'] = 'Bearer $token';
 
       request.files.add(
         http.MultipartFile.fromBytes(

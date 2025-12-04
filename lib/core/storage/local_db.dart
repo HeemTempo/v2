@@ -12,7 +12,7 @@ class LocalDb {
 
     _db = await openDatabase(
       path,
-      version: 4, // Bump version to handle notifications table addition
+      version: 5, // Bump version to handle reports table updates
       onCreate: (db, version) async {
         // CREATE bookings table safely
         await db.execute('''
@@ -39,11 +39,15 @@ class LocalDb {
             reportId TEXT,
             description TEXT,
             email TEXT,
+            phone TEXT,
             file TEXT,
             createdAt TEXT,
             latitude REAL,
             longitude REAL,
             spaceName TEXT,
+            district TEXT,
+            street TEXT,
+            userId TEXT,
             userData TEXT,
             status TEXT
           )
@@ -122,6 +126,25 @@ class LocalDb {
               createdAt TEXT
             )
           ''');
+        }
+        
+        if (oldVersion < 5) {
+          // Add missing columns to reports table
+          final reportColumns = await db.rawQuery("PRAGMA table_info(reports)");
+          final reportColumnNames = reportColumns.map((c) => c['name'] as String).toList();
+          
+          if (!reportColumnNames.contains('phone')) {
+            await db.execute('ALTER TABLE reports ADD COLUMN phone TEXT');
+          }
+          if (!reportColumnNames.contains('district')) {
+            await db.execute('ALTER TABLE reports ADD COLUMN district TEXT');
+          }
+          if (!reportColumnNames.contains('street')) {
+            await db.execute('ALTER TABLE reports ADD COLUMN street TEXT');
+          }
+          if (!reportColumnNames.contains('userId')) {
+            await db.execute('ALTER TABLE reports ADD COLUMN userId TEXT');
+          }
         }
 
         // Ensure 'street' column exists in open_spaces table

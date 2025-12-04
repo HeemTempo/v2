@@ -60,7 +60,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (user.isStaff == true || user.role?.toLowerCase() == "admin") {
         throw Exception(
-          loc.adminNotAllowed,
+          'Administrators are not allowed to register here.',
         );
       }
 

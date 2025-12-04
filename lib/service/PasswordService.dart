@@ -1,11 +1,10 @@
-// auth_service.dart (or your existing service file)
-import 'dart:async';
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 
 class PasswordService {
-  final String _baseUrl = "http://192.168.0.56:8001/api/v1";
-  // final Duration _timeoutDuration = const Duration(seconds: 60);
+  final String _baseUrl = '${AppConfig.baseUrl}api/v1';
 
   Future<String> requestPasswordReset(String email) async {
     final Uri url = Uri.parse('$_baseUrl/password-reset/');

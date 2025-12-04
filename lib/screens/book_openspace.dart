@@ -172,16 +172,19 @@ class _BookingPageState extends State<BookingPage> {
   }
 
   InputDecoration _buildInputDecoration(String label, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: AppConstants.primaryBlue),
+      labelStyle: TextStyle(color: primaryColor),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide.none,
       ),
       filled: true,
-      fillColor: Colors.white,
-      prefixIcon: Icon(icon, color: AppConstants.primaryBlue),
+      fillColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+      prefixIcon: Icon(icon, color: primaryColor),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     );
   }
@@ -202,7 +205,7 @@ class _BookingPageState extends State<BookingPage> {
         keyboardType: keyboardType,
         validator: validator,
         maxLines: maxLines,
-        style: const TextStyle(color: Colors.black87),
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
       ),
     );
   }
@@ -228,7 +231,7 @@ class _BookingPageState extends State<BookingPage> {
           child: Text(
             date != null ? DateFormat('yyyy-MM-dd').format(date) : 'YYYY-MM-DD',
             style: TextStyle(
-              color: date != null ? Colors.black87 : Colors.grey,
+              color: date != null ? Theme.of(context).colorScheme.onSurface : Colors.grey,
             ),
           ),
         ),
@@ -292,18 +295,18 @@ class _BookingPageState extends State<BookingPage> {
         ),
       ),
       body: Container(
-        color: const Color(0xFFF5F5F5),
+        color: Theme.of(context).scaffoldBackgroundColor,
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
-              const Text(
+              Text(
                 'Booking Details',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppConstants.primaryBlue,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -398,7 +401,7 @@ class _BookingPageState extends State<BookingPage> {
                       'Attachment (Optional)',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: AppConstants.primaryBlue,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -425,7 +428,7 @@ class _BookingPageState extends State<BookingPage> {
                             style: TextStyle(
                               color:
                                   _selectedFile != null
-                                      ? Colors.black87
+                                      ? Theme.of(context).colorScheme.onSurface
                                       : Colors.grey,
                             ),
                           ),

@@ -41,8 +41,12 @@ class ReportProvider with ChangeNotifier {
   Future<Report> submitReport({
     required String description,
     String? email,
+    String? phone,
     File? file,
     String? spaceName,
+    String? district,
+    String? street,
+    String? userId,
     double? latitude,
     double? longitude,
   }) async {
@@ -53,8 +57,12 @@ class ReportProvider with ChangeNotifier {
       final report = await _repository.submitReport(
         description: description,
         email: email,
+        phone: phone,
         file: file,
         spaceName: spaceName,
+        district: district,
+        street: street,
+        userId: userId,
         latitude: latitude,
         longitude: longitude,
       );

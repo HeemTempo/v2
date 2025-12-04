@@ -1,20 +1,28 @@
 import 'dart:convert';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/material.dart';
-import 'package:openspace_mobile_app/data/local/notification_local.dart';
-import 'package:openspace_mobile_app/model/Notification.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:openspace_mobile_app/model/Notification.dart';
 import 'package:openspace_mobile_app/service/auth_service.dart';
 
 class NotificationRepository {
-  final NotificationLocalDataSource _localDataSource;
-  static const String _baseUrl = 'http://192.168.100.110:8001/api/v1';
+  final String _baseUrl;
+  final dynamic _localDataSource;
 
-  NotificationRepository(this._localDataSource);
+  NotificationRepository({
+    String? baseUrl,
+    dynamic localDataSource,
+  })  : _baseUrl = baseUrl ?? 'http://your-server-url.com',
+        _localDataSource = localDataSource;
 
   Future<bool> _isOnline() async {
-    final connectivityResult = await Connectivity().checkConnectivity();
-    return connectivityResult != ConnectivityResult.none;
+    // Simple connectivity check
+    try {
+      final result = await InternetAddress.lookup('google.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<List<ReportNotification>> getNotifications() async {

@@ -62,6 +62,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppConstants.primaryBlue,
@@ -80,171 +82,174 @@ class _EditProfilePageState extends State<EditProfilePage> {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Profile Picture Section
-                Center(
-                  child: Card(
-                    elevation: 8,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    margin: const EdgeInsets.only(bottom: 24),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [AppConstants.primaryBlue, AppConstants.primaryBlue.withOpacity(0.7)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+        child: Container(
+          color: isDark ? AppConstants.darkBackground : Colors.grey[50],
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Profile Picture Section
+                  Center(
+                    child: Card(
+                      elevation: 8,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      margin: const EdgeInsets.only(bottom: 24),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AppConstants.primaryBlue, AppConstants.primaryBlue.withOpacity(0.7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            Stack(
-                              alignment: Alignment.bottomRight,
-                              children: [
-                                GestureDetector(
-                                  onTap: _pickImage,
-                                  child: CircleAvatar(
-                                    radius: 70,
-                                    backgroundImage: _image != null
-                                        ? FileImage(_image!)
-                                        : const AssetImage('assets/images/avatar.jpg') as ImageProvider,
-                                  )
-                                      .animate()
-                                      .scale(duration: 300.ms, curve: Curves.easeOut)
-                                      .then()
-                                      .fadeIn(duration: 300.ms),
-                                ),
-                                if (_image != null)
-                                  Positioned(
-                                    right: 0,
-                                    child: GestureDetector(
-                                      onTap: _removeImage,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.redAccent,
-                                          shape: BoxShape.circle,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            children: [
+                              Stack(
+                                alignment: Alignment.bottomRight,
+                                children: [
+                                  GestureDetector(
+                                    onTap: _pickImage,
+                                    child: CircleAvatar(
+                                      radius: 70,
+                                      backgroundImage: _image != null
+                                          ? FileImage(_image!)
+                                          : const AssetImage('assets/images/avatar.jpg') as ImageProvider,
+                                    )
+                                        .animate()
+                                        .scale(duration: 300.ms, curve: Curves.easeOut)
+                                        .then()
+                                        .fadeIn(duration: 300.ms),
+                                  ),
+                                  if (_image != null)
+                                    Positioned(
+                                      right: 0,
+                                      child: GestureDetector(
+                                        onTap: _removeImage,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: const BoxDecoration(
+                                            color: Colors.redAccent,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(Icons.delete, color: Colors.white, size: 20),
                                         ),
-                                        child: const Icon(Icons.delete, color: Colors.white, size: 20),
                                       ),
                                     ),
-                                  ),
-                                Positioned(
-                                  bottom: 0,
-                                  right: _image != null ? 40 : 0,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: LinearGradient(
-                                        colors: [Colors.black54, Colors.black26],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
+                                  Positioned(
+                                    bottom: 0,
+                                    right: _image != null ? 40 : 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: LinearGradient(
+                                          colors: [Colors.black54, Colors.black26],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
                                       ),
+                                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 24),
                                     ),
-                                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 24),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Tap to change profile photo',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white.withOpacity(0.9),
-                                fontWeight: FontWeight.w500,
+                                ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 16),
+                              Text(
+                                'Tap to change profile photo',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                // Personal Information Section
-                Text(
-                  'Personal Information',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontSize: 22,
-                    color: AppConstants.primaryBlue,
-                    fontWeight: FontWeight.bold,
+                  // Personal Information Section
+                  Text(
+                    'Personal Information',
+                    style: TextStyle(
+                      fontSize: 22,
+                      color: AppConstants.primaryBlue,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                _buildTextField(
-                  context: context,
-                  label: 'Name',
-                  hint: 'Enter your name',
-                  icon: Icons.person_outline,
-                  validator: (value) => value == null || value.isEmpty ? 'Name is required' : null,
-                ),
-                _buildTextField(
-                  context: context,
-                  label: 'Email',
-                  hint: 'Enter your email',
-                  icon: Icons.email_outlined,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return 'Email is required';
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                      return 'Enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
-                _buildTextField(
-                  context: context,
-                  label: 'Phone Number',
-                  hint: 'Enter your phone number',
-                  icon: Icons.phone_outlined,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return 'Phone number is required';
-                    if (!RegExp(r'^\+?[\d\s-]{10,}$').hasMatch(value)) {
-                      return 'Enter a valid phone number';
-                    }
-                    return null;
-                  },
-                ),
-                _buildTextField(
-                  context: context,
-                  label: 'Password',
-                  hint: 'Enter new password',
-                  icon: Icons.lock_outline,
-                  obscureText: true,
-                  validator: (value) => value == null || value.length < 6 ? 'Password must be at least 6 characters' : null,
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStyledButton(
-                        context: context,
-                        text: 'Cancel',
-                        color: Colors.grey[400]!,
-                        onPressed: () => Navigator.pop(context),
+                  const SizedBox(height: 24),
+                  _buildTextField(
+                    context: context,
+                    label: 'Name',
+                    hint: 'Enter your name',
+                    icon: Icons.person_outline,
+                    validator: (value) => value == null || value.isEmpty ? 'Name is required' : null,
+                  ),
+                  _buildTextField(
+                    context: context,
+                    label: 'Email',
+                    hint: 'Enter your email',
+                    icon: Icons.email_outlined,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Email is required';
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                        return 'Enter a valid email';
+                      }
+                      return null;
+                    },
+                  ),
+                  _buildTextField(
+                    context: context,
+                    label: 'Phone Number',
+                    hint: 'Enter your phone number',
+                    icon: Icons.phone_outlined,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Phone number is required';
+                      if (!RegExp(r'^\+?[\d\s-]{10,}$').hasMatch(value)) {
+                        return 'Enter a valid phone number';
+                      }
+                      return null;
+                    },
+                  ),
+                  _buildTextField(
+                    context: context,
+                    label: 'Password',
+                    hint: 'Enter new password',
+                    icon: Icons.lock_outline,
+                    obscureText: true,
+                    validator: (value) => value == null || value.length < 6 ? 'Password must be at least 6 characters' : null,
+                  ),
+                  const SizedBox(height: 32),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStyledButton(
+                          context: context,
+                          text: 'Cancel',
+                          color: Colors.grey[400]!,
+                          onPressed: () => Navigator.pop(context),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildStyledButton(
-                        context: context,
-                        text: 'Save Changes',
-                        color: AppConstants.primaryBlue,
-                        onPressed: _saveChanges,
-                        isLoading: _isSaving,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildStyledButton(
+                          context: context,
+                          text: 'Save Changes',
+                          color: AppConstants.primaryBlue,
+                          onPressed: _saveChanges,
+                          isLoading: _isSaving,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -260,10 +265,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
     String? Function(String?)? validator,
     bool obscureText = false,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Card(
         elevation: 2,
+        color: isDark ? AppConstants.darkCard : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: TextFormField(
           obscureText: obscureText,
@@ -271,21 +279,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
             labelText: label,
             hintText: hint,
             prefixIcon: Icon(icon, color: AppConstants.primaryBlue),
-            labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            labelStyle: TextStyle(
               fontWeight: FontWeight.w600,
               color: AppConstants.primaryBlue,
             ),
-            hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+            hintStyle: TextStyle(color: Colors.grey[600]),
             border: InputBorder.none,
             focusedBorder: OutlineInputBorder(
               borderSide: BorderSide(color: AppConstants.primaryBlue, width: 2),
               borderRadius: BorderRadius.circular(12),
             ),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: isDark ? AppConstants.darkCard : Colors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
           validator: validator,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black87),
+          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
         ),
       ),
     );
@@ -315,7 +324,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       )
           : Text(
         text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        style: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.bold,
           color: Colors.white,

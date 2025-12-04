@@ -317,6 +317,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spaceNameLabel => 'Space Name';
 
   @override
+  String get districtLabel => 'District';
+
+  @override
   String get coordinatesLabel => 'Coordinates';
 
   @override
@@ -726,7 +729,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offlineNoCachedToken => 'No offline login available. Please connect to the internet.';
 
   @override
-  String get offlineLoginSuccess => 'You have successfully logged in offline';
+  String get offlineLoginSuccess => 'Successfully logged in offline';
 
   @override
   String get offlineLoginHint => 'You are offline. Tap below to continue with your saved session';
@@ -735,11 +738,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invalidCredentials => 'Invalid username or password';
 
   @override
-  String get adminNotAllowed => 'Admins are not allowed to login here.';
+  String get adminNotAllowed => 'Administrators are not allowed to login here.';
 
   @override
   String get streetLabel => 'Street';
 
   @override
-  String get streetRequired => 'Please select a street';
+  String get offlineBanner => 'You are offline';
+
+  @override
+  String get connectingBanner => 'Connecting...';
+
+  @override
+  String get retryButton => 'RETRY';
+
+  @override
+  String get syncSuccess => 'Success!';
+
+  @override
+  String syncReportsSubmitted(Object count) {
+    return '$count reports submitted';
+  }
+
+  @override
+  String syncBookingsSubmitted(Object count) {
+    return '$count bookings submitted';
+  }
+
+  @override
+  String syncReportNumber(Object reportId) {
+    return 'Report #: $reportId';
+  }
+
+  @override
+  String get errorNoInternet => 'No internet connection. Please check your network.';
+
+  @override
+  String get errorServerIssue => 'Server error. Please try again later.';
+
+  @override
+  String get errorTimeout => 'Request timed out. Network is slow, please try again.';
+
+  @override
+  String get errorAuth => 'Please sign in again to your account.';
+
+  @override
+  String get errorGeneric => 'An error occurred. Please try again.';
+
+  @override
+  String get errorOfflineSaved => 'You are offline. Data has been saved and will be synced when connection is restored.';
+
+  @override
+  String get routeSearching => 'Finding route...';
+
+  @override
+  String get searchLocation => 'Search location';
+
+  @override
+  String get closeButton => 'CLOSE';
 }

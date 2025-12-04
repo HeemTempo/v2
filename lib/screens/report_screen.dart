@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openspace_mobile_app/providers/report_provider.dart';
+import 'package:openspace_mobile_app/providers/user_provider.dart';
 import 'package:openspace_mobile_app/screens/file_attachment_section.dart';
 import 'package:provider/provider.dart';
 import 'package:quickalert/models/quickalert_type.dart';
@@ -15,6 +16,7 @@ class ReportIssuePage extends StatefulWidget {
   final double? latitude;
   final double? longitude;
   final String? district;
+  final String? street;
 
   const ReportIssuePage({
     super.key,
@@ -22,6 +24,7 @@ class ReportIssuePage extends StatefulWidget {
     this.latitude,
     this.longitude,
     this.district,
+    this.street,
   });
 
   @override
@@ -44,11 +47,16 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
   @override
   void initState() {
     super.initState();
-    // Sync pending reports automatically when opening the screen
-    Future.microtask(() {
-      // ignore: use_build_context_synchronously
-      final reportProvider = context.read<ReportProvider>();
-      reportProvider.syncPendingReports();
+    // Defer sync to avoid blocking UI
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        try {
+          final reportProvider = context.read<ReportProvider>();
+          reportProvider.syncPendingReports();
+        } catch (e) {
+          debugPrint('Error syncing reports: $e');
+        }
+      }
     });
   }
 
@@ -124,12 +132,14 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-    final primaryBlue = const Color(0xFF2563EB);
+    try {
+      final loc = AppLocalizations.of(context)!;
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final primaryBlue = Theme.of(context).colorScheme.primary;
 
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: AppBar(
         title: Text(loc.reportPageTitle),
         backgroundColor: primaryBlue,
         centerTitle: true,
@@ -205,6 +215,14 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                     _InfoRow(
                       label: loc.spaceNameLabel,
                       value: widget.spaceName ?? loc.notAvailable,
+                    ),
+                    _InfoRow(
+                      label: loc.districtLabel,
+                      value: widget.district ?? loc.notAvailable,
+                    ),
+                    _InfoRow(
+                      label: loc.streetLabel,
+                      value: widget.street ?? loc.notAvailable,
                     ),
                     _InfoRow(
                       label: loc.coordinatesLabel,
@@ -399,7 +417,31 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
           ),
         ),
       ),
-    );
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Error building report screen: $e');
+      debugPrint('Stack trace: $stackTrace');
+      return Scaffold(
+        appBar: AppBar(title: const Text('Report Issue')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text('Failed to load report screen'),
+              const SizedBox(height: 8),
+              Text('Error: ${e.toString()}', textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 
   InputDecoration _inputDecoration({
@@ -407,38 +449,43 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
     required String hint,
     IconData? icon,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final surfaceColor = Theme.of(context).colorScheme.surface;
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      prefixIcon: icon != null ? Icon(icon, color: Colors.blue[700]) : null,
+      prefixIcon: icon != null ? Icon(icon, color: primaryColor) : null,
       filled: true,
-      fillColor: Colors.white,
+      fillColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
       contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.blue.shade700, width: 2),
+        borderSide: BorderSide(color: primaryColor, width: 2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.red.shade700),
+        borderSide: BorderSide(color: Theme.of(context).colorScheme.error),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.red.shade700, width: 2),
+        borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
       ),
       labelStyle: TextStyle(
-        color: Colors.grey[700],
+        color: isDark ? Colors.grey[400] : Colors.grey[700],
         fontWeight: FontWeight.w600,
       ),
-      hintStyle: TextStyle(color: Colors.grey[500]),
+      hintStyle: TextStyle(color: isDark ? Colors.grey[600] : Colors.grey[500]),
     );
   }
 
@@ -452,12 +499,20 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
     });
 
     try {
+      // Get current user ID
+      final userProvider = context.read<UserProvider>();
+      final userId = userProvider.user.id;
+
       // Submit report (provider handles online/offline automatically)
       final report = await reportProvider.submitReport(
         description: _descriptionController.text,
         email: _emailController.text.isNotEmpty ? _emailController.text : null,
+        phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
         file: _selectedFiles.isNotEmpty ? _selectedFiles.first : null,
         spaceName: widget.spaceName,
+        district: widget.district,
+        street: widget.street,
+        userId: userId,
         latitude: widget.latitude,
         longitude: widget.longitude,
       );
@@ -546,9 +601,13 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       elevation: 3,
+      color: Theme.of(context).cardColor,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -557,8 +616,8 @@ class _InfoCard extends StatelessWidget {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: Colors.blue[100],
-                  child: Icon(icon, color: Colors.blue[700]),
+                  backgroundColor: isDark ? primaryColor.withOpacity(0.2) : primaryColor.withOpacity(0.1),
+                  child: Icon(icon, color: primaryColor),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -566,7 +625,7 @@ class _InfoCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue[700],
+                    color: primaryColor,
                   ),
                 ),
               ],
@@ -588,6 +647,8 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -597,14 +658,14 @@ class _InfoRow extends StatelessWidget {
             width: 110,
             child: Text(
               '$label:',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: textColor,
               ),
             ),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(color: Colors.black87)),
+            child: Text(value, style: TextStyle(color: textColor)),
           ),
         ],
       ),
@@ -619,17 +680,20 @@ class _GuidelineText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.check_circle, color: Colors.blue[600], size: 20),
+          Icon(Icons.check_circle, color: primaryColor, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 14, height: 1.4),
+              style: TextStyle(fontSize: 14, height: 1.4, color: textColor),
             ),
           ),
         ],

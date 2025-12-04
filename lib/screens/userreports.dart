@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../model/Report.dart';
 import '../service/userreports.dart';
+import '../data/repository/report_repository.dart';
+import '../data/local/report_local.dart';
 import '../utils/constants.dart';
 
 class UserReportsPage extends StatefulWidget {
@@ -18,7 +20,7 @@ class _UserReportsPageState extends State<UserReportsPage> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _futureReports = ReportService().fetchUserReports();
+    _futureReports = _fetchUserReports();
     _tabController = TabController(length: 3, vsync: this);
   }
 
@@ -28,105 +30,223 @@ class _UserReportsPageState extends State<UserReportsPage> with SingleTickerProv
     super.dispose();
   }
 
+  Future<List<Report>> _fetchUserReports() async {
+    final reportRepo = ReportRepository(localService: ReportLocal());
+    
+    try {
+      // Try to fetch from API first
+      final onlineReports = await ReportService().fetchUserReports();
+      return onlineReports;
+    } catch (e) {
+      debugPrint('Failed to fetch from API: $e. Using local data.');
+      // Fall back to local data if API fails
+      final localReports = await reportRepo.getAllReports();
+      return localReports;
+    }
+  }
+
   String formatDate(DateTime date) {
     return DateFormat.yMMMd().add_jm().format(date);
   }
 
-  // 🔹 Report card UI (like your screenshots)
+  // Enhanced Report card UI
   Widget _buildReportCard(Report report) {
     return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Report ID + Description
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.description, color: Colors.blueGrey, size: 18),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    "${report.reportId} • ${report.description}",
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+      elevation: 3,
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              _getStatusColor(report.status ?? '').withOpacity(0.03),
+            ],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with icon and title
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(report.status ?? '').withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.description_outlined,
+                      color: _getStatusColor(report.status ?? ''),
+                      size: 24,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Space
-            if (report.spaceName != null)
-              Text(
-                "Space: ${report.spaceName}",
-                style: const TextStyle(fontSize: 13, color: Colors.black87),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          report.reportId ?? 'N/A',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          report.description,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: AppConstants.black,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Status badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(report.status ?? ''),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      (report.status ?? 'unknown').toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 16),
+              const Divider(height: 1, thickness: 1),
+              const SizedBox(height: 12),
 
-            // Created date
-            Text(
-              "Created: ${formatDate(report.createdAt)}",
-              style: const TextStyle(fontSize: 13, color: Colors.black87),
-            ),
-
-            // Reporter
-            if (report.user != null)
-              Text(
-                "Reporter: ${report.user!.username}",
-                style: const TextStyle(fontSize: 13, color: Colors.black87),
-              ),
-
-            const SizedBox(height: 6),
-
-            // Status badge
-            Align(
-              alignment: Alignment.centerRight,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(report.status!).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _getStatusColor(report.status!)),
+              // Details with icons
+              if (report.spaceName != null)
+                _buildIconRow(
+                  Icons.location_on_outlined,
+                  "Space",
+                  report.spaceName!,
                 ),
-                child: Text(
-                  report.status!,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: _getStatusColor(report.status!),
+              _buildIconRow(
+                Icons.calendar_today_outlined,
+                "Created",
+                formatDate(report.createdAt),
+              ),
+              if (report.user != null)
+                _buildIconRow(
+                  Icons.person_outline,
+                  "Reporter",
+                  report.user!.username,
+                ),
+
+              // Attachment button
+              if (report.file != null && report.file!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.attach_file, size: 18),
+                    label: const Text("View Attachment"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppConstants.primaryBlue,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                    ),
+                    onPressed: () => _viewAttachment(report.file!),
                   ),
                 ),
-              ),
-            ),
-
-            // Attachment
-            if (report.file != null)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  icon: const Icon(Icons.attach_file, size: 16, color: Colors.blue),
-                  label: const Text("View attachment", style: TextStyle(color: Colors.blue)),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('File URL: ${report.file}')),
-                    );
-                  },
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // 🔹 Status color helper
+  Widget _buildIconRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 16,
+            color: AppConstants.primaryBlue.withOpacity(0.7),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            "$label: ",
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppConstants.black,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _viewAttachment(String fileUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('View Attachment'),
+        content: Text('File URL:\\n\\n$fileUrl'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.primaryBlue,
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('File: $fileUrl')),
+              );
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
@@ -140,7 +260,7 @@ class _UserReportsPageState extends State<UserReportsPage> with SingleTickerProv
     }
   }
 
-  // 🔹 Reports list per tab
+  // Reports list per tab
   Widget _buildReportTab(bool Function(Report) filter) {
     return FutureBuilder<List<Report>>(
       future: _futureReports,
@@ -161,7 +281,7 @@ class _UserReportsPageState extends State<UserReportsPage> with SingleTickerProv
         return RefreshIndicator(
           onRefresh: () async {
             setState(() {
-              _futureReports = ReportService().fetchUserReports();
+              _futureReports = _fetchUserReports();
             });
           },
           child: ListView.builder(

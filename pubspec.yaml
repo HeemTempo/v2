@@ -43,7 +43,7 @@ dependencies:
   geolocator: ^14.0.1
   flutter_map_marker_popup_plus: ^7.1.0
   quickalert: ^1.1.0
-  image_picker: ^1.1.2
+  image_picker: ^1.2.1
   file_picker: ^10.1.9
   shared_preferences: ^2.5.3
   http: ^1.4.0
@@ -70,6 +70,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.2
+  flutter_dotenv: ^6.0.0
 
 
 
@@ -141,6 +142,8 @@ flutter:
      - assets/icon/icon.png
      - assets/images/green_space.jpg
      - assets/images/green_space2.jpg
+     - .env.development
+     - .env.production
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

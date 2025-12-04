@@ -58,6 +58,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   
   List<_ActivityItem> _recentActivities = [];
   bool _isLoadingActivities = true;
+  
+  // Quick Stats counts
+  int _openSpacesCount = 0;
+  int _activeReportsCount = 0;
+  int _bookingsCount = 0;
+  bool _isLoadingStats = true;
 
   final List<String> _horizontalImages = [
     'assets/images/green_space.jpg',
@@ -74,9 +80,60 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       vsync: this,
     );
     _animationController.forward();
-
-    _fetchRecentActivities();
     _startAutoScroll();
+    
+    // Defer data loading to prevent blocking UI
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _fetchQuickStats();
+        _fetchRecentActivities();
+      }
+    });
+  }
+
+  Future<void> _fetchQuickStats() async {
+    if (!mounted) return;
+    setState(() => _isLoadingStats = true);
+
+    try {
+      final reportRepo = ReportRepository(localService: ReportLocal());
+      final bookingRepo = BookingRepository();
+
+      // Fetch with timeout to prevent hanging
+      final results = await Future.wait([
+        reportRepo.getAllReports().timeout(const Duration(seconds: 5)),
+        bookingRepo.getMyBookings().timeout(const Duration(seconds: 5)),
+      ]).timeout(const Duration(seconds: 10));
+
+      final allReports = results[0] as List<Report>;
+      final allBookings = results[1] as List<Booking>;
+
+      final activeReports = allReports.where((r) => 
+        r.status?.toLowerCase() == 'pending' || 
+        r.status?.toLowerCase() == 'in_progress'
+      ).toList();
+
+      final openSpaces = 47;
+
+      if (mounted) {
+        setState(() {
+          _activeReportsCount = activeReports.length;
+          _bookingsCount = allBookings.length;
+          _openSpacesCount = openSpaces;
+          _isLoadingStats = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching quick stats: $e');
+      if (mounted) {
+        setState(() {
+          _activeReportsCount = 0;
+          _bookingsCount = 0;
+          _openSpacesCount = 47;
+          _isLoadingStats = false;
+        });
+      }
+    }
   }
 
   Future<void> _fetchRecentActivities() async {
@@ -87,22 +144,18 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       final reportRepo = ReportRepository(localService: ReportLocal());
       final bookingRepo = BookingRepository();
 
-      // Fetch reports and bookings (local/offline first or synced)
-      // Note: In a real app, you might want to fetch from API if online, 
-      // but here we use what's available via repositories which handle that logic.
-      // For simplicity, we'll fetch pending/local ones or you might want to add a method to fetch 'all' user activities.
-      // Assuming repositories have methods to get user's history.
-      
-      // Since the current repositories focus on 'pending' or 'create', we might need to rely on what's stored locally
-      // or add a method to fetch user history. For now, let's use local pending items as "Recent Activity" 
-      // to demonstrate the dynamic nature, or mock it if empty.
-      
-      final pendingReports = await reportRepo.getPendingReports();
-      final pendingBookings = await bookingRepo.getPendingBookings();
+      // Fetch with timeout
+      final results = await Future.wait([
+        reportRepo.getAllReports().timeout(const Duration(seconds: 5)),
+        bookingRepo.getMyBookings().timeout(const Duration(seconds: 5)),
+      ]).timeout(const Duration(seconds: 10));
+
+      final allReports = results[0] as List<Report>;
+      final allBookings = results[1] as List<Booking>;
 
       List<_ActivityItem> activities = [];
 
-      for (var report in pendingReports) {
+      for (var report in allReports.take(5)) {
         activities.add(_ActivityItem(
           icon: Icons.report_problem,
           title: 'Report: ${report.spaceName ?? "Unknown Space"}',
@@ -112,7 +165,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         ));
       }
 
-      for (var booking in pendingBookings) {
+      for (var booking in allBookings.take(5)) {
         activities.add(_ActivityItem(
           icon: Icons.event,
           title: 'Booking: Space #${booking.spaceId}',
@@ -492,12 +545,21 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   Widget _buildQuickStats(AppLocalizations locale, ThemeData theme, bool isDarkMode) {
+    if (_isLoadingStats) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Row(
       children: [
         Expanded(
           child: _buildStatCard(
             locale.openSpaces,
-            '47',
+            '$_openSpacesCount',
             Icons.park_outlined,
             theme,
             isDarkMode,
@@ -507,7 +569,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         Expanded(
           child: _buildStatCard(
             locale.activeReports,
-            '12',
+            '$_activeReportsCount',
             Icons.report_outlined,
             theme,
             isDarkMode,
@@ -517,7 +579,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         Expanded(
           child: _buildStatCard(
             locale.bookings,
-            '8',
+            '$_bookingsCount',
             Icons.event_outlined,
             theme,
             isDarkMode,
@@ -575,7 +637,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   Widget _buildActionCards(List<_CardData> cards, ThemeData theme, bool isDarkMode) {
     return SizedBox(
-      height: 140,
+      height: 160,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: cards.length,
@@ -671,17 +733,21 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   String _formatDate(DateTime date) {
+    // Show actual time instead of relative time
     final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays} days ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours} hours ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} minutes ago';
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final activityDate = DateTime(date.year, date.month, date.day);
+    
+    final timeFormat = DateFormat('h:mm a'); // e.g., "2:30 PM"
+    final dateFormat = DateFormat('MMM d'); // e.g., "Dec 3"
+    
+    if (activityDate == today) {
+      return 'Today at ${timeFormat.format(date)}';
+    } else if (activityDate == yesterday) {
+      return 'Yesterday at ${timeFormat.format(date)}';
     } else {
-      return 'Just now';
+      return '${dateFormat.format(date)} at ${timeFormat.format(date)}';
     }
   }
 

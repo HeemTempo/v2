@@ -16,6 +16,9 @@ class SyncService {
   late final StreamSubscription<dynamic> _subscription;
 
   bool _isSyncing = false;
+  
+  // Sync feedback with detailed info
+  Function(int successCount, int failCount, int reportCount, int bookingCount, List<String> reportIds)? onSyncComplete;
 
   void init() {
     print('[SyncService] Initializing sync service...');
@@ -64,16 +67,63 @@ class SyncService {
     _isSyncing = true;
     print('[SyncService] Starting sync of offline data...');
     
+    int totalSuccess = 0;
+    int totalFail = 0;
+    int reportsSynced = 0;
+    int bookingsSynced = 0;
+    List<String> syncedReportIds = [];
+    
     try {
       // Sync reports first
       print('[SyncService] Syncing reports...');
-      await _reportRepo.syncPendingReports();
+      final reportsPending = await _reportRepo.getPendingReports();
+      final reportsCount = reportsPending.length;
+      
+      if (reportsCount > 0) {
+        await _reportRepo.syncPendingReports();
+        
+        // Check which ones succeeded
+        final reportsAfter = await _reportRepo.getPendingReports();
+        reportsSynced = reportsCount - reportsAfter.length;
+        totalSuccess += reportsSynced;
+        totalFail += reportsAfter.length;
+        
+        // Get synced report IDs from all reports
+        if (reportsSynced > 0) {
+          final allReports = await _reportRepo.getAllReports();
+          // Get the most recent successfully synced reports
+          final recentlySynced = allReports
+              .where((r) => r.status != 'pending' && r.reportId != 'pending')
+              .take(reportsSynced)
+              .toList();
+          syncedReportIds = recentlySynced
+              .map((r) => r.reportId ?? 'N/A')
+              .where((id) => id != 'N/A')
+              .toList();
+        }
+      }
       
       // Then sync bookings
       print('[SyncService] Syncing bookings...');
-      await _bookingRepo.syncPendingBookings();
+      final bookingsPending = await _bookingRepo.getPendingBookings();
+      final bookingsCount = bookingsPending.length;
       
-      print('[SyncService] ✓ All offline data synced successfully');
+      if (bookingsCount > 0) {
+        await _bookingRepo.syncPendingBookings();
+        
+        final bookingsAfter = await _bookingRepo.getPendingBookings();
+        bookingsSynced = bookingsCount - bookingsAfter.length;
+        totalSuccess += bookingsSynced;
+        totalFail += bookingsAfter.length;
+      }
+      
+      print('[SyncService] ✓ Sync complete: $totalSuccess succeeded, $totalFail failed');
+      print('[SyncService] Reports synced: $reportsSynced, Bookings synced: $bookingsSynced');
+      
+      // Notify listeners of sync completion with details
+      if (onSyncComplete != null && totalSuccess > 0) {
+        onSyncComplete!(totalSuccess, totalFail, reportsSynced, bookingsSynced, syncedReportIds);
+      }
     } catch (e) {
       print('[SyncService] ✗ Error during sync: $e');
       // Retry after 10 seconds

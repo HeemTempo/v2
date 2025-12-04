@@ -138,13 +138,13 @@ class _IntroSliderScreenState extends State<IntroSliderScreen> with SingleTicker
                 OnboardingScreenContent(
                   title: loc.onboardingTitle1,
                   description: loc.onboardingDescription1,
-                  icon: Icons.report,
+                  icon: Icons.report_problem_rounded,
                   imagePath: 'assets/images/report1.jpg',
                 ),
                 OnboardingScreenContent(
                   title: loc.onboardingTitle2,
                   description: loc.onboardingDescription2,
-                  icon: Icons.park,
+                  icon: Icons.event_available_rounded,
                   imagePath: 'assets/images/openspace_detail.jpg',
                 ),
                 UserTypeScreenContent(onUserTypeSelected: _onUserTypeSelected),

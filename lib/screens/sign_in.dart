@@ -240,17 +240,18 @@ class _SignInScreenState extends State<SignInScreen> {
                             const SizedBox(height: 16),
                             Text(
                               loc.welcomeBack,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               loc.signInSubtitle,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
-                                color: AppConstants.grey,
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -260,6 +261,7 @@ class _SignInScreenState extends State<SignInScreen> {
                             if (connectivityService.isOnline) ...[
                               TextFormField(
                                 controller: _usernameController,
+                                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                                 decoration: InputDecoration(
                                   labelText: loc.usernameLabel,
                                   hintText: loc.usernameHint,
@@ -277,6 +279,7 @@ class _SignInScreenState extends State<SignInScreen> {
                               TextFormField(
                                 controller: _passwordController,
                                 obscureText: _obscurePassword,
+                                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                                 decoration: InputDecoration(
                                   labelText: loc.passwordLabel,
                                   hintText: loc.passwordHint,
@@ -317,7 +320,10 @@ class _SignInScreenState extends State<SignInScreen> {
                                           });
                                         },
                                       ),
-                                      Text(loc.rememberMe),
+                                      Text(
+                                        loc.rememberMe,
+                                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                                      ),
                                     ],
                                   ),
                                   TextButton(
@@ -403,7 +409,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                 },
                                 child: Text(
                                   loc.dontHaveAccount,
-                                  style: const TextStyle(color: Colors.grey),
+                                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
                                 ),
                               ),
                           ],

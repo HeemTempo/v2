@@ -346,11 +346,17 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     double? lat;
     double? lon;
     String? spaceName;
+    String? street;
+    String? district;
+
 
     if (_selectedSpace != null) {
       lat = _selectedSpace!.point.latitude;
       lon = _selectedSpace!.point.longitude;
       spaceName = _selectedSpace!.name;
+      street = _selectedSpace!.street;
+      district = _selectedSpace!.district;
+
     } else if (_selectedPosition != null) {
       lat = _selectedPosition!.latitude;
       lon = _selectedPosition!.longitude;
@@ -360,7 +366,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       Navigator.pushNamed(
         context,
         '/report-issue',
-        arguments: {'latitude': lat, 'longitude': lon, 'spaceName': spaceName},
+        arguments: {'latitude': lat, 'longitude': lon, 'spaceName': spaceName, 'street': street, 'district': district},
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

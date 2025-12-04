@@ -317,6 +317,9 @@ class AppLocalizationsSw extends AppLocalizations {
   String get spaceNameLabel => 'Jina la Nafasi';
 
   @override
+  String get districtLabel => 'Wilaya';
+
+  @override
   String get coordinatesLabel => 'Kuratibu';
 
   @override
@@ -732,7 +735,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get offlineLoginHint => 'Uko nje ya mtandao. Gusa hapa chini ili kuendelea na kikao chako kilichohifadhiwa';
 
   @override
-  String get invalidCredentials => 'Jina la mtumiaji au nywila si sahihi';
+  String get invalidCredentials => 'Jina la mtumiaji au nenosiri si sahihi';
 
   @override
   String get adminNotAllowed => 'Wasimamizi hawaruhusiwi kuingia hapa.';
@@ -741,5 +744,56 @@ class AppLocalizationsSw extends AppLocalizations {
   String get streetLabel => 'Mtaa';
 
   @override
-  String get streetRequired => 'Tafadhali chagua mtaa';
+  String get offlineBanner => 'Huna intaneti';
+
+  @override
+  String get connectingBanner => 'Inaunganisha...';
+
+  @override
+  String get retryButton => 'JARIBU';
+
+  @override
+  String get syncSuccess => 'Mafanikio!';
+
+  @override
+  String syncReportsSubmitted(Object count) {
+    return 'Ripoti $count zimewekwa';
+  }
+
+  @override
+  String syncBookingsSubmitted(Object count) {
+    return 'Miadi $count imewekwa';
+  }
+
+  @override
+  String syncReportNumber(Object reportId) {
+    return 'Nambari: $reportId';
+  }
+
+  @override
+  String get errorNoInternet => 'Hakuna mtandao. Tafadhali angalia muunganisho wako wa intaneti.';
+
+  @override
+  String get errorServerIssue => 'Tatizo la seva. Tafadhali jaribu tena baadaye.';
+
+  @override
+  String get errorTimeout => 'Muda umeisha. Mtandao unakuwa polepole, jaribu tena.';
+
+  @override
+  String get errorAuth => 'Tafadhali ingia tena katika akaunti yako.';
+
+  @override
+  String get errorGeneric => 'Kuna tatizo. Tafadhali jaribu tena.';
+
+  @override
+  String get errorOfflineSaved => 'Mtandao haupo. Takwimu zimehifadhiwa na zitatumwa mara mtandao utakaporejesha.';
+
+  @override
+  String get routeSearching => 'Inatafuta njia...';
+
+  @override
+  String get searchLocation => 'Tafuta eneo';
+
+  @override
+  String get closeButton => 'FUNGA';
 }

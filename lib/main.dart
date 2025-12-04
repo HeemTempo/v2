@@ -1,4 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:openspace_mobile_app/config/app_config.dart';
+import 'package:openspace_mobile_app/widget/connectivity_banner.dart';
+import 'package:openspace_mobile_app/widget/environment_badge.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:openspace_mobile_app/api/graphql/graphql_service.dart';
 import 'package:openspace_mobile_app/core/network/connectivity_service.dart';
@@ -10,7 +14,6 @@ import 'package:openspace_mobile_app/model/Notification.dart';
 import 'package:openspace_mobile_app/providers/booking_provider.dart';
 import 'package:openspace_mobile_app/providers/locale_provider.dart';
 import 'package:openspace_mobile_app/providers/notification_provider.dart';
-
 import 'package:openspace_mobile_app/providers/report_provider.dart';
 import 'package:openspace_mobile_app/providers/theme_provider.dart';
 import 'package:openspace_mobile_app/providers/user_provider.dart';
@@ -44,25 +47,105 @@ import 'package:openspace_mobile_app/utils/alert/access_denied_dialog.dart';
 import 'package:openspace_mobile_app/utils/alert/error_dialog.dart';
 import 'package:openspace_mobile_app/utils/permission.dart';
 import 'package:openspace_mobile_app/utils/theme.dart';
+import 'package:openspace_mobile_app/services/notification_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await requestNotificationPermission();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    print("DEBUG: WidgetsFlutterBinding initialized");
 
-  // Initialize ThemeProvider and load saved theme
-  final themeProvider = ThemeProvider();
-  await themeProvider.loadTheme().catchError((e) {
-    print('Failed to load theme: $e');
-  });
+    try {
+      await requestNotificationPermission();
+      print("DEBUG: Notification permission requested");
+    } catch (e) {
+      print("ERROR: Failed to request notification permission: $e");
+      // Permission failure shouldn't block the app, so we continue
+    }
 
-  // Initialize services
-  SyncService().init();
+    // Initialize ThemeProvider and load saved theme
+    final themeProvider = ThemeProvider();
+    try {
+      await themeProvider.loadTheme();
+      print("DEBUG: Theme loaded");
+    } catch (e) {
+      print('WARNING: Failed to load theme: $e');
+    }
 
-  runApp(MyApp(themeProvider: themeProvider));
+    // Initialize AppConfig
+    try {
+      const envFile = kReleaseMode ? '.env.production' : '.env.development';
+      await AppConfig.load(envFile: envFile);
+      print("DEBUG: AppConfig loaded from $envFile");
+    } catch (e) {
+      print("CRITICAL ERROR: Failed to load AppConfig: $e");
+      runApp(ErrorApp(message: "Failed to load configuration: $e"));
+      return; // Stop execution
+    }
+
+    // Initialize services
+    try {
+      final syncService = SyncService();
+      syncService.onSyncComplete = (successCount, failCount, reportCount, bookingCount, reportIds) {
+        print("SYNC SUCCESS: $successCount items synced successfully!");
+        print("Reports: $reportCount, Bookings: $bookingCount");
+        print("Report IDs: $reportIds");
+        
+        // Show user-friendly notification
+        NotificationService.showSyncSuccess(reportCount, bookingCount, reportIds);
+      };
+      syncService.init();
+      print("DEBUG: SyncService initialized");
+    } catch (e) {
+      print("ERROR: Failed to initialize SyncService: $e");
+    }
+
+    runApp(MyApp(themeProvider: themeProvider));
+    print("DEBUG: runApp called");
+  } catch (e, stack) {
+    print("CRITICAL ERROR in main: $e");
+    print(stack);
+    runApp(ErrorApp(message: "Critical startup error: $e"));
+  }
+}
+
+class ErrorApp extends StatelessWidget {
+  final String message;
+  const ErrorApp({super.key, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        backgroundColor: Colors.red.shade100,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 20),
+                const Text(
+                  "Startup Error",
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.red),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16, color: Colors.black87),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -72,10 +155,35 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: _initializeApp(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const MaterialApp(
+            home: Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
+        
+        if (snapshot.hasError) {
+          return ErrorApp(message: 'Initialization failed: ${snapshot.error}');
+        }
+        
+        return _buildApp();
+      },
+    );
+  }
+  
+  Future<void> _initializeApp() async {
+    await Future.delayed(const Duration(milliseconds: 100));
+  }
+  
+  Widget _buildApp() {
     final client = GraphQLService().client;
-      final connectivityService = ConnectivityService();
-      final reportLocal = ReportLocal();
-      final reportRepository = ReportRepository(localService: reportLocal);
+    final connectivityService = ConnectivityService();
+    final reportLocal = ReportLocal();
+    final reportRepository = ReportRepository(localService: reportLocal);
 
     return MultiProvider(
       providers: [
@@ -116,7 +224,46 @@ class MyApp extends StatelessWidget {
           return GraphQLProvider(
             client: ValueNotifier(client),
             child: MaterialApp(
+              scaffoldMessengerKey: NotificationService.scaffoldMessengerKey,
               debugShowCheckedModeBanner: false,
+              builder: (context, child) {
+                ErrorWidget.builder = (FlutterErrorDetails details) {
+                  return Scaffold(
+                    body: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                            const SizedBox(height: 16),
+                            const Text('Something went wrong', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            if (kDebugMode) Text(details.exception.toString(), textAlign: TextAlign.center),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => Navigator.of(context).pushReplacementNamed('/'),
+                              child: const Text('Restart App'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                };
+                
+                return Stack(
+                  children: [
+                    Column(
+                      children: [
+                        const ConnectivityBanner(),
+                        Expanded(child: child!),
+                      ],
+                    ),
+                    const EnvironmentBadge(),
+                  ],
+                );
+              },
               title: 'Smart GIS App',
               theme: AppTheme.lightTheme,
               darkTheme: AppTheme.darkTheme,

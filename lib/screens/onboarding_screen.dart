@@ -34,44 +34,57 @@ class OnboardingScreenContent extends StatelessWidget {
           children: [
             const Spacer(),
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 32),
+              width: 200,
+              height: 200,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.asset(
-                  imagePath,
-                  height: 200,
-                  fit: BoxFit.cover,
+              child: Container(
+                margin: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 100,
+                  color: AppConstants.primaryBlue,
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 40),
             Semantics(
               label: title,
               child: Text(
                 title,
-                style: Theme.of(context).textTheme.headlineMedium,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
+              padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Semantics(
                 label: description,
                 child: Text(
                   description,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    height: 1.5,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.white,
+                    height: 1.6,
                   ),
                 ),
               ),

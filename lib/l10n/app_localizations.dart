@@ -707,6 +707,12 @@ abstract class AppLocalizations {
   /// **'Space Name'**
   String get spaceNameLabel;
 
+  /// No description provided for @districtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'District'**
+  String get districtLabel;
+
   /// No description provided for @coordinatesLabel.
   ///
   /// In en, this message translates to:
@@ -1520,7 +1526,7 @@ abstract class AppLocalizations {
   /// No description provided for @offlineLoginSuccess.
   ///
   /// In en, this message translates to:
-  /// **'You have successfully logged in offline'**
+  /// **'Successfully logged in offline'**
   String get offlineLoginSuccess;
 
   /// No description provided for @offlineLoginHint.
@@ -1538,7 +1544,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminNotAllowed.
   ///
   /// In en, this message translates to:
-  /// **'Admins are not allowed to login here.'**
+  /// **'Administrators are not allowed to login here.'**
   String get adminNotAllowed;
 
   /// No description provided for @streetLabel.
@@ -1547,11 +1553,101 @@ abstract class AppLocalizations {
   /// **'Street'**
   String get streetLabel;
 
-  /// No description provided for @streetRequired.
+  /// No description provided for @offlineBanner.
   ///
   /// In en, this message translates to:
-  /// **'Please select a street'**
-  String get streetRequired;
+  /// **'You are offline'**
+  String get offlineBanner;
+
+  /// No description provided for @connectingBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting...'**
+  String get connectingBanner;
+
+  /// No description provided for @retryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'RETRY'**
+  String get retryButton;
+
+  /// No description provided for @syncSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Success!'**
+  String get syncSuccess;
+
+  /// No description provided for @syncReportsSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} reports submitted'**
+  String syncReportsSubmitted(Object count);
+
+  /// No description provided for @syncBookingsSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} bookings submitted'**
+  String syncBookingsSubmitted(Object count);
+
+  /// No description provided for @syncReportNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Report #: {reportId}'**
+  String syncReportNumber(Object reportId);
+
+  /// No description provided for @errorNoInternet.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection. Please check your network.'**
+  String get errorNoInternet;
+
+  /// No description provided for @errorServerIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Server error. Please try again later.'**
+  String get errorServerIssue;
+
+  /// No description provided for @errorTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Request timed out. Network is slow, please try again.'**
+  String get errorTimeout;
+
+  /// No description provided for @errorAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in again to your account.'**
+  String get errorAuth;
+
+  /// No description provided for @errorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred. Please try again.'**
+  String get errorGeneric;
+
+  /// No description provided for @errorOfflineSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'You are offline. Data has been saved and will be synced when connection is restored.'**
+  String get errorOfflineSaved;
+
+  /// No description provided for @routeSearching.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding route...'**
+  String get routeSearching;
+
+  /// No description provided for @searchLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Search location'**
+  String get searchLocation;
+
+  /// No description provided for @closeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'CLOSE'**
+  String get closeButton;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

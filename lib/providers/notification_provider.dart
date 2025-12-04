@@ -11,7 +11,7 @@ class NotificationProvider extends ChangeNotifier {
 
   NotificationProvider()
       : _repository = NotificationRepository(
-          NotificationLocalDataSource(),
+          localDataSource: NotificationLocalDataSource(),
         );
 
   List<ReportNotification> get notifications => _notifications;

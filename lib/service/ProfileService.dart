@@ -1,15 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'auth_service.dart';
+import '../config/app_config.dart';
+import '../service/auth_service.dart';
 
 class ProfileService {
-  static const String _baseUrl = 'http://192.168.0.56:8001'; // Update to HTTPS in production
-  static const String _profileEndpoint = '/api/v1/profile';
+  final String _baseUrl = AppConfig.baseUrl;
+  final String _profileEndpoint = 'api/v1/profile/';
 
-  static Future<Map<String, dynamic>> fetchProfile() async {
-    final token = await AuthService.getToken();
-    if (token == null) {
-      print('ProfileService: No authentication token found. User needs to log in.');
+  Future<Map<String, dynamic>> fetchProfile(String token) async {
+    if (token.isEmpty) {
       throw Exception('Please log in to access your profile.');
     }
 

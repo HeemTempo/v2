@@ -2,17 +2,20 @@ import 'dart:async';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:openspace_mobile_app/config/app_config.dart';
+
 class GraphQLService {
   late final GraphQLClient client;
   final bool debugMode;
 
   GraphQLService({
-    String endpoint = 'http://192.168.0.56:8001/graphql/',
+    String? endpoint,
     Duration timeout = const Duration(seconds: 30),
     this.debugMode = false,
   }) {
+    final url = endpoint ?? AppConfig.graphqlUrl;
     final httpLink = HttpLink(
-      endpoint,
+      url,
       httpClient: TimeoutHttpClient(timeout),
       defaultHeaders: {'Content-Type': 'application/json'},
     );

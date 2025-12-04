@@ -5,11 +5,15 @@ class Report {
   final String reportId;
   final String description;
   final String? email;
+  final String? phone;
   final String? file;
   final DateTime createdAt;
   final double? latitude;
   final double? longitude;
   final String? spaceName;
+  final String? district;
+  final String? street;
+  final String? userId; // Store userId as string for payload
   final User? user;
   final String? status;
 
@@ -18,11 +22,15 @@ class Report {
     required this.reportId,
     required this.description,
     this.email,
+    this.phone,
     this.file,
     required this.createdAt,
     this.latitude,
     this.longitude,
     this.spaceName,
+    this.district,
+    this.street,
+    this.userId,
     this.user,
     this.status,
   });
@@ -61,6 +69,7 @@ class Report {
       reportId: reportIdValue,
       description: json['description']?.toString() ?? '',
       email: json['email']?.toString(),
+      phone: json['phone']?.toString(),
       file: json['file']?.toString(),
       createdAt: parsedDate,
       latitude: json['latitude'] != null 
@@ -70,8 +79,11 @@ class Report {
           ? (json['longitude'] as num).toDouble()
           : null,
       spaceName: json['space_name']?.toString() ?? json['spaceName']?.toString(),
+      district: json['district']?.toString(),
+      street: json['street']?.toString(),
+      userId: json['user_id']?.toString(),
       status: json['status']?.toString() ?? 'submitted',
-      user: null, // REST response typically doesn't include user
+      user: null, // REST response typically doesn't include user object
     );
   }
 
@@ -108,11 +120,15 @@ class Report {
       reportId: json['reportId'] as String,
       description: json['description'] as String,
       email: json['email'] as String?,
+      phone: json['phone'] as String?,
       file: json['file'] as String?,
       createdAt: parsedCreatedAt,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       spaceName: json['spaceName'] as String?,
+      district: json['district'] as String?,
+      street: json['street'] as String?,
+      userId: json['userId'] as String?,
       user: reportUser,
       status: json['status'] as String?,
     );
@@ -123,11 +139,15 @@ class Report {
     String? reportId,
     String? description,
     String? email,
+    String? phone,
     String? file,
     DateTime? createdAt,
     double? latitude,
     double? longitude,
     String? spaceName,
+    String? district,
+    String? street,
+    String? userId,
     String? status,
     User? user,
   }) {
@@ -136,11 +156,15 @@ class Report {
       reportId: reportId ?? this.reportId,
       description: description ?? this.description,
       email: email ?? this.email,
+      phone: phone ?? this.phone,
       file: file ?? this.file,
       createdAt: createdAt ?? this.createdAt,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       spaceName: spaceName ?? this.spaceName,
+      district: district ?? this.district,
+      street: street ?? this.street,
+      userId: userId ?? this.userId,
       status: status ?? this.status,
       user: user ?? this.user,
     );
@@ -152,11 +176,15 @@ class Report {
       'reportId': reportId,
       'description': description,
       'email': email,
+      'phone': phone,
       'file': file,
       'createdAt': createdAt.toIso8601String(),
       'latitude': latitude,
       'longitude': longitude,
       'spaceName': spaceName,
+      'district': district,
+      'street': street,
+      'userId': userId,
       'status': status,
       'user': user?.toJsonString(),
     };

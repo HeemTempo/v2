@@ -11,6 +11,10 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+docs/**
+.git_corrupt_backup/*
+.env.production
+.env.development
 
 # IntelliJ related
 *.iml

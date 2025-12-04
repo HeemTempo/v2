@@ -121,7 +121,6 @@
   "reportHeader": "Report unused or underutilized public spaces in your community",
   "locationDetailsTitle": "Location Details",
   "spaceNameLabel": "Space Name",
-  "districtLabel": "District",
   "coordinatesLabel": "Coordinates",
   "yourInfoTitle": "Your Information",
   "phoneLabel": "Phone Number (Optional)",
@@ -300,14 +299,213 @@
   "passwordRequired": "Password is required",
   "connectionTimeout": "Connection timed out. Please check your internet and try again.",
   "offlineNoCachedToken": "No offline login available. Please connect to the internet.",
-  "offlineLoginSuccess": "Successfully logged in offline",
+{
+  "spaceNotAvailable": "This space is currently not available for booking.",
+  "pinpointedNotPublic": "Pinpointed area is not a Public open space",
+  "unableFetchLocation": "Unable to fetch location.",
+  "locationError": "Location error",
+  "directionsError": "Unable to fetch your current location.",
+  "distanceInfo": "Directions to {area}:\nStraight-line distance: {distance} km.\n(Implement a directions API for detailed navigation.)",
+  "@distanceInfo": {
+    "placeholders": {
+      "area": {},
+      "distance": {}
+    }
+  },
+
+  "reportPageTitle": "OpenSpace Report",
+  "reportHeader": "Report unused or underutilized public spaces in your community",
+  "locationDetailsTitle": "Location Details",
+  "spaceNameLabel": "Space Name",
+  "coordinatesLabel": "Coordinates",
+  "yourInfoTitle": "Your Information",
+  "phoneLabel": "Phone Number (Optional)",
+  "issueDescriptionTitle": "Issue Description",
+  "issueDescriptionHint": "Please provide a clear description of the issue you've observed...",
+  "attachmentsTitle": "Attachments",
+  "attachmentsHint": "Add photos or documents to support your report (max 5 files)",
+  "addPhotosButton": "Add Photos",
+  "addDocumentsButton": "Add Documents",
+  "reportGuidelinesTitle": "Reporting Guidelines",
+  "guideline1": "Provide accurate details to assist government officials.",
+  "guideline2": "Avoid duplicate reports; check existing submissions.",
+  "guideline3": "Submit issues that benefit the public (e.g., infrastructure, safety).",
+  "guideline4": "Attach clear evidence (photos, documents) if available.",
+  "submitReportButton": "Submit Report",
+  "submittingLabel": "Submitting...",
+  "reportSubmittedMessage": "Report submitted successfully!",
+
+
+
+  "bookingPageTitle": "Book Community Space",
+  "bookingHeader": "Booking Details",
+  "fullNameLabel": "Full Name *",
+  "phoneBookingLabel": "Phone Number *",
+  "emailBookingLabel": "Email Address (Optional)",
+  "spaceDistrictLabel": "Space Name / District *",
+  "startDateLabel": "Start Date *",
+  "endDateLabel": "End Date",
+  "startTimeLabel": "Start Time *",
+  "endTimeLabel": "End Time *",
+  "activitiesLabel": "Activities Planned *",
+  "submitBookingButton": "Submit Booking Request",
+  "bookingTermsTitle": "Booking Terms",
+  "bookingTerm1": "Bookings are subject to availability",
+  "bookingTerm2": "Please arrive on time for your scheduled slot",
+  "bookingTerm3": "Cancellations must be made at least 24 hours in advance",
+  "bookingTerm4": "Keep the space clean and follow all facility rules",
+
+  "reportedIssuesTitle": "Reported Issues",
+  "noIssuesMessage": "No issues reported yet.",
+  "viewMapLabel": "View Map",
+  "statusResolved": "Resolved",
+  "statusPending": "Pending",
+  "statusRejected": "Rejected",
+  "statusUnknown": "Unknown",
+
+  "profileTitle": "Profile",
+  "profileNoLogin": "Please log in to view your profile.",
+  "profileFailedLoad": "Failed to load profile",
+  "profileNoData": "No profile data available.",
+  "fetchProfile": "Fetch Profile",
+  "sessionExpired": "Session expired or invalid. Please log in again.",
+
+  "generalSection": "GENERAL",
+  "activitySection": "ACTIVITY",
+
+  "profileSettings": "Profile Settings",
+  "profileSettingsSubtitle": "Update and modify your profile",
+
+  "privacy": "Privacy",
+  "privacySubtitle": "Change your password",
+  "privacyPopupTitle": "Privacy Settings",
+  "privacyPopupMessage": "Password change feature coming soon!",
+  "privacyPopupButton": "Got it!",
+
+  "myReports": "My Reports",
+  "myReportsSubtitle": "View and manage your reports",
+
+  "myBookings": "My Bookings",
+  "myBookingsSubtitle": "View and manage your bookings",
+
+  "editProfileTitle": "Edit Profile",
+  "tapChangePhoto": "Tap to change profile photo",
+  "personalInformation": "Personal Information",
+
+  "name": "Name",
+  "enterName": "Enter your name",
+  "emailInput": "Email",
+  "enterEmail": "Enter your email",
+  "phoneNumber": "Phone Number",
+  "enterPhoneNumber": "Enter your phone number",
+  "passwordInput": "Password",
+  "enterPassword": "Enter new password",
+
+  "saveChanges": "Save Changes",
+  "profileUpdatedSuccess": "Profile updated successfully!",
+
+  "settingsTitle": "Settings",
+  "changeLanguage": "Change Language",
+  "theme": "Theme",
+  "notificationSettings": "Notification Settings",
+
+  "resetPasswordTitle": "Reset Password",
+  "resetPasswordInstruction": "Enter your new password below.",
+  "resetPasswordNewPassword": "New Password",
+  "resetPasswordConfirmPassword": "Confirm New Password",
+  "resetPasswordSubmitButton": "Set New Password",
+  "resetPasswordSuccessMessage": "{message} You can now log in with your new password.",
+  "@resetPasswordSuccessMessage": {
+    "placeholders": {
+      "message": {}
+    }
+  },
+  "resetPasswordErrorMessageEmptyPassword": "Please enter a new password",
+  "resetPasswordErrorMessageShortPassword": "Password must be at least 8 characters long",
+  "resetPasswordErrorMessageConfirmEmpty": "Please confirm your new password",
+  "resetPasswordErrorMessageMismatch": "Passwords do not match",
+
+
+  "themeTitle": "Choose Theme",
+  "themeLightMode": "Light Mode",
+  "themeDarkMode": "Dark Mode",
+
+
+  "languageTitle": "Select Language", 
+  "english": "English   ",
+  
+  "kiswahili": "Kiswahili",
+
+  "userTypeTitle": "Join OpenSpace",
+  "userTypeDescription": "Sign in to track your reports and bookings, or continue anonymously to explore open spaces.",
+  "signInRegisteredButton": "Sign In as Registered User",
+  "continueAnonymousButton": "Continue as Anonymous",
+  "termsPrivacyButton": "Terms & Privacy Policy",
+
+
+  "onboardingTitle1": "Report Issues",
+  "onboardingDescription1": "Easily report unusual activities in open spaces to keep your community safe.",
+
+  "onboardingTitle2": "Book Spaces",
+  "onboardingDescription2": "Reserve open spaces for community events or personal use with a few taps.",
+
+  "skipButton": "Skip",
+  "backButton": "Back",
+  "nextButton": "Next",
+
+
+
+  "search": "Search",
+  "enterReferenceId": "Enter Reference ID",
+  "enterReferenceIdHint": "Enter Reference ID...",
+  "enterReferenceIdPrompt": "Enter a Reference ID and click Search to view report details.",
+  "enterReferenceIdError": "Please enter a Reference ID",
+  "noReportFound": "No report found for Reference ID: {refId}",
+  "@noReportFound": {
+    "description": "Message when no report matches the entered Reference ID",
+    "placeholders": {
+      "refId": {}
+    }
+  },
+  "notAvailable": "N/A",
+  "anonymousUser": "Anonymous User",
+  "attachmentViewNotImplemented": "Attachment viewing not yet implemented",
+  "description": "Description",
+  "attachments": "Attachments",
+   "noAttachments": "No attachments provided.",
+  "location": "Location",
+  "reportId": "Report ID",
+
+ 
+  "activeBookings": "Active Bookings",
+  "pastBookings": "Past Bookings",
+  "pendingBookings": "Pending Bookings",
+  "noBookingsMessage": "No bookings found.",
+  "status": "Status",
+  "contact": "Contact",
+  "purpose": "Purpose",
+  "district": "District",
+  "error": "Error",
+
+  "okButton": "OK",
+
+  "onlineMode": "Online",
+   "offlineMode": "Offline",
+  "usernameRequired": "Username is required",
+  "passwordRequired": "Password is required",
+  "connectionTimeout": "Connection timed out. Please check your internet and try again.",
+  "offlineNoCachedToken": "No offline login available. Please connect to the internet.",
+  "offlineLoginSuccess": "You have successfully logged in offline",
   "offlineLoginHint": "You are offline. Tap below to continue with your saved session",
   "invalidCredentials": "Invalid username or password",
-  "adminNotAllowed": "Administrators are not allowed to login here.",
+  "adminNotAllowed": "Admins are not allowed to login here.",
   "streetLabel": "Street",
+  "streetRequired": "Please select a street",
+
   "offlineBanner": "You are offline",
   "connectingBanner": "Connecting...",
   "retryButton": "RETRY",
+
   "syncSuccess": "Success!",
   "syncReportsSubmitted": "{count} reports submitted",
   "@syncReportsSubmitted": {
@@ -327,13 +525,53 @@
       "reportId": {}
     }
   },
+
   "errorNoInternet": "No internet connection. Please check your network.",
   "errorServerIssue": "Server error. Please try again later.",
   "errorTimeout": "Request timed out. Network is slow, please try again.",
+  "errorValidation": "Please fill in {field} correctly.",
+  "@errorValidation": {
+    "placeholders": {
+      "field": {}
+    }
+  },
   "errorAuth": "Please sign in again to your account.",
   "errorGeneric": "An error occurred. Please try again.",
   "errorOfflineSaved": "You are offline. Data has been saved and will be synced when connection is restored.",
+
   "routeSearching": "Finding route...",
+  "routeDistance": "Distance: {distance}",
+  "@routeDistance": {
+    "placeholders": {
+      "distance": {}
+    }
+  },
+  "routeDuration": "Duration: {duration}",
+  "@routeDuration": {
+    "placeholders": {
+      "duration": {}
+    }
+  },
+  "routeError": "Unable to get route: {error}",
+  "@routeError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "searchLocation": "Search location",
-  "closeButton": "CLOSE"
+  "closeButton": "CLOSE",
+  "minutesShort": "{count} min",
+  "@minutesShort": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "hoursMinutes": "{hours} hr {minutes} min",
+  "@hoursMinutes": {
+    "placeholders": {
+      "hours": {},
+      "minutes": {}
+    }
+  }
+
 }

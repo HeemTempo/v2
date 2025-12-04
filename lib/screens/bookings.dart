@@ -136,48 +136,157 @@ class _MyBookingsPageState extends State<MyBookingsPage>
             final booking = bookings[index];
 
             return Card(
-              margin: const EdgeInsets.only(bottom: 12.0),
-              elevation: 4,
+              margin: const EdgeInsets.only(bottom: 16.0),
+              elevation: 3,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(16),
+              ),
               color: AppConstants.white,
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      booking.username,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: AppConstants.primaryBlue,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white,
+                      _getStatusColor(booking.status).withOpacity(0.03),
+                    ],
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header with icon and title
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppConstants.primaryBlue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.event_note,
+                              color: AppConstants.primaryBlue,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              booking.username,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                color: AppConstants.black,
+                              ),
+                            ),
+                          ),
+                          // Status badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _getStatusColor(booking.status),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              booking.status == "pending_offline"
+                                  ? "Pending (Offline)"
+                                  : booking.status.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildDetailRow(locale.contact, booking.contact),
-                    _buildDetailRow(locale.purpose, booking.purpose),
-                    _buildDetailRow(locale.district, booking.district),
-                    _buildDetailRow(
-                        locale.startDateLabel, formatDate(booking.startDate)),
-                    if (booking.endDate != null)
-                      _buildDetailRow(
-                          locale.endDateLabel, formatDate(booking.endDate!)),
-                    Text(
-                      '${locale.status}: ${booking.status == "pending_offline" ? "Pending (Offline)" : booking.status}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: _getStatusColor(booking.status),
-                        fontWeight: FontWeight.w500,
+                      const SizedBox(height: 16),
+                      const Divider(height: 1, thickness: 1),
+                      const SizedBox(height: 12),
+                      // Details with icons
+                      _buildIconDetailRow(
+                        Icons.phone_outlined,
+                        locale.contact,
+                        booking.contact,
                       ),
-                    ),
-                  ],
+                      _buildIconDetailRow(
+                        Icons.description_outlined,
+                        locale.purpose,
+                        booking.purpose,
+                      ),
+                      _buildIconDetailRow(
+                        Icons.location_on_outlined,
+                        locale.district,
+                        booking.district,
+                      ),
+                      _buildIconDetailRow(
+                        Icons.calendar_today_outlined,
+                        locale.startDateLabel,
+                        formatDate(booking.startDate),
+                      ),
+                      if (booking.endDate != null)
+                        _buildIconDetailRow(
+                          Icons.event_available_outlined,
+                          locale.endDateLabel,
+                          formatDate(booking.endDate!),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildIconDetailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: AppConstants.primaryBlue.withOpacity(0.7),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppConstants.black,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

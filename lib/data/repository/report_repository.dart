@@ -22,8 +22,12 @@ class ReportRepository {
   Future<Report> submitReport({
     required String description,
     String? email,
+    String? phone,
     File? file,
     String? spaceName,
+    String? district,
+    String? street,
+    String? userId,
     double? latitude,
     double? longitude,
   }) async {
@@ -34,8 +38,12 @@ class ReportRepository {
       return await _saveOfflineReport(
         description: description,
         email: email,
+        phone: phone,
         file: file,
         spaceName: spaceName,
+        district: district,
+        street: street,
+        userId: userId,
         latitude: latitude,
         longitude: longitude,
       );
@@ -46,8 +54,12 @@ class ReportRepository {
       final response = await ReportingService.createReport(
         description: description,
         email: email,
+        phone: phone,
         file: file,
         spaceName: spaceName,
+        district: district,
+        street: street,
+        userId: userId,
         latitude: latitude,
         longitude: longitude,
       );
@@ -64,8 +76,12 @@ class ReportRepository {
       return await _saveOfflineReport(
         description: description,
         email: email,
+        phone: phone,
         file: file,
         spaceName: spaceName,
+        district: district,
+        street: street,
+        userId: userId,
         latitude: latitude,
         longitude: longitude,
       );
@@ -76,8 +92,12 @@ class ReportRepository {
   Future<Report> _saveOfflineReport({
     required String description,
     String? email,
+    String? phone,
     File? file,
     String? spaceName,
+    String? district,
+    String? street,
+    String? userId,
     double? latitude,
     double? longitude,
   }) async {
@@ -86,11 +106,15 @@ class ReportRepository {
       reportId: 'pending',
       description: description,
       email: email,
+      phone: phone,
       file: file?.path,
       createdAt: DateTime.now(),
       latitude: latitude,
       longitude: longitude,
       spaceName: spaceName,
+      district: district,
+      street: street,
+      userId: userId,
       user: null,
       status: 'pending',
     );
@@ -124,8 +148,12 @@ class ReportRepository {
         final response = await ReportingService.createReport(
           description: report.description,
           email: report.email,
+          phone: report.phone,
           file: report.file != null ? File(report.file!) : null,
           spaceName: report.spaceName,
+          district: report.district,
+          street: report.street,
+          userId: report.userId,
           latitude: report.latitude,
           longitude: report.longitude,
         );

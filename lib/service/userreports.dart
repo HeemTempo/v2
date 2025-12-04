@@ -4,8 +4,10 @@ import 'package:http/http.dart' as http;
 import '../model/Report.dart';
 import 'auth_service.dart';
 
+import 'package:openspace_mobile_app/config/app_config.dart';
+
 class ReportService {
-  static const String baseUrl = 'http://192.168.0.56:8001';
+  static String get baseUrl => AppConfig.baseUrl.endsWith('/') ? AppConfig.baseUrl.substring(0, AppConfig.baseUrl.length - 1) : AppConfig.baseUrl;
   static const String endpoint = '/api/v1/user-reports/';
 
   Future<List<Report>> fetchUserReports() async {

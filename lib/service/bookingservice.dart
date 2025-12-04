@@ -2,15 +2,18 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:openspace_mobile_app/model/Booking.dart';
-import 'auth_service.dart';
+import 'package:openspace_mobile_app/service/auth_service.dart';
 
 class BookingService {
-  static const String _baseUrl = "http://192.168.0.56:8001"; // Update to HTTPS in production
-  static const String _createBookingEndpoint = "/api/v1/book-open-space/";
-  static const String _myBookingsEndpoint = "/api/v1/my-bookings/";
-
+  final String _baseUrl;
+  final String _createBookingEndpoint = '/booking/spaces/bookings/';
+  final String _myBookingsEndpoint = '/booking/my-bookings/';
   String? _lastError;
-  String? get getLastError => _lastError;
+
+  BookingService({String? baseUrl})
+      : _baseUrl = baseUrl ?? 'http://your-server-url.com';
+
+  String? get lastError => _lastError;
 
   // Sanitize input to prevent injection attacks
   String _sanitizeInput(String input) {

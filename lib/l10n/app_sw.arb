@@ -121,6 +121,7 @@
   "reportHeader": "Ripoti nafasi zisizotumika au zisizotumika vizuri katika jamii yako",
   "locationDetailsTitle": "Maelezo ya Eneo",
   "spaceNameLabel": "Jina la Nafasi",
+  "districtLabel": "Wilaya",
   "coordinatesLabel": "Kuratibu",
   "yourInfoTitle": "Taarifa Zako",
   "phoneLabel": "Nambari ya Simu (Hiari)",
@@ -294,11 +295,42 @@
   "offlineNoCachedToken": "Hakuna uwezo wa kuingia bila mtandao. Tafadhali ungana na intaneti.",
   "offlineLoginSuccess": "Umefanikiwa kuingia bila mtandao",
   "offlineLoginHint": "Uko nje ya mtandao. Gusa hapa chini ili kuendelea na kikao chako kilichohifadhiwa",
-  "invalidCredentials": "Jina la mtumiaji au nywila si sahihi",
+  "invalidCredentials": "Jina la mtumiaji au nenosiri si sahihi",
   "adminNotAllowed": "Wasimamizi hawaruhusiwi kuingia hapa.",
-   "streetLabel": "Mtaa",
-  "streetRequired": "Tafadhali chagua mtaa"
+  "streetLabel": "Mtaa",
+  "offlineBanner": "Huna intaneti",
+  "connectingBanner": "Inaunganisha...",
+  "retryButton": "JARIBU",
 
+  "syncSuccess": "Mafanikio!",
+  "syncReportsSubmitted": "Ripoti {count} zimewekwa",
+  "@syncReportsSubmitted": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "syncBookingsSubmitted": "Miadi {count} imewekwa",
+  "@syncBookingsSubmitted": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "syncReportNumber": "Nambari: {reportId}",
+  "@syncReportNumber": {
+    "placeholders": {
+      "reportId": {}
+    }
+  },
 
+  "errorNoInternet": "Hakuna mtandao. Tafadhali angalia muunganisho wako wa intaneti.",
+  "errorServerIssue": "Tatizo la seva. Tafadhali jaribu tena baadaye.",
+  "errorTimeout": "Muda umeisha. Mtandao unakuwa polepole, jaribu tena.",
+  "errorAuth": "Tafadhali ingia tena katika akaunti yako.",
+  "errorGeneric": "Kuna tatizo. Tafadhali jaribu tena.",
+  "errorOfflineSaved": "Mtandao haupo. Takwimu zimehifadhiwa na zitatumwa mara mtandao utakaporejesha.",
+
+  "routeSearching": "Inatafuta njia...",
+  "searchLocation": "Tafuta eneo",
+  "closeButton": "FUNGA"
 
 }

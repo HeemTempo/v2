@@ -61,12 +61,30 @@ class AppTheme {
           color: AppConstants.grey,
         ),
       ),
-      inputDecorationTheme: const InputDecorationTheme(
+      inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppConstants.white,
-        border: OutlineInputBorder(),
+        hintStyle: TextStyle(color: AppConstants.grey.withOpacity(0.6)),
+        labelStyle: const TextStyle(color: AppConstants.grey),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppConstants.grey.withOpacity(0.3)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppConstants.grey.withOpacity(0.3)),
+        ),
         focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: AppConstants.primaryBlue),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppConstants.primaryBlue, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFD32F2F)),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 2),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -152,12 +170,32 @@ class AppTheme {
           color: AppConstants.darkTextSecondary,
         ),
       ),
-      inputDecorationTheme: const InputDecorationTheme(
+      inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppConstants.darkCard,
-        border: OutlineInputBorder(),
+        fillColor: const Color(0xFF2C2C2C),
+        hintStyle: const TextStyle(color: AppConstants.darkTextSecondary),
+        labelStyle: const TextStyle(color: AppConstants.darkTextSecondary),
+        prefixIconColor: AppConstants.darkTextSecondary,
+        suffixIconColor: AppConstants.darkTextSecondary,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppConstants.darkTextSecondary.withOpacity(0.3)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppConstants.darkTextSecondary.withOpacity(0.3)),
+        ),
         focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: AppConstants.primaryBlue),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppConstants.lightAccent, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFEF5350)),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFEF5350), width: 2),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(

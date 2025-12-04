@@ -1,23 +1,23 @@
+
 import 'dart:async';
 import 'dart:io';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
 
-class ConnectivityService with ChangeNotifier {
+class ConnectivityService extends ChangeNotifier {
   final Connectivity _connectivity = Connectivity();
-  
   bool _isOnline = false;
-  bool get isOnline => _isOnline;
-  
+  bool _isReconnecting = false;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   Timer? _recheckTimer;
+  final String _serverCheckUrl;
 
-  // Your server URL for reachability check
-  static const String _serverCheckUrl = 'http://192.168.1.132:8001/api/v1/health'; // Add health endpoint
-  static const String _fallbackCheckUrl = 'https://www.google.com'; // Fallback check
+  bool get isOnline => _isOnline;
+  bool get isReconnecting => _isReconnecting;
 
-  ConnectivityService() {
+  ConnectivityService({String? serverCheckUrl})
+      : _serverCheckUrl = serverCheckUrl ?? 'https://www.google.com' {
     _initConnectivity();
     _startMonitoring();
   }
@@ -44,6 +44,7 @@ class ConnectivityService with ChangeNotifier {
       onError: (error) {
         print('Connectivity error: $error');
         _isOnline = false;
+        _isReconnecting = false;
         notifyListeners();
       },
     );
@@ -55,12 +56,21 @@ class ConnectivityService with ChangeNotifier {
     
     if (result == ConnectivityResult.none) {
       _isOnline = false;
+      _isReconnecting = false;
       notifyListeners();
       return;
     }
 
-    // Connected to WiFi/Mobile, but check if we can actually reach the server
+    // Show reconnecting status when trying to connect
+    if (!_isOnline) {
+      _isReconnecting = true;
+      notifyListeners();
+    }
+
+    // Connected to WiFi/Mobile, check if we can reach the server
     final canReachServer = await _checkServerReachability();
+    
+    _isReconnecting = false;
     
     if (_isOnline != canReachServer) {
       _isOnline = canReachServer;
@@ -121,6 +131,9 @@ class ConnectivityService with ChangeNotifier {
 
   /// Manually check connectivity (useful for retry operations)
   Future<bool> checkConnectivity() async {
+    _isReconnecting = true;
+    notifyListeners();
+    
     final result = await _connectivity.checkConnectivity();
     await _updateConnectionStatus(result);
     return _isOnline;

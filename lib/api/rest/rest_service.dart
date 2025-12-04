@@ -1,8 +1,10 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:openspace_mobile_app/config/app_config.dart';
+
 class RestService {
-  final String baseUrl = 'http://192.168.0.56:8001/api/';
+  final String baseUrl = "${AppConfig.baseUrl}api/";
 
   Future<dynamic> getRequest(String endpoint) async {
     final response = await http.get(Uri.parse('$baseUrl$endpoint'));

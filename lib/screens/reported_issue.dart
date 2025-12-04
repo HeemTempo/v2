@@ -182,19 +182,29 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  imageUrl,
-                  width: 70,
-                  height: 70,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Image.asset(
-                    'assets/images/report1.jpg',
-                    width: 70,
-                    height: 70,
-                    fit: BoxFit.cover,
+              // Report icon with circular background
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      _getStatusColor(issue.status ?? '').withOpacity(0.2),
+                      _getStatusColor(issue.status ?? '').withOpacity(0.05),
+                    ],
                   ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _getStatusColor(issue.status ?? '').withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: Icon(
+                  Icons.description_outlined,
+                  size: 38,
+                  color: _getStatusColor(issue.status ?? ''),
                 ),
               ),
               const SizedBox(width: 14),
@@ -281,6 +291,22 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
         ),
       ),
     );
+  }
+
+  /// Get status color helper
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'resolved':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'rejected':
+        return Colors.red;
+      case 'in_progress':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
   }
 
   /// Status Chip Builder
