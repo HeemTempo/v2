@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
 
-  "appName": "OpenSpace",
+  "appName": "Kinondoni OpenSpace",
   "version": "Version 1.0.0",
   "splashTagline": "Connecting Communities",
 
@@ -83,7 +83,7 @@
   "ambulance": "Ambulance",
   "close": "Close",
 
-  "heroTitle1": "Dar es Salaam Open Spaces",
+  "heroTitle1": "Kinondoni Open Spaces",
   "heroTitle2": "Community Gardens",
   "heroTitle3": "Public Parks & Recreation",
   "heroTitle4": "Urban Green Spaces",
@@ -92,7 +92,7 @@
   "heroSubtitle3": "Fun for families and friends",
   "heroSubtitle4": "Nature in the heart of the city",
 
-  "mapScreenAppBar": "Open Spaces Map",
+  "mapScreenAppBar": "Kinondoni Open Spaces Map",
   "searchHint": "Search public open space",
   "latitudeLabel": "Latitude",
   "longitudeLabel": "Longitude",
@@ -335,5 +335,8 @@
   "errorOfflineSaved": "You are offline. Data has been saved and will be synced when connection is restored.",
   "routeSearching": "Finding route...",
   "searchLocation": "Search location",
-  "closeButton": "CLOSE"
+  "closeButton": "CLOSE",
+  "offline": "No internet",
+  "reconnecting": "Reconnecting...",
+  "retry": "Retry"
 }

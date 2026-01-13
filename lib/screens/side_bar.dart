@@ -11,10 +11,6 @@ class Sidebar extends StatelessWidget {
 
     // Define menu items here for extensibility
     final List<Map<String, dynamic>> menuItems = [
-      {'icon': Icons.dashboard, 'title': locale.dashboard, 'route': '/home'},
-      {'icon': Icons.notifications, 'title': locale.notificationsTitle, 'route': '/user-notification'},
-      {'icon': Icons.person, 'title': locale.myProfile, 'route': '/user-profile'},
-      {'divider': true},
       {'icon': Icons.help_outline, 'title': locale.helpFaqs, 'route': '/help-support'},
       {'icon': Icons.description, 'title': locale.termsConditions, 'route': '/terms'},
       {'icon': Icons.lock, 'title': locale.privacyPolicyMenu, 'route': '/privacy'}, // Assuming route exists or placeholder

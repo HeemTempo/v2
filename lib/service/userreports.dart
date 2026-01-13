@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../model/Report.dart';
 import 'auth_service.dart';
 
-import 'package:openspace_mobile_app/config/app_config.dart';
+import 'package:kinondoni_openspace_app/config/app_config.dart';
 
 class ReportService {
   static String get baseUrl => AppConfig.baseUrl.endsWith('/') ? AppConfig.baseUrl.substring(0, AppConfig.baseUrl.length - 1) : AppConfig.baseUrl;

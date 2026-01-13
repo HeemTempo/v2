@@ -1,4 +1,4 @@
-import 'package:openspace_mobile_app/data/local/rofile_local_data_source.dart';
+import 'package:kinondoni_openspace_app/data/local/rofile_local_data_source.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 

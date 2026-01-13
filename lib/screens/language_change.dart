@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/locale_provider.dart';
 import '../l10n/app_localizations.dart';
-import 'package:openspace_mobile_app/utils/constants.dart';
+import 'package:kinondoni_openspace_app/utils/constants.dart';
 
 class LanguageSettings extends StatelessWidget {
   const LanguageSettings({super.key});

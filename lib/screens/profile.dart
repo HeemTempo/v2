@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:openspace_mobile_app/data/repository/profile_repository.dart';
-import 'package:openspace_mobile_app/screens/userreports.dart';
-import 'package:openspace_mobile_app/utils/constants.dart';
-import 'package:openspace_mobile_app/screens/edit_profile.dart';
-import 'package:openspace_mobile_app/screens/pop_card.dart';
+import 'package:kinondoni_openspace_app/data/repository/profile_repository.dart';
+import 'package:kinondoni_openspace_app/screens/userreports.dart';
+import 'package:kinondoni_openspace_app/utils/constants.dart';
+import 'package:kinondoni_openspace_app/screens/edit_profile.dart';
+import 'package:kinondoni_openspace_app/screens/pop_card.dart';
 import 'package:provider/provider.dart';
 import '../utils/alert/access_denied_dialog.dart';
 import '../widget/custom_navigation_bar.dart';

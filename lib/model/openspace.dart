@@ -26,11 +26,17 @@ class OpenSpaceMarker {
   });
 
   factory OpenSpaceMarker.fromJson(Map<String, dynamic> json) {
+    final district = json['district'] as String? ?? '';
+    final street = json['street'] as String? ?? '';
+    
+    // Debug log to verify data from backend
+    // print('OpenSpaceMarker.fromJson: id=${json['id']}, district=$district, street=$street');
+    
     return OpenSpaceMarker(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
-      district: json['district'] as String? ?? '',
-      street: json['street'] as String? ?? '', // NEW
+      district: district.isEmpty ? 'N/A' : district,
+      street: street.isEmpty ? 'N/A' : street,
       latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
       longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
       isActive: json['isActive'] as bool? ?? false,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:openspace_mobile_app/data/repository/report_repository.dart';
-import 'package:openspace_mobile_app/model/Report.dart';
-import 'package:openspace_mobile_app/utils/constants.dart';
+import 'package:kinondoni_openspace_app/data/repository/report_repository.dart';
+import 'package:kinondoni_openspace_app/model/Report.dart';
+import 'package:kinondoni_openspace_app/utils/constants.dart';
 import 'package:provider/provider.dart';
 import '../providers/report_provider.dart';
 import '../l10n/app_localizations.dart';

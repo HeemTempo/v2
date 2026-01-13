@@ -1,17 +1,18 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:openspace_mobile_app/model/Booking.dart';
-import 'package:openspace_mobile_app/service/auth_service.dart';
+import 'package:kinondoni_openspace_app/config/app_config.dart';
+import 'package:kinondoni_openspace_app/model/Booking.dart';
+import 'package:kinondoni_openspace_app/service/auth_service.dart';
 
 class BookingService {
   final String _baseUrl;
-  final String _createBookingEndpoint = '/booking/spaces/bookings/';
-  final String _myBookingsEndpoint = '/booking/my-bookings/';
+  final String _createBookingEndpoint = '/api/v1/booking/spaces/bookings/';
+  final String _myBookingsEndpoint = '/api/v1/booking/my-bookings/';
   String? _lastError;
 
   BookingService({String? baseUrl})
-      : _baseUrl = baseUrl ?? 'http://your-server-url.com';
+      : _baseUrl = baseUrl ?? AppConfig.baseUrl;
 
   String? get lastError => _lastError;
 
@@ -39,9 +40,10 @@ class BookingService {
   required String purpose,
   required String district,
   File? file,
+  String? authToken,
 }) async {
   _lastError = null;
-  final String? token = await _getAuthToken();
+  final String? token = authToken ?? await _getAuthToken();
   if (token == null) {
     throw Exception(_lastError ?? 'Authentication required.');
   }

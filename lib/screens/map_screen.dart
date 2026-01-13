@@ -6,9 +6,9 @@ import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:openspace_mobile_app/data/local/openspace_local.dart';
-import 'package:openspace_mobile_app/data/repository/openspace_repository.dart';
-import 'package:openspace_mobile_app/service/openspace_service.dart';
+import 'package:kinondoni_openspace_app/data/local/openspace_local.dart';
+import 'package:kinondoni_openspace_app/data/repository/openspace_repository.dart';
+import 'package:kinondoni_openspace_app/service/openspace_service.dart';
 import 'package:provider/provider.dart';
 import '../model/openspace.dart';
 
@@ -449,8 +449,8 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           const SizedBox(height: 12),
 
           // Details for OpenSpace or normal point
-          _buildDetailRow("District", _selectedSpace?.district ?? "Unknown"),
-          _buildDetailRow("Street", _selectedSpace?.street ?? "Unknown"),
+          _buildDetailRow("District", _selectedSpace?.district ?? "N/A"),
+          _buildDetailRow("Street", _selectedSpace?.street ?? "N/A"),
           if (isOpenSpace)
             _buildDetailRow(
               "Status",

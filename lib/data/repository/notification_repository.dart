@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:openspace_mobile_app/model/Notification.dart';
-import 'package:openspace_mobile_app/service/auth_service.dart';
+import 'package:kinondoni_openspace_app/model/Notification.dart';
+import 'package:kinondoni_openspace_app/service/auth_service.dart';
 
 class NotificationRepository {
   final String _baseUrl;
@@ -32,7 +32,7 @@ class NotificationRepository {
         if (token == null) throw Exception('Not authenticated');
         
         final response = await http.get(
-          Uri.parse('$_baseUrl/notifications/'),
+          Uri.parse('$_baseUrl/api/v1/notifications/'),
           headers: {'Authorization': 'Bearer $token'},
         );
         
@@ -47,6 +47,7 @@ class NotificationRepository {
         }
         return await _localDataSource.getNotifications();
       } catch (e) {
+        debugPrint('Error fetching notifications: $e');
         return await _localDataSource.getNotifications();
       }
     } else {
@@ -66,7 +67,7 @@ class NotificationRepository {
         final token = await AuthService.getToken();
         if (token != null) {
           await http.post(
-            Uri.parse('$_baseUrl/notifications/mark-read/$notificationId/'),
+          Uri.parse('$_baseUrl/api/v1/notifications/mark-read/$notificationId/'),
             headers: {'Authorization': 'Bearer $token'},
           );
         }
@@ -97,7 +98,7 @@ class NotificationRepository {
             final token = await AuthService.getToken();
             if (token != null) {
               await http.post(
-                Uri.parse('$_baseUrl/notifications/mark-read/${data['id']}/'),
+                Uri.parse('$_baseUrl/api/v1/notifications/mark-read/${data['id']}/'),
                 headers: {'Authorization': 'Bearer $token'},
               );
               await _localDataSource.clearQueuedAction(action['id']);

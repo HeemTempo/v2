@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:openspace_mobile_app/providers/report_provider.dart';
-import 'package:openspace_mobile_app/providers/user_provider.dart';
-import 'package:openspace_mobile_app/screens/file_attachment_section.dart';
+import 'package:kinondoni_openspace_app/providers/report_provider.dart';
+import 'package:kinondoni_openspace_app/providers/user_provider.dart';
+import 'package:kinondoni_openspace_app/screens/file_attachment_section.dart';
 import 'package:provider/provider.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
@@ -47,17 +47,8 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
   @override
   void initState() {
     super.initState();
-    // Defer sync to avoid blocking UI
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        try {
-          final reportProvider = context.read<ReportProvider>();
-          reportProvider.syncPendingReports();
-        } catch (e) {
-          debugPrint('Error syncing reports: $e');
-        }
-      }
-    });
+    // Sync is handled automatically by ReportProvider when connectivity changes
+    // No need to sync on every screen load - this prevents UI freezing
   }
 
 
@@ -244,6 +235,7 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
                       decoration: _inputDecoration(
                         label: loc.emailLabel,
                         hint: 'your.email@example.com',

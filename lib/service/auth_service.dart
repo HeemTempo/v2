@@ -1,5 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:openspace_mobile_app/api/graphql/auth_mutation.dart';
+import 'package:kinondoni_openspace_app/api/graphql/auth_mutation.dart';
 import '../api/graphql/graphql_service.dart';
 import '../model/user_model.dart';
 

@@ -9,7 +9,7 @@ class AppLocalizationsSw extends AppLocalizations {
   AppLocalizationsSw([String locale = 'sw']) : super(locale);
 
   @override
-  String get appName => 'OpenSpace';
+  String get appName => 'Kinondoni OpenSpace';
 
   @override
   String get version => 'Toleo 1.0.0';
@@ -225,7 +225,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get close => 'Funga';
 
   @override
-  String get heroTitle1 => 'Nafasi Za Umma Dar es Salaam';
+  String get heroTitle1 => 'Nafasi Za Umma Kinondoni ';
 
   @override
   String get heroTitle2 => 'Bustani za Jamii';
@@ -796,4 +796,13 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get closeButton => 'FUNGA';
+
+  @override
+  String get offline => 'Huna intaneti';
+
+  @override
+  String get reconnecting => 'Inaunganisha...';
+
+  @override
+  String get retry => 'Jaribu';
 }

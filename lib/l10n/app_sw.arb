@@ -1,7 +1,7 @@
 {
   "@@locale": "sw",
 
-  "appName": "OpenSpace",
+  "appName": "Kinondoni OpenSpace",
   "version": "Toleo 1.0.0", 
   "splashTagline": "Kuunganisha Jamii",
 
@@ -83,7 +83,7 @@
   "ambulance": "Ambulensi",
   "close": "Funga",
 
-  "heroTitle1": "Nafasi Za Umma Dar es Salaam",
+  "heroTitle1": "Nafasi Za Umma Kinondoni ",
   "heroTitle2": "Bustani za Jamii",
   "heroTitle3": "Hadi za Burudani & Hadi za Umma",
   "heroTitle4": "Nafasi za Kijani Mjini",
@@ -331,6 +331,8 @@
 
   "routeSearching": "Inatafuta njia...",
   "searchLocation": "Tafuta eneo",
-  "closeButton": "FUNGA"
-
+  "closeButton": "FUNGA",
+  "offline": "Huna intaneti",
+  "reconnecting": "Inaunganisha...",
+  "retry": "Jaribu"
 }

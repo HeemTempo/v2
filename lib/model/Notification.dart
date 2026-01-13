@@ -41,12 +41,45 @@ class ReportNotification {
 
   // Create from JSON (for API)
   factory ReportNotification.fromJson(Map<String, dynamic> json) {
+    // Parse created_at - API may return dd/MM/yyyy HH:mm:ss format
+    DateTime parsedDate;
+    try {
+      parsedDate = DateTime.parse(json['created_at']);
+    } catch (e) {
+      // Try parsing dd/MM/yyyy HH:mm:ss format
+      try {
+        final dateStr = json['created_at'].toString();
+        final parts = dateStr.split(' ');
+        if (parts.length == 2) {
+          final dateParts = parts[0].split('/');
+          final timeParts = parts[1].split(':');
+          if (dateParts.length == 3 && timeParts.length == 3) {
+            parsedDate = DateTime(
+              int.parse(dateParts[2]), // year
+              int.parse(dateParts[1]), // month
+              int.parse(dateParts[0]), // day
+              int.parse(timeParts[0]), // hour
+              int.parse(timeParts[1]), // minute
+              int.parse(timeParts[2]), // second
+            );
+          } else {
+            parsedDate = DateTime.now();
+          }
+        } else {
+          parsedDate = DateTime.now();
+        }
+      } catch (parseError) {
+        print('Error parsing notification date: $parseError');
+        parsedDate = DateTime.now();
+      }
+    }
+
     return ReportNotification(
       id: json['id'],
       reportId: json['report_id'],
       message: json['message'],
       repliedBy: json['replied_by'] ?? 'System',
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: parsedDate,
       isRead: json['is_read'] ?? false,
     );
   }

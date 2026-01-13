@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:openspace_mobile_app/screens/splash_screen.dart';
-import 'package:openspace_mobile_app/screens/user_type.dart';
+import 'package:kinondoni_openspace_app/screens/splash_screen.dart';
+import 'package:kinondoni_openspace_app/screens/user_type.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';

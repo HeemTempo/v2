@@ -12,3 +12,9 @@ const String getAllOpenSpacesQuery = """
     }
   }
 """;
+
+const String getOpenSpaceCountQuery = """
+  query MyQuery {
+    totalOpenspaces
+  }
+""";

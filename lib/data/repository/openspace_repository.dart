@@ -1,7 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:openspace_mobile_app/model/openspace.dart';
-import 'package:openspace_mobile_app/data/local/openspace_local.dart';
-import 'package:openspace_mobile_app/service/openspace_service.dart';
+import 'package:kinondoni_openspace_app/model/openspace.dart';
+import 'package:kinondoni_openspace_app/data/local/openspace_local.dart';
+import 'package:kinondoni_openspace_app/service/openspace_service.dart';
 
 class OpenSpaceRepository {
   final OpenSpaceService remoteService;

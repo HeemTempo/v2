@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:openspace_mobile_app/data/local/report_local.dart';
-import 'package:openspace_mobile_app/model/Report.dart';
-import 'package:openspace_mobile_app/service/report_service.dart';
+import 'package:kinondoni_openspace_app/data/local/report_local.dart';
+import 'package:kinondoni_openspace_app/model/Report.dart';
+import 'package:kinondoni_openspace_app/service/report_service.dart';
 
 class ReportRepository {
   final ReportLocal localService;
@@ -12,10 +12,23 @@ class ReportRepository {
 
   ReportRepository({required this.localService});
 
-  /// Check if device is online
+  /// Check if device has internet and can reach server
   Future<bool> _isConnected() async {
-    final connectivityResult = await Connectivity().checkConnectivity();
-    return connectivityResult != ConnectivityResult.none;
+    try {
+      // First check basic connectivity
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult == ConnectivityResult.none) {
+        return false;
+      }
+      
+      // Then verify we can actually reach the internet
+      final result = await InternetAddress.lookup('google.com')
+          .timeout(const Duration(seconds: 3));
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (e) {
+      print('Connectivity check failed: $e');
+      return false;
+    }
   }
 
   /// Submit a report - handles online/offline automatically
@@ -123,6 +136,7 @@ class ReportRepository {
     return offlineReport;
   }
 
+
   /// Sync all pending reports to backend
   Future<void> syncPendingReports() async {
     final isOnline = await _isConnected();
@@ -138,10 +152,14 @@ class ReportRepository {
       return;
     }
     
-    print('Syncing ${pendingReports.length} pending reports...');
+    print('Syncing ${pendingReports.length} pending reports in background...');
 
+    // Run sync asynchronously without blocking UI
+    unawaited(_doSync(pendingReports));
+  }
+
+  Future<void> _doSync(List<Report> pendingReports) async {
     int successCount = 0;
-    int failCount = 0;
 
     for (final report in pendingReports) {
       try {
@@ -158,30 +176,23 @@ class ReportRepository {
           longitude: report.longitude,
         );
 
-        // Update with synced data from backend
         final syncedReport = Report.fromRestJson(response, localId: report.id);
         await localService.saveReport(syncedReport.copyWith(status: 'submitted'));
         
         successCount++;
         print('✓ Successfully synced report: ${report.id}');
       } on SocketException catch (e) {
-        failCount++;
         print('✗ Network error syncing report ${report.id}: $e');
-        // Stop trying if we get network errors - we're not actually online
-        print('Stopping sync due to network errors. Server may be unreachable.');
         break;
       } on TimeoutException catch (e) {
-        failCount++;
         print('✗ Timeout syncing report ${report.id}: $e');
         break;
       } catch (e) {
-        failCount++;
         print('✗ Failed to sync report ${report.id}: $e');
-        // Continue to next report for non-network errors
       }
     }
     
-    print('Sync complete: $successCount succeeded, $failCount failed');
+    print('Sync complete: $successCount synced.');
   }
 
   Future<List<Report>> getPendingReports() => localService.getPendingReports();

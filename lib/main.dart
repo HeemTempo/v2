@@ -1,53 +1,53 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:openspace_mobile_app/config/app_config.dart';
-import 'package:openspace_mobile_app/widget/connectivity_banner.dart';
-import 'package:openspace_mobile_app/widget/environment_badge.dart';
+import 'package:kinondoni_openspace_app/config/app_config.dart';
+import 'package:kinondoni_openspace_app/widget/connectivity_banner.dart';
+import 'package:kinondoni_openspace_app/widget/environment_badge.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
-import 'package:openspace_mobile_app/api/graphql/graphql_service.dart';
-import 'package:openspace_mobile_app/core/network/connectivity_service.dart';
-import 'package:openspace_mobile_app/core/sync/sync_service.dart';
-import 'package:openspace_mobile_app/data/local/report_local.dart';
-import 'package:openspace_mobile_app/data/repository/booking_repository.dart';
-import 'package:openspace_mobile_app/data/repository/report_repository.dart';
-import 'package:openspace_mobile_app/model/Notification.dart';
-import 'package:openspace_mobile_app/providers/booking_provider.dart';
-import 'package:openspace_mobile_app/providers/locale_provider.dart';
-import 'package:openspace_mobile_app/providers/notification_provider.dart';
-import 'package:openspace_mobile_app/providers/report_provider.dart';
-import 'package:openspace_mobile_app/providers/theme_provider.dart';
-import 'package:openspace_mobile_app/providers/user_provider.dart';
-import 'package:openspace_mobile_app/screens/Forget_password.dart';
-import 'package:openspace_mobile_app/screens/NotificationDetail.dart';
-import 'package:openspace_mobile_app/screens/NotificationScreen.dart';
-import 'package:openspace_mobile_app/screens/Reset_Password.dart';
-import 'package:openspace_mobile_app/screens/helps_and_Faqs.dart';
-import 'package:openspace_mobile_app/screens/book_openspace.dart';
-import 'package:openspace_mobile_app/screens/bookings.dart';
-import 'package:openspace_mobile_app/screens/edit_profile.dart';
-import 'package:openspace_mobile_app/screens/home_page.dart';
-import 'package:openspace_mobile_app/screens/intro_slider_screen.dart';
-import 'package:openspace_mobile_app/screens/language_change.dart';
-import 'package:openspace_mobile_app/screens/map_screen.dart';
-import 'package:openspace_mobile_app/screens/pending_bookings.dart';
-import 'package:openspace_mobile_app/screens/profile.dart';
-import 'package:openspace_mobile_app/screens/report_screen.dart';
-import 'package:openspace_mobile_app/screens/reported_issue.dart';
-import 'package:openspace_mobile_app/screens/settings_page.dart';
-import 'package:openspace_mobile_app/screens/sign_in.dart';
-import 'package:openspace_mobile_app/screens/sign_up.dart';
-import 'package:openspace_mobile_app/screens/terms_and_conditions.dart';
-import 'package:openspace_mobile_app/screens/theme_change.dart';
-import 'package:openspace_mobile_app/screens/track_progress.dart';
-import 'package:openspace_mobile_app/screens/userreports.dart';
-import 'package:openspace_mobile_app/screens/pending_reports.dart';
-import 'package:openspace_mobile_app/screens/report_detail.dart';
-import 'package:openspace_mobile_app/model/Report.dart';
-import 'package:openspace_mobile_app/utils/alert/access_denied_dialog.dart';
-import 'package:openspace_mobile_app/utils/alert/error_dialog.dart';
-import 'package:openspace_mobile_app/utils/permission.dart';
-import 'package:openspace_mobile_app/utils/theme.dart';
-import 'package:openspace_mobile_app/services/notification_service.dart';
+import 'package:kinondoni_openspace_app/api/graphql/graphql_service.dart';
+import 'package:kinondoni_openspace_app/core/network/connectivity_service.dart';
+import 'package:kinondoni_openspace_app/core/sync/sync_service.dart';
+import 'package:kinondoni_openspace_app/data/local/report_local.dart';
+import 'package:kinondoni_openspace_app/data/repository/booking_repository.dart';
+import 'package:kinondoni_openspace_app/data/repository/report_repository.dart';
+import 'package:kinondoni_openspace_app/model/Notification.dart';
+import 'package:kinondoni_openspace_app/providers/booking_provider.dart';
+import 'package:kinondoni_openspace_app/providers/locale_provider.dart';
+import 'package:kinondoni_openspace_app/providers/notification_provider.dart';
+import 'package:kinondoni_openspace_app/providers/report_provider.dart';
+import 'package:kinondoni_openspace_app/providers/theme_provider.dart';
+import 'package:kinondoni_openspace_app/providers/user_provider.dart';
+import 'package:kinondoni_openspace_app/screens/Forget_password.dart';
+import 'package:kinondoni_openspace_app/screens/NotificationDetail.dart';
+import 'package:kinondoni_openspace_app/screens/NotificationScreen.dart';
+import 'package:kinondoni_openspace_app/screens/Reset_Password.dart';
+import 'package:kinondoni_openspace_app/screens/helps_and_Faqs.dart';
+import 'package:kinondoni_openspace_app/screens/book_openspace.dart';
+import 'package:kinondoni_openspace_app/screens/bookings.dart';
+import 'package:kinondoni_openspace_app/screens/edit_profile.dart';
+import 'package:kinondoni_openspace_app/screens/home_page.dart';
+import 'package:kinondoni_openspace_app/screens/intro_slider_screen.dart';
+import 'package:kinondoni_openspace_app/screens/language_change.dart';
+import 'package:kinondoni_openspace_app/screens/map_screen.dart';
+import 'package:kinondoni_openspace_app/screens/pending_bookings.dart';
+import 'package:kinondoni_openspace_app/screens/profile.dart';
+import 'package:kinondoni_openspace_app/screens/report_screen.dart';
+import 'package:kinondoni_openspace_app/screens/reported_issue.dart';
+import 'package:kinondoni_openspace_app/screens/settings_page.dart';
+import 'package:kinondoni_openspace_app/screens/sign_in.dart';
+import 'package:kinondoni_openspace_app/screens/sign_up.dart';
+import 'package:kinondoni_openspace_app/screens/terms_and_conditions.dart';
+import 'package:kinondoni_openspace_app/screens/theme_change.dart';
+import 'package:kinondoni_openspace_app/screens/track_progress.dart';
+import 'package:kinondoni_openspace_app/screens/userreports.dart';
+import 'package:kinondoni_openspace_app/screens/pending_reports.dart';
+import 'package:kinondoni_openspace_app/screens/report_detail.dart';
+import 'package:kinondoni_openspace_app/model/Report.dart';
+import 'package:kinondoni_openspace_app/utils/alert/access_denied_dialog.dart';
+import 'package:kinondoni_openspace_app/utils/alert/error_dialog.dart';
+import 'package:kinondoni_openspace_app/utils/permission.dart';
+import 'package:kinondoni_openspace_app/utils/theme.dart';
+import 'package:kinondoni_openspace_app/services/notification_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -80,10 +80,13 @@ Future<void> main() async {
       const envFile = kReleaseMode ? '.env.production' : '.env.development';
       await AppConfig.load(envFile: envFile);
       print("DEBUG: AppConfig loaded from $envFile");
-    } catch (e) {
+      print("DEBUG: BASE_URL = ${AppConfig.baseUrl}");
+      print("DEBUG: GRAPHQL_URL = ${AppConfig.graphqlUrl}");
+    } catch (e, stackTrace) {
       print("CRITICAL ERROR: Failed to load AppConfig: $e");
-      runApp(ErrorApp(message: "Failed to load configuration: $e"));
-      return; // Stop execution
+      print("Stack trace: $stackTrace");
+      runApp(ErrorApp(message: "Failed to load configuration file. Please ensure .env files are included in the build."));
+      return;
     }
 
     // Initialize services
@@ -100,7 +103,7 @@ Future<void> main() async {
       syncService.init();
       print("DEBUG: SyncService initialized");
     } catch (e) {
-      print("ERROR: Failed to initialize SyncService: $e");
+      print("WARNING: Failed to initialize SyncService: $e");
     }
 
     runApp(MyApp(themeProvider: themeProvider));
@@ -361,9 +364,11 @@ class MyApp extends StatelessWidget {
                   final double? latitude = args?['latitude'] as double?;
                   final double? longitude = args?['longitude'] as double?;
                   final String? spaceName = args?['spaceName'] as String?;
+                  final String? district = args?['district'] as String?;
+                  final String? street = args?['street'] as String?;
 
                   print(
-                    "onGenerateRoute extracted for ReportIssuePage: lat=$latitude, lon=$longitude, name=$spaceName",
+                    "onGenerateRoute extracted for ReportIssuePage: lat=$latitude, lon=$longitude, name=$spaceName, district=$district, street=$street",
                   );
 
                   return MaterialPageRoute(
@@ -372,6 +377,8 @@ class MyApp extends StatelessWidget {
                           latitude: latitude,
                           longitude: longitude,
                           spaceName: spaceName,
+                          district: district,
+                          street: street,
                         ),
                   );
                 }

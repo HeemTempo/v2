@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:openspace_mobile_app/core/storage/local_db.dart';
-import 'package:openspace_mobile_app/model/Notification.dart';
+import 'package:kinondoni_openspace_app/core/storage/local_db.dart';
+import 'package:kinondoni_openspace_app/model/Notification.dart';
 
 import 'package:sqflite/sqflite.dart';
 

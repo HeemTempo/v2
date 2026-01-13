@@ -1,7 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:openspace_mobile_app/model/Notification.dart';
-import 'package:openspace_mobile_app/screens/NotificationDetail.dart';
+import 'package:kinondoni_openspace_app/model/Notification.dart';
+import 'package:kinondoni_openspace_app/screens/NotificationDetail.dart';
 import 'package:provider/provider.dart';
 import '../providers/notification_provider.dart';
 import '../utils/constants.dart';

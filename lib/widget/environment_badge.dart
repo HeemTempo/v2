@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:openspace_mobile_app/config/app_config.dart';
+import 'package:kinondoni_openspace_app/config/app_config.dart';
 
 class EnvironmentBadge extends StatelessWidget {
   const EnvironmentBadge({super.key});

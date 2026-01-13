@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:openspace_mobile_app/utils/constants.dart';
+import 'package:kinondoni_openspace_app/utils/constants.dart';
 
 class SpaceDetailBottomSheet extends StatelessWidget {
   final Map<String, dynamic> space;

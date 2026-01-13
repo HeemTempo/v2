@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:openspace_mobile_app/l10n/app_localizations.dart';
+import 'package:kinondoni_openspace_app/l10n/app_localizations.dart';
 import 'package:quickalert/quickalert.dart';
-import 'package:openspace_mobile_app/service/auth_service.dart';
-import 'package:openspace_mobile_app/utils/constants.dart';
+import 'package:kinondoni_openspace_app/service/auth_service.dart';
+import 'package:kinondoni_openspace_app/utils/constants.dart';
 
 import 'sign_in.dart';
 

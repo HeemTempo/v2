@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:quickalert/quickalert.dart';
-import 'package:openspace_mobile_app/utils/constants.dart';
+import 'package:kinondoni_openspace_app/utils/constants.dart';
 import '../widget/faqs.dart';
 
 class HelpPage extends StatefulWidget {

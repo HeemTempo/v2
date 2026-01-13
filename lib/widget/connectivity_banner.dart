@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:openspace_mobile_app/core/network/connectivity_service.dart';
+import 'package:kinondoni_openspace_app/core/network/connectivity_service.dart';
+import 'package:kinondoni_openspace_app/l10n/app_localizations.dart';
 
 class ConnectivityBanner extends StatelessWidget {
   const ConnectivityBanner({super.key});
@@ -22,11 +23,11 @@ class ConnectivityBanner extends StatelessWidget {
         if (connectivity.isReconnecting) {
           backgroundColor = Colors.orange;
           icon = Icons.wifi_find;
-          message = 'Inaunganisha...';
+          message = 'Reconnecting...';
         } else {
           backgroundColor = Colors.red;
           icon = Icons.wifi_off;
-          message = 'Huna intaneti';
+          message = 'No internet';
         }
 
         return Container(
@@ -65,7 +66,7 @@ class ConnectivityBanner extends StatelessWidget {
                       ),
                     ),
                     child: const Text(
-                      'JARIBU',
+                      'RETRY',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),

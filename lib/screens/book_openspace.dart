@@ -2,12 +2,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:openspace_mobile_app/providers/booking_provider.dart';
-import 'package:openspace_mobile_app/service/auth_service.dart';
+import 'package:kinondoni_openspace_app/providers/booking_provider.dart';
+import 'package:kinondoni_openspace_app/service/auth_service.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:openspace_mobile_app/utils/constants.dart';
+import 'package:kinondoni_openspace_app/utils/constants.dart';
 
 class BookingPage extends StatefulWidget {
   final int spaceId;
@@ -38,12 +38,8 @@ class _BookingPageState extends State<BookingPage> {
     if (widget.spaceName != null) {
       _locationController.text = widget.spaceName!;
     }
-
-    // Auto-sync pending bookings when page opens
-    Future.microtask(() {
-      final bookingProvider = context.read<BookingProvider>();
-      bookingProvider.syncPendingBookings();
-    });
+    // Sync is handled automatically by BookingProvider when connectivity changes
+    // No need to sync on every screen load - this prevents UI freezing
   }
 
   Future<void> _selectDate(BuildContext context, bool isStart) async {
@@ -196,6 +192,7 @@ class _BookingPageState extends State<BookingPage> {
     TextInputType? keyboardType,
     String? Function(String?)? validator,
     int maxLines = 1,
+    AutovalidateMode? autovalidateMode,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -204,6 +201,7 @@ class _BookingPageState extends State<BookingPage> {
         decoration: _buildInputDecoration(label, icon),
         keyboardType: keyboardType,
         validator: validator,
+        autovalidateMode: autovalidateMode ?? AutovalidateMode.disabled,
         maxLines: maxLines,
         style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
       ),
@@ -336,6 +334,7 @@ class _BookingPageState extends State<BookingPage> {
                 label: 'Email (Optional)',
                 icon: Icons.email,
                 keyboardType: TextInputType.emailAddress,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 validator: (v) {
                   if (v != null && v.isNotEmpty) {
                     final valid = RegExp(

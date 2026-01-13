@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'auth_service.dart';
 
-import 'package:openspace_mobile_app/config/app_config.dart';
+import 'package:kinondoni_openspace_app/config/app_config.dart';
 
 class ReportingService {
   static String get _baseUrl => AppConfig.baseUrl;
@@ -21,8 +21,9 @@ class ReportingService {
     String? userId,
     double? latitude,
     double? longitude,
+    String? authToken,
   }) async {
-    final token = await AuthService.getToken();
+    final token = authToken ?? await AuthService.getToken();
     if (token == null) throw Exception('Authentication token missing');
 
     final uri = Uri.parse('$_baseUrl$_reportEndpoint');

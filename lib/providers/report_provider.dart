@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:openspace_mobile_app/core/network/connectivity_service.dart';
-import 'package:openspace_mobile_app/data/repository/report_repository.dart';
-import 'package:openspace_mobile_app/model/Report.dart';
+import 'package:kinondoni_openspace_app/core/network/connectivity_service.dart';
+import 'package:kinondoni_openspace_app/data/repository/report_repository.dart';
+import 'package:kinondoni_openspace_app/model/Report.dart';
 
 class ReportProvider with ChangeNotifier {
   final ReportRepository _repository;
@@ -16,14 +17,18 @@ class ReportProvider with ChangeNotifier {
   // Track pending reports for UI display
   List<Report> _pendingReports = [];
   List<Report> get pendingReports => _pendingReports;
-
   int get pendingReportsCount => _pendingReports.length;
+
+  bool _wasOnline = false;
+  Timer? _syncDebounceTimer;
+  bool _isSyncing = false;
 
   ReportProvider({
     required ReportRepository repository,
     required ConnectivityService connectivity,
   })  : _repository = repository,
         _connectivity = connectivity {
+    _wasOnline = _connectivity.isOnline;
     // Auto-sync when coming back online
     _connectivity.addListener(_onConnectivityChanged);
     // Load pending reports on initialization
@@ -31,10 +36,24 @@ class ReportProvider with ChangeNotifier {
   }
 
   void _onConnectivityChanged() {
-    if (_connectivity.isOnline) {
-      print('Device came online. Syncing pending reports...');
-      syncPendingReports();
+    final isNowOnline = _connectivity.isOnline;
+    
+    // Only sync if we just came online (was offline, now online)
+    if (!_wasOnline && isNowOnline) {
+      print('Device came online. Scheduling sync...');
+      
+      // Debounce: cancel previous timer if exists
+      _syncDebounceTimer?.cancel();
+      
+      // Wait 3 seconds before syncing to avoid rapid repeated calls
+      _syncDebounceTimer = Timer(const Duration(seconds: 3), () {
+        if (_connectivity.isOnline) {
+          syncPendingReports();
+        }
+      });
     }
+    
+    _wasOnline = isNowOnline;
   }
 
   /// Submit a report (handles online/offline automatically)
@@ -99,6 +118,8 @@ class ReportProvider with ChangeNotifier {
 
   /// Sync all pending reports to backend
   Future<void> syncPendingReports() async {
+    if (_isSyncing) return;
+
     // Double-check connectivity before syncing
     final isActuallyOnline = await _connectivity.checkConnectivity();
     
@@ -107,14 +128,19 @@ class ReportProvider with ChangeNotifier {
       return;
     }
 
+    _isSyncing = true;
+    // Don't notify start of background sync to avoid UI rebuilds while typing
+
     try {
       print('Starting sync of ${_pendingReports.length} pending reports...');
       await _repository.syncPendingReports();
       await _loadPendingReports(); // Refresh the list after sync
       print('Sync completed. ${_pendingReports.length} reports still pending');
-      notifyListeners();
     } catch (e) {
       print('Failed to sync pending reports: $e');
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
     }
   }
 
@@ -143,6 +169,7 @@ class ReportProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    _syncDebounceTimer?.cancel();
     _connectivity.removeListener(_onConnectivityChanged);
     super.dispose();
   }

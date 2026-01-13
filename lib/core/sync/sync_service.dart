@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:openspace_mobile_app/data/repository/booking_repository.dart';
-import 'package:openspace_mobile_app/data/repository/report_repository.dart';
-import 'package:openspace_mobile_app/data/local/report_local.dart';
+import 'package:kinondoni_openspace_app/data/repository/booking_repository.dart';
+import 'package:kinondoni_openspace_app/data/repository/report_repository.dart';
+import 'package:kinondoni_openspace_app/data/local/report_local.dart';
 
 class SyncService {
   static final SyncService _instance = SyncService._internal();

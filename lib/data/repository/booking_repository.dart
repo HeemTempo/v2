@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:openspace_mobile_app/data/local/booking_local.dart';
-import 'package:openspace_mobile_app/model/Booking.dart';
-import 'package:openspace_mobile_app/service/bookingservice.dart';
+import 'package:kinondoni_openspace_app/data/local/booking_local.dart';
+import 'package:kinondoni_openspace_app/model/Booking.dart';
+import 'package:kinondoni_openspace_app/service/bookingservice.dart';
 
 class BookingRepository {
   final BookingService _service = BookingService();
@@ -12,10 +12,23 @@ class BookingRepository {
   List<Booking>? _cachedBookings;
   DateTime? _lastFetch;
 
-  /// Check if device is online
+  /// Check if device has internet and can reach server
   Future<bool> _isConnected() async {
-    final connectivityResult = await Connectivity().checkConnectivity();
-    return connectivityResult != ConnectivityResult.none;
+    try {
+      // First check basic connectivity
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult == ConnectivityResult.none) {
+        return false;
+      }
+      
+      // Then verify we can actually reach the internet
+      final result = await InternetAddress.lookup('google.com')
+          .timeout(const Duration(seconds: 3));
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (e) {
+      print('Connectivity check failed: $e');
+      return false;
+    }
   }
 
   /// Create booking - handles online/offline automatically
@@ -203,6 +216,7 @@ class BookingRepository {
     return await _local.getPendingBookings();
   }
 
+
   /// Sync all pending bookings to backend
   Future<void> syncPendingBookings() async {
     final isOnline = await _isConnected();
@@ -218,10 +232,14 @@ class BookingRepository {
       return;
     }
 
-    print('Syncing ${pending.length} pending bookings...');
+    print('Syncing ${pending.length} pending bookings in background...');
 
+    // Run sync asynchronously without blocking UI
+    unawaited(_doSync(pending));
+  }
+
+  Future<void> _doSync(List<Booking> pending) async {
     int successCount = 0;
-    int failCount = 0;
 
     for (var booking in pending) {
       try {
@@ -229,8 +247,7 @@ class BookingRepository {
           spaceId: booking.spaceId,
           username: booking.username,
           contact: booking.contact,
-          startDate:
-              booking.startDate.toIso8601String().split('T')[0], // yyyy-MM-dd
+          startDate: booking.startDate.toIso8601String().split('T')[0],
           endDate: booking.endDate?.toIso8601String().split('T')[0],
           purpose: booking.purpose,
           district: booking.district,
@@ -238,26 +255,22 @@ class BookingRepository {
         );
 
         if (success) {
-          // Remove from pending (it's now synced)
           await _local.removeBooking(booking.id);
           successCount++;
           print('✓ Successfully synced booking: ${booking.id}');
         }
       } on SocketException catch (e) {
-        failCount++;
         print('✗ Network error syncing booking ${booking.id}: $e');
-        break; // Stop trying if we get network errors
+        break;
       } on TimeoutException catch (e) {
-        failCount++;
         print('✗ Timeout syncing booking ${booking.id}: $e');
         break;
       } catch (e) {
-        failCount++;
         print('✗ Failed to sync booking ${booking.id}: $e');
       }
     }
 
-    print('Sync complete: $successCount succeeded, $failCount failed');
+    print('Sync complete: $successCount synced.');
 
     // Refresh bookings from server after sync
     if (successCount > 0) {

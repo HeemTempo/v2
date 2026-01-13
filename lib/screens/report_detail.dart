@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:openspace_mobile_app/model/Report.dart';
-import 'package:openspace_mobile_app/utils/constants.dart';
+import 'package:kinondoni_openspace_app/model/Report.dart';
+import 'package:kinondoni_openspace_app/utils/constants.dart';
 import 'dart:io';
 
 class ReportDetailPage extends StatelessWidget {

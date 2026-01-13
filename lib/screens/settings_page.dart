@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:openspace_mobile_app/screens/language_change.dart';
-import 'package:openspace_mobile_app/screens/reported_issue.dart';
-import 'package:openspace_mobile_app/screens/theme_change.dart';
-import 'package:openspace_mobile_app/utils/constants.dart';
+import 'package:kinondoni_openspace_app/screens/language_change.dart';
+import 'package:kinondoni_openspace_app/screens/reported_issue.dart';
+import 'package:kinondoni_openspace_app/screens/theme_change.dart';
+import 'package:kinondoni_openspace_app/utils/constants.dart';
 import '../l10n/app_localizations.dart';
 
 class SettingsPage extends StatelessWidget {

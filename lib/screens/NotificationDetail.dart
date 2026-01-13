@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:openspace_mobile_app/model/Notification.dart';
+import 'package:kinondoni_openspace_app/model/Notification.dart';
 import '../utils/constants.dart';
 
 class NotificationDetailScreen extends StatelessWidget {

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:openspace_mobile_app/providers/booking_provider.dart';
-import 'package:openspace_mobile_app/model/Booking.dart';
-import 'package:openspace_mobile_app/utils/constants.dart';
+import 'package:kinondoni_openspace_app/providers/booking_provider.dart';
+import 'package:kinondoni_openspace_app/model/Booking.dart';
+import 'package:kinondoni_openspace_app/utils/constants.dart';
 
 class PendingBookingsPage extends StatefulWidget {
   const PendingBookingsPage({super.key});

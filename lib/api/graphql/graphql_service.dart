@@ -2,7 +2,8 @@ import 'dart:async';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:openspace_mobile_app/config/app_config.dart';
+import '../../config/app_config.dart';
+import '../../utils/error_handler.dart' as app_error;
 
 class GraphQLService {
   late final GraphQLClient client;
@@ -10,7 +11,7 @@ class GraphQLService {
 
   GraphQLService({
     String? endpoint,
-    Duration timeout = const Duration(seconds: 30),
+    Duration timeout = const Duration(seconds: 20),
     this.debugMode = false,
   }) {
     final url = endpoint ?? AppConfig.graphqlUrl;
@@ -75,11 +76,16 @@ class GraphQLService {
         print('GraphQL $label completed in ${duration.inMilliseconds}ms');
       }
 
-      if (result.hasException) throw result.exception!;
+      if (result.hasException) {
+        final friendlyMessage = app_error.AppErrorHandler.getUserFriendlyMessage(result.exception!);
+        throw Exception(friendlyMessage);
+      }
       return result;
     } catch (e) {
       if (debugMode) print('GraphQL $label ERROR: $e');
-      rethrow;
+      if (e is Exception) rethrow;
+      final friendlyMessage = app_error.AppErrorHandler.getUserFriendlyMessage(e);
+      throw Exception(friendlyMessage);
     }
   }
 }

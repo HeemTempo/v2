@@ -1,4 +1,4 @@
-package com.example.openspace_mobile_app
+package com.kinondoni.openspace.app
 
 import io.flutter.embedding.android.FlutterActivity
 

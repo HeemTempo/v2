@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:openspace_mobile_app/model/Notification.dart';
-import 'package:openspace_mobile_app/utils/constants.dart';
+import 'package:kinondoni_openspace_app/model/Notification.dart';
+import 'package:kinondoni_openspace_app/utils/constants.dart';
 import 'package:provider/provider.dart';
 import '../providers/notification_provider.dart';
 

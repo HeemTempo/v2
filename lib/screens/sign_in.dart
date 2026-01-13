@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:openspace_mobile_app/core/network/connectivity_service.dart';
+import 'package:kinondoni_openspace_app/core/network/connectivity_service.dart';
 import 'package:quickalert/quickalert.dart';
 import 'package:provider/provider.dart';
 import '../service/auth_service.dart';

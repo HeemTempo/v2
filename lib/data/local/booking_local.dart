@@ -1,4 +1,4 @@
-import 'package:openspace_mobile_app/model/Booking.dart';
+import 'package:kinondoni_openspace_app/model/Booking.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../core/storage/local_db.dart';
 

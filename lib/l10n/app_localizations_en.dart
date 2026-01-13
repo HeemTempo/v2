@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appName => 'OpenSpace';
+  String get appName => 'Kinondoni OpenSpace';
 
   @override
   String get version => 'Version 1.0.0';
@@ -225,7 +225,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get close => 'Close';
 
   @override
-  String get heroTitle1 => 'Dar es Salaam Open Spaces';
+  String get heroTitle1 => 'Kinondoni Open Spaces';
 
   @override
   String get heroTitle2 => 'Community Gardens';
@@ -249,7 +249,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get heroSubtitle4 => 'Nature in the heart of the city';
 
   @override
-  String get mapScreenAppBar => 'Open Spaces Map';
+  String get mapScreenAppBar => 'Kinondoni Open Spaces Map';
 
   @override
   String get searchHint => 'Search public open space';
@@ -796,4 +796,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get closeButton => 'CLOSE';
+
+  @override
+  String get offline => 'No internet';
+
+  @override
+  String get reconnecting => 'Reconnecting...';
+
+  @override
+  String get retry => 'Retry';
 }

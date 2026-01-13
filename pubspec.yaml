@@ -1,5 +1,5 @@
-name: openspace_mobile_app
-description: "A new Flutter project."
+name: kinondoni_openspace_app
+description: "Kinondoni Open Space App - Protecting Kinondoni's public open spaces through community reporting"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -96,16 +96,18 @@ flutter_launcher_icons:
     android: "launcher_icon"
     ios: true
     image_path: "assets/icon/icon.png"
-    min_sdk_android: 21 # android min sdk min:16, default 21
+    min_sdk_android: 21
+    adaptive_icon_background: "#1976D2"
+    adaptive_icon_foreground: "assets/icon/icon.png"
     web:
       generate: true
       image_path: "assets/icon/icon.png"
-      background_color: "#FFFFFF"
+      background_color: "#1976D2"
       theme_color: "#1976D2"
     windows:
       generate: true
       image_path: "assets/icon/icon.png"
-      icon_size: 48 # min:48, max:256, default: 48
+      icon_size: 48
     macos:
       generate: true
       image_path: "assets/icon/icon.png"

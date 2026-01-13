@@ -1,5 +1,5 @@
-import 'package:openspace_mobile_app/data/local/rofile_local_data_source.dart';
-import 'package:openspace_mobile_app/service/auth_service.dart';
+import 'package:kinondoni_openspace_app/data/local/rofile_local_data_source.dart';
+import 'package:kinondoni_openspace_app/service/auth_service.dart';
 import '../../service/ProfileService.dart';
 
 

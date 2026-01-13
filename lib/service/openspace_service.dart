@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:openspace_mobile_app/model/openspace.dart';
+import 'package:kinondoni_openspace_app/model/openspace.dart';
 
 import '../api/graphql/graphql_service.dart';
 import '../api/graphql/openspace_query.dart';
@@ -19,6 +19,16 @@ class OpenSpaceService {
     return spaces
         .map((e) => OpenSpaceMarker.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  Future<int> getOpenSpaceCount() async {
+    final result = await _graphQLService.query(getOpenSpaceCountQuery);
+
+    if (result.hasException) {
+      throw Exception(result.exception.toString());
+    }
+
+    return result.data?['totalOpenspaces'] as int? ?? 0;
   }
 
   Future<List<Report>> getAllReports() async {

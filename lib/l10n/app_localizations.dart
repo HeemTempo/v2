@@ -98,7 +98,7 @@ abstract class AppLocalizations {
   /// No description provided for @appName.
   ///
   /// In en, this message translates to:
-  /// **'OpenSpace'**
+  /// **'Kinondoni OpenSpace'**
   String get appName;
 
   /// No description provided for @version.
@@ -530,7 +530,7 @@ abstract class AppLocalizations {
   /// No description provided for @heroTitle1.
   ///
   /// In en, this message translates to:
-  /// **'Dar es Salaam Open Spaces'**
+  /// **'Kinondoni Open Spaces'**
   String get heroTitle1;
 
   /// No description provided for @heroTitle2.
@@ -578,7 +578,7 @@ abstract class AppLocalizations {
   /// No description provided for @mapScreenAppBar.
   ///
   /// In en, this message translates to:
-  /// **'Open Spaces Map'**
+  /// **'Kinondoni Open Spaces Map'**
   String get mapScreenAppBar;
 
   /// No description provided for @searchHint.
@@ -1648,6 +1648,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'CLOSE'**
   String get closeButton;
+
+  /// No description provided for @offline.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet'**
+  String get offline;
+
+  /// No description provided for @reconnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting...'**
+  String get reconnecting;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

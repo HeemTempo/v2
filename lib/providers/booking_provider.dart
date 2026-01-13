@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:openspace_mobile_app/core/network/connectivity_service.dart';
-import '../data/repository/booking_repository.dart';
-import '../model/Booking.dart';
+import 'package:flutter/foundation.dart';
+import 'package:kinondoni_openspace_app/core/network/connectivity_service.dart';
+import 'package:kinondoni_openspace_app/data/repository/booking_repository.dart';
+import 'package:kinondoni_openspace_app/model/Booking.dart';
 
 class BookingProvider extends ChangeNotifier {
   final BookingRepository _repository;
@@ -22,11 +23,16 @@ class BookingProvider extends ChangeNotifier {
   
   int get pendingBookingsCount => pendingBookings.length;
 
+  bool _wasOnline = false;
+  Timer? _syncDebounceTimer;
+  bool _isSyncing = false;
+
   BookingProvider({
     required BookingRepository repository,
     required ConnectivityService connectivity,
   })  : _repository = repository,
         _connectivity = connectivity {
+    _wasOnline = _connectivity.isOnline;
     // Auto-sync when coming back online
     _connectivity.addListener(_onConnectivityChanged);
     // Initial load
@@ -34,10 +40,24 @@ class BookingProvider extends ChangeNotifier {
   }
 
   void _onConnectivityChanged() {
-    if (_connectivity.isOnline) {
-      print('Device came online. Syncing pending bookings...');
-      syncPendingBookings();
+    final isNowOnline = _connectivity.isOnline;
+    
+    // Only sync if we just came online (was offline, now online)
+    if (!_wasOnline && isNowOnline) {
+      print('Device came online. Scheduling sync...');
+      
+      // Debounce: cancel previous timer if exists
+      _syncDebounceTimer?.cancel();
+      
+      // Wait 3 seconds before syncing to avoid rapid repeated calls
+      _syncDebounceTimer = Timer(const Duration(seconds: 3), () {
+        if (_connectivity.isOnline) {
+          syncPendingBookings();
+        }
+      });
     }
+    
+    _wasOnline = isNowOnline;
   }
 
   /// Load all bookings (online + pending)
@@ -102,6 +122,8 @@ class BookingProvider extends ChangeNotifier {
 
   /// Sync all pending bookings to backend
   Future<void> syncPendingBookings() async {
+    if (_isSyncing) return;
+
     // Double-check connectivity before syncing
     final isActuallyOnline = await _connectivity.checkConnectivity();
     
@@ -110,14 +132,19 @@ class BookingProvider extends ChangeNotifier {
       return;
     }
 
+    _isSyncing = true;
+    // Don't notify start of background sync to avoid UI rebuilds while typing
+
     try {
       print('Starting sync of ${pendingBookingsCount} pending bookings...');
       await _repository.syncPendingBookings();
       await loadBookings(); // Refresh the list after sync
       print('Sync completed. ${pendingBookingsCount} bookings still pending');
-      notifyListeners();
     } catch (e) {
       print('Failed to sync pending bookings: $e');
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
     }
   }
 
@@ -146,6 +173,7 @@ class BookingProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _syncDebounceTimer?.cancel();
     _connectivity.removeListener(_onConnectivityChanged);
     super.dispose();
   }

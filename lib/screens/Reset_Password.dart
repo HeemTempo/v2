@@ -1,6 +1,6 @@
 // reset_password_page.dart
 import 'package:flutter/material.dart';
-import 'package:openspace_mobile_app/service/PasswordService.dart';
+import 'package:kinondoni_openspace_app/service/PasswordService.dart';
 
 
 class ResetPasswordPage extends StatefulWidget {

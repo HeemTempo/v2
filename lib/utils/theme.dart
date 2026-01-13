@@ -4,7 +4,13 @@ import 'constants.dart';
 class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
+      useMaterial3: true,
       brightness: Brightness.light,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        },
+      ),
       primaryColor: AppConstants.primaryBlue,
       scaffoldBackgroundColor: AppConstants.lightGrey,
       cardColor: AppConstants.white,
@@ -114,6 +120,11 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        },
+      ),
       primaryColor: AppConstants.primaryBlue,
       scaffoldBackgroundColor: Colors.black, // Changed to pure black
       cardColor: AppConstants.darkCard,

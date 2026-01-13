@@ -11,6 +11,8 @@ import '../data/repository/booking_repository.dart';
 import '../data/local/report_local.dart';
 import '../model/Report.dart';
 import '../model/Booking.dart';
+import '../service/openspace_service.dart';
+import '../utils/error_handler.dart' as app_error;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -48,13 +50,14 @@ class _ActivityItem {
   });
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   int _currentIndex = 0;
   int _carouselIndex = 0;
   final PageController _pageController = PageController();
   int _notificationCount = 0;
   late AnimationController _animationController;
   Timer? _autoScrollTimer;
+  bool _isAppInForeground = true;
   
   List<_ActivityItem> _recentActivities = [];
   bool _isLoadingActivities = true;
@@ -75,6 +78,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -91,6 +95,25 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     });
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _isAppInForeground = true;
+        _startAutoScroll();
+        break;
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+        _isAppInForeground = false;
+        _autoScrollTimer?.cancel();
+        break;
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+
   Future<void> _fetchQuickStats() async {
     if (!mounted) return;
     setState(() => _isLoadingStats = true);
@@ -98,40 +121,49 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     try {
       final reportRepo = ReportRepository(localService: ReportLocal());
       final bookingRepo = BookingRepository();
+      final openSpaceService = OpenSpaceService();
 
       // Fetch with timeout to prevent hanging
       final results = await Future.wait([
         reportRepo.getAllReports().timeout(const Duration(seconds: 5)),
         bookingRepo.getMyBookings().timeout(const Duration(seconds: 5)),
+        openSpaceService.getOpenSpaceCount().timeout(const Duration(seconds: 5)),
       ]).timeout(const Duration(seconds: 10));
 
       final allReports = results[0] as List<Report>;
       final allBookings = results[1] as List<Booking>;
+      final openSpacesCount = results[2] as int;
 
       final activeReports = allReports.where((r) => 
         r.status?.toLowerCase() == 'pending' || 
         r.status?.toLowerCase() == 'in_progress'
       ).toList();
 
-      final openSpaces = 47;
-
       if (mounted) {
         setState(() {
           _activeReportsCount = activeReports.length;
           _bookingsCount = allBookings.length;
-          _openSpacesCount = openSpaces;
+          _openSpacesCount = openSpacesCount;
           _isLoadingStats = false;
         });
       }
     } catch (e) {
-      debugPrint('Error fetching quick stats: $e');
+      final errorMessage = app_error.AppErrorHandler.getUserFriendlyMessage(e);
+      debugPrint('Error fetching quick stats: $errorMessage');
       if (mounted) {
         setState(() {
           _activeReportsCount = 0;
           _bookingsCount = 0;
-          _openSpacesCount = 47;
+          _openSpacesCount = 0;
           _isLoadingStats = false;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
@@ -196,8 +228,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   void _startAutoScroll() {
+    _autoScrollTimer?.cancel();
+    if (!_isAppInForeground) return;
     _autoScrollTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (_pageController.hasClients && mounted) {
+      if (_pageController.hasClients && mounted && _isAppInForeground) {
         int next = (_pageController.page?.round() ?? 0) + 1;
         if (next >= _horizontalImages.length) next = 0;
         _pageController.animateToPage(
@@ -211,6 +245,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _autoScrollTimer?.cancel();
     _pageController.dispose();
     _animationController.dispose();
