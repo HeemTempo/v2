@@ -798,6 +798,19 @@ class AppLocalizationsSw extends AppLocalizations {
   String get closeButton => 'FUNGA';
 
   @override
+  String get requestTimeout => 'Muda umeisha. Tafadhali angalia muunganisho wako na ujaribu tena.';
+
+  @override
+  String syncReportsSuccess(Object count) {
+    return 'Ripoti $count zimesawazishwa kwa mafanikio';
+  }
+
+  @override
+  String syncBookingsSuccess(Object count) {
+    return 'Hifadhi $count zimesawazishwa kwa mafanikio';
+  }
+
+  @override
   String get offline => 'Huna intaneti';
 
   @override
@@ -805,4 +818,297 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get retry => 'Jaribu';
+
+  @override
+  String get helpSupportTitle => 'Msaada na Usaidizi';
+
+  @override
+  String get needHelpTitle => 'Unahitaji Msaada?';
+
+  @override
+  String get needHelpSubtitle => 'Pata majibu ya maswali ya kawaida au wasiliana na timu yetu ya usaidizi.';
+
+  @override
+  String get hideContactForm => 'Ficha Fomu ya Mawasiliano';
+
+  @override
+  String get contactSupport => 'Wasiliana na Usaidizi';
+
+  @override
+  String get sendMessageTitle => 'Tutumie ujumbe';
+
+  @override
+  String get messageHint => 'Elezea tatizo au swali lako kwa undani...';
+
+  @override
+  String get messageRequired => 'Tafadhali ingiza ujumbe wako';
+
+  @override
+  String get messageTooShort => 'Tafadhali toa maelezo zaidi (angalau herufi 10)';
+
+  @override
+  String get messageSentTitle => 'Ujumbe Umetumwa!';
+
+  @override
+  String get messageSentContent => 'Ujumbe wako umetumwa kwa timu yetu ya usaidizi. Tutakuja kwako ndani ya masaa 24-48.';
+
+  @override
+  String get sendMessageButton => 'Tuma Ujumbe';
+
+  @override
+  String get faqTitle => 'Maswali Yanayoulizwa Mara kwa Mara';
+
+  @override
+  String get faqCategoryAccount => 'Akaunti na Uthibitishaji';
+
+  @override
+  String get faqQuestionResetPass => 'Je, ninawezaje kubadilisha nenosiri langu?';
+
+  @override
+  String get faqAnswerResetPass => 'Kwenye skrini ya kuingia, gusa \'Umesahau Nenosiri\' na ingiza barua pepe yako iliyosajiliwa. Utapokea kiungo cha kuweka upya nenosiri kupitia barua pepe. Fuata maelekezo kwenye barua pepe kuunda nenosiri jipya.';
+
+  @override
+  String get faqQuestionAnonymous => 'Je, naweza kutumia programu bila kujisajili?';
+
+  @override
+  String get faqAnswerAnonymous => 'Ndio! Unaweza kuvinjari na kuchunguza nafasi za umma kama mtumiaji asiyejulikana. Hata hivyo, ili kuripoti matatizo, kuhifadhi nafasi, na kufuatilia shughuli zako, utahitaji kuunda akaunti iliyosajiliwa.';
+
+  @override
+  String get faqQuestionUpdateProfile => 'Je, ninawezaje kusasisha taarifa zangu za wasifu?';
+
+  @override
+  String get faqAnswerUpdateProfile => 'Nenda kwenye ukurasa wa Profaili yako, gusa kitufe cha \'Hariri Profaili\', sasisha taarifa zako, na uhifadhi mabadiliko. Hakikisha unatumia barua pepe sahihi kwa arifa muhimu.';
+
+  @override
+  String get faqCategoryReports => 'Ripoti na Hifadhi';
+
+  @override
+  String get faqQuestionFindReports => 'Ninawezaje kupata ripoti zangu nilizowasilisha?';
+
+  @override
+  String get faqAnswerFindReports => 'Nenda kwenye ukurasa wa Profaili yako na chagua \'Ripoti Zangu\'. Hapa unaweza kuona ripoti zako zote, kufuatilia maendeleo, na kuona majibu kutoka mamlaka.';
+
+  @override
+  String get faqQuestionBookSpace => 'Je, ninawezaje kuhifadhi nafasi ya umma?';
+
+  @override
+  String get faqAnswerBookSpace => 'Tafuta nafasi unayotaka kwenye Ramani au ukurasa wa Nyumbani, gusa ili kuona maelezo, kisha bonyeza \'Hifadhi Nafasi Hii\'. Jaza taarifa zinazohitajika ikiwemo tarehe, muda, na madhumuni, kisha tuma ombi lako la hifadhi.';
+
+  @override
+  String get faqQuestionCancelBooking => 'Je, naweza kughairi hifadhi yangu?';
+
+  @override
+  String get faqAnswerCancelBooking => 'Ndio, unaweza kughairi hifadhi kutoka sehemu ya \'Hifadhi Zangu\' kwenye profaili yako. Tafadhali zingatia kuwa kufuta kunapaswa kufanywa angalau masaa 24 kabla ikiwezekana.';
+
+  @override
+  String get faqQuestionReportResponse => 'Inachukua muda gani kupata jibu la ripoti yangu?';
+
+  @override
+  String get faqAnswerReportResponse => 'Muda wa kujibu hutofautiana kulingana na uzito na aina ya tatizo. Matatizo ya dharura hupewa kipaumbele na kushughulikiwa ndani ya masaa 24-48. Matatizo ya kawaida yanaweza kuchukua siku 3-7 za kazi.';
+
+  @override
+  String get faqCategoryTechnical => 'Usaidizi wa Kiufundi';
+
+  @override
+  String get faqQuestionOffline => 'Je, programu inafanya kazi bila mtandao?';
+
+  @override
+  String get faqAnswerOffline => 'Ndio! Programu inasaidia utendaji wa nje ya mtandao. Unaweza kuona maudhui yaliyopakiwa awali na kuwasilisha ripoti/hifadhi bila mtandao. Data yako itasawazishwa kiotomatiki utakapokuwa mtandaoni.';
+
+  @override
+  String get faqQuestionLanguage => 'Je, ninawezaje kubadilisha lugha ya programu?';
+
+  @override
+  String get faqAnswerLanguage => 'Nenda kwenye Mipangilio, chagua \'Lugha\', na chagua kati ya Kiingereza na Kiswahili. Programu itasasishwa mara moja kwa lugha uliyochagua.';
+
+  @override
+  String get faqQuestionMapIssue => 'Mbona siwezi kuona ramani?';
+
+  @override
+  String get faqAnswerMapIssue => 'Hakikisha umetoa ruhusa ya eneo kwa programu na una mtandao mzuri kwa kupakia data ya ramani. Angalia mipangilio ya kifaa chako ikiwa tatizo litaendelea.';
+
+  @override
+  String get faqQuestionCrash => 'Nifanye nini ikiwa programu inajifunga yenyewe?';
+
+  @override
+  String get faqAnswerCrash => 'Jaribu kufunga na kufungua tena programu. Ikiwa tatizo litaendelea, futa kache ya programu kwenye mipangilio ya kifaa au ingiza programu upya. Wasiliana na usaidizi ikiwa tatizo litaendelea.';
+
+  @override
+  String get stillNeedHelp => 'Bado unahitaji msaada?';
+
+  @override
+  String get contactEmailLabel => 'Barua Pepe';
+
+  @override
+  String get contactPhoneLabel => 'Simu';
+
+  @override
+  String get copyrightFooter => '© 2026 Baraza la Manispaa Kinondoni';
+
+  @override
+  String aboutTitle(Object appName) {
+    return 'Kuhusu $appName';
+  }
+
+  @override
+  String get aboutMission => 'Dhamira Yetu';
+
+  @override
+  String get aboutMissionContent => 'Programu ya OpenSpace (OSA) ni jukwaa linaloendeshwa na jamii lililoundwa kuboresha ushirikiano wa umma katika Manispaa ya Kinondoni. Dhamira yetu ni kuwawezesha wananchi kuripoti matatizo, kuhifadhi nafasi za umma, na kushiriki kikamilifu katika kuboresha jamii yao.';
+
+  @override
+  String get aboutDeveloper => 'Msanidi Programu';
+
+  @override
+  String get aboutDeveloperValue => 'Baraza la Manispaa Kinondoni';
+
+  @override
+  String get aboutLocation => 'Mahali';
+
+  @override
+  String get aboutLocationValue => 'Dar es Salaam, Tanzania';
+
+  @override
+  String get aboutContact => 'Mawasiliano';
+
+  @override
+  String get aboutContactValue => 'support@openspace.go.tz';
+
+  @override
+  String get aboutKeyFeatures => 'Vipengele Muhimu:';
+
+  @override
+  String get aboutFeature1 => 'Ripoti changamoto za jamii ukiwa na picha na eneo';
+
+  @override
+  String get aboutFeature2 => 'Hifadhi nafasi na vifaa vya umma';
+
+  @override
+  String get aboutFeature3 => 'Fuatilia ripoti na hifadhi zako';
+
+  @override
+  String get aboutFeature4 => 'Inafanya kazi bila mtandao kwa upatikanaji usioingiliwa';
+
+  @override
+  String get aboutFeature5 => 'Inasaidia lugha nyingi (Kiingereza na Kiswahili)';
+
+  @override
+  String get aboutCopyright => '© 2025 Baraza la Manispaa Kinondoni\nHaki zote zimehifadhiwa.';
+
+  @override
+  String get termsUserResponsibilitiesTitle => '1. Majukumu ya Mtumiaji';
+
+  @override
+  String get termsUserResponsibilitiesContent => 'Unakubali kutumia OpenSpace kwa madhumuni ya kisheria, ukihakikisha kuwa ripoti na hifadhi zote ni sahihi na zinaheshimu maeneo ya jamii. Matumizi mabaya, ikiwa ni pamoja na kutoa ripoti za uongo au ufikiaji usioidhinishwa, kunaweza kusababisha kusimamishwa kwa akaunti.';
+
+  @override
+  String get termsAccountUsageTitle => '2. Matumizi ya Akaunti';
+
+  @override
+  String get termsAccountUsageContent => 'Watumiaji waliosajiliwa lazima watoe taarifa sahihi wakati wa kujisajili, ikiwa ni pamoja na jina la mtumiaji halali na maelezo ya mawasiliano. Watumiaji wasiojulikana wanaweza kuchunguza nafasi za umma lakini hawawezi kufikia vipengele vya kufuatilia ripoti au hifadhi.';
+
+  @override
+  String get termsContentOwnershipTitle => '3. Umiliki wa Maudhui';
+
+  @override
+  String get termsContentOwnershipContent => 'Maudhui yaliyowasilishwa (mfano: ripoti za changamoto, maombi ya hifadhi) yanaweza kutumiwa na OpenSpace kuboresha huduma, yakiwa hayajulikani mahali inapobidi, kwa mujibu wa Sheria ya Tanzania ya Ulinzi wa Data Binafsi, 2022. Watumiaji wanabaki na umiliki wa maudhui yao lakini wanaipa OpenSpace leseni isiyo ya kipekee ya kuitumia kwa madhumuni ya uendeshaji.';
+
+  @override
+  String get termsLiabilityTitle => '4. Dhima';
+
+  @override
+  String get termsLiabilityContent => 'OpenSpace haiwajibiki kwa uharibifu unaotokana na matumizi mabaya ya jukwaa au kutokuwa na usahihi katika data iliyowasilishwa na watumiaji. Watumiaji wanawajibika kufuata sheria za nchi na sera za jukwaa.';
+
+  @override
+  String get termsUpdatesTitle => '5. Maboresho ya Masharti';
+
+  @override
+  String get termsUpdatesContent => 'Tunaweza kuboresha masharti haya mara kwa mara. Kuendelea kutumia OpenSpace baada ya maboresho kunamaanisha kukubali mabadiliko. Taarifa za mabadiliko zitatolewa kupitia programu au njia rasmi za mawasiliano.';
+
+  @override
+  String get privacyDataCollectionTitle => '1. Ukusanyaji wa Data';
+
+  @override
+  String get privacyDataCollectionContent => 'Tunakusanya kiwango kidogo cha data binafsi (mfano: jina la mtumiaji, eneo kwa ajili ya ripoti/hifadhi) ili kuwezesha kazi za programu. Mawasiliano ya watumiaji wasiojulikana hayahusiani na vitambulisho binafsi.';
+
+  @override
+  String get privacyDataUsageTitle => '2. Matumizi ya Data';
+
+  @override
+  String get privacyDataUsageContent => 'Data inatumiwa kushughulikia ripoti, kusimamia hifadhi, na kuboresha huduma za jamii. Data isiyojulikana inaweza kushirikiwa na mamlaka za mitaa kwa ajili ya mipango miji na mipango ya usalama.';
+
+  @override
+  String get privacyDataSecurityTitle => '3. Usalama wa Data';
+
+  @override
+  String get privacyDataSecurityContent => 'Tunatumia usimbaji fiche na itifaki salama ili kulinda stakabadhi na data za watumiaji waliosajiliwa. Ukaguzi wa mara kwa mara wa usalama unahakikisha kufuata kanuni za kitaifa.';
+
+  @override
+  String get privacyCookiesTitle => '4. Vidakuzi na Uchambuzi';
+
+  @override
+  String get privacyCookiesContent => 'OpenSpace inaweza kutumia vidakuzi au zana za uchambuzi ili kuboresha hali ya matumizi ya mtumiaji. Unaweza kujiondoa kupitia ukurasa wa Mipangilio. Data ya uchambuzi haijulikani na inatumiwa kuboresha utendaji wa programu.';
+
+  @override
+  String get privacyUserRightsTitle => '5. Haki Zako';
+
+  @override
+  String get privacyUserRightsContent => 'Una haki ya kufikia, kusahihisha, au kufuta data yako binafsi. Wasiliana nasi kupitia ukurasa wa Msaada na Usaidizi. Maombi ya kufikia au kufuta data yatashughulikiwa ndani ya siku 30, kulingana na mahitaji ya kisheria.';
+
+  @override
+  String get privacyInquiries => 'Kwa maswali zaidi, wasiliana na support@openspace.go.tz au tumia ukurasa wa Msaada na Usaidizi.';
+
+  @override
+  String get languageSelectSubtitle => 'Chagua lugha unayopendelea';
+
+  @override
+  String get languageEnglishDescription => 'Lugha ya Kiingereza';
+
+  @override
+  String get languageSwahiliDescription => 'Lugha ya Kiswahili fasaha';
+
+  @override
+  String get howToUseTitle => 'Jinsi ya Kutumia Programu';
+
+  @override
+  String get offlineModeTitle => 'Hali ya Nje ya Mtandao';
+
+  @override
+  String get offlineModeDescription => 'Programu hii inasaidia utendaji wa nje ya mtandao ili kuhakikisha unaweza kufikia vipengele hata bila muunganisho wa intaneti.';
+
+  @override
+  String get firstTimeUseTitle => 'Matumizi ya Mara ya Kwanza';
+
+  @override
+  String get firstTimeUseDescription => 'Unapotumia programu kwa mara ya kwanza, unahitaji kuwa mtandaoni ili kupakua na kuhifadhi data (ripoti, hifadhi, nafasi za umma). Hii inakuruhusu kufikia taarifa baadaye bila mtandao.';
+
+  @override
+  String get offlineAccessTitle => 'Ufikiaji wa Nje ya Mtandao';
+
+  @override
+  String get offlineAccessDescription => 'Mara data imehifadhiwa, unaweza kuona ripoti, hifadhi, na nafasi za umma bila intaneti. Unaweza pia kuwasilisha ripoti na hifadhi mpya bila mtandao - zitahifadhiwa ndani.';
+
+  @override
+  String get autoSyncTitle => 'Usawazishaji Otomatiki';
+
+  @override
+  String get autoSyncDescription => 'Muunganisho wako wa intaneti unaporejesha, programu inasawazisha ripoti na hifadhi zote zinazongoja kwenye seva kiotomatiki. Utaona arifa wakati usawazishaji umekamilika.';
+
+  @override
+  String get offlineTipsTitle => 'Vidokezo vya Nje ya Mtandao';
+
+  @override
+  String get offlineTip1 => 'Daima unganisha intaneti angalau mara moja ili kupakua data ya awali';
+
+  @override
+  String get offlineTip2 => 'Ripoti/hifadhi zilizowasilishwa bila mtandao zitaonyesha hali ya \'Inasubiri\'';
+
+  @override
+  String get offlineTip3 => 'Vuta chini ili kuonyesha upya unapokuwa mtandaoni ili kupata data mpya';
+
+  @override
+  String get offlineTip4 => 'Kiashiria cha nje ya mtandao kinaonekana kwenye upau wa programu wakati hakuna muunganisho';
+
+  @override
+  String get gotItButton => 'Nimeelewa!';
 }

@@ -37,7 +37,6 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
 
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 // For image/document upload
 
@@ -125,7 +124,6 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
   Widget build(BuildContext context) {
     try {
       final loc = AppLocalizations.of(context)!;
-      final isDark = Theme.of(context).brightness == Brightness.dark;
       final primaryBlue = Theme.of(context).colorScheme.primary;
 
       return Scaffold(
@@ -251,16 +249,6 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                         }
                         return null;
                       },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
-                      decoration: _inputDecoration(
-                        label: loc.phoneLabel,
-                        hint: '+1 (555) 000-0000',
-                        icon: Icons.phone_outlined,
-                      ),
                     ),
                   ],
                 ),
@@ -443,9 +431,6 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Theme.of(context).colorScheme.primary;
-    final surfaceColor = Theme.of(context).colorScheme.surface;
-    final textColor = Theme.of(context).colorScheme.onSurface;
-    
     return InputDecoration(
       labelText: label,
       hintText: hint,
@@ -499,7 +484,6 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
       final report = await reportProvider.submitReport(
         description: _descriptionController.text,
         email: _emailController.text.isNotEmpty ? _emailController.text : null,
-        phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
         file: _selectedFiles.isNotEmpty ? _selectedFiles.first : null,
         spaceName: widget.spaceName,
         district: widget.district,
@@ -512,19 +496,15 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
       if (!mounted) return;
 
       // Check if report was submitted online or saved offline
+      final isActuallyOffline = !reportProvider.isOnline;
+
       if (report.status == 'pending') {
         // Offline submission
         _showAlert(
           QuickAlertType.info,
-          '''
-You are offline. Your report has been saved locally and will be submitted automatically when you reconnect.
-
-Report ID: ${report.reportId}
-Location: ${report.spaceName ?? 'Not specified'}
-Saved Date: ${report.createdAt.toLocal().toString().split('.')[0]}
-
-${reportProvider.pendingReports.length} pending report(s) waiting to sync.
-''',
+          isActuallyOffline
+              ? 'You are offline. Your report has been saved locally and will be submitted automatically when you reconnect.'
+              : 'Your report was saved locally because the server could not be reached. It will sync automatically once the connection is stable.\n\nReport ID: ${report.reportId}',
           onConfirmed: () {
             _clearForm();
             Navigator.of(context).pop();
@@ -572,7 +552,6 @@ Thank you for reporting. Our team will review and act as soon as possible.
 
   void _clearForm() {
     _emailController.clear();
-    _phoneController.clear();
     _descriptionController.clear();
     setState(() {
       _attachedFiles.clear();
@@ -608,7 +587,7 @@ class _InfoCard extends StatelessWidget {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: isDark ? primaryColor.withOpacity(0.2) : primaryColor.withOpacity(0.1),
+                  backgroundColor: isDark ? primaryColor.withValues(alpha: 0.2) : primaryColor.withValues(alpha: 0.1),
                   child: Icon(icon, color: primaryColor),
                 ),
                 const SizedBox(width: 12),

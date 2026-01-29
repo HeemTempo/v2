@@ -33,7 +33,12 @@ class ReportLocal {
 
   Future<List<Report>> getPendingReports() async {
     final db = await LocalDb.getDb();
-    final maps = await db.query('reports', where: 'status = ?', whereArgs: ['pending']);
+    final maps = await db.query(
+      'reports', 
+      where: 'status = ?', 
+      whereArgs: ['pending'],
+      orderBy: 'createdAt DESC', // Ensure newest pending reports are first
+    );
     return maps.map((e) => Report.fromJson({
       'id': e['id'],
       'reportId': e['reportId'],
@@ -56,6 +61,11 @@ class ReportLocal {
   Future<void> updateReportStatus(String id, String status) async {
     final db = await LocalDb.getDb();
     await db.update('reports', {'status': status}, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> removeReport(String id) async {
+    final db = await LocalDb.getDb();
+    await db.delete('reports', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<List<Report>> getAllReports({int? limit}) async {

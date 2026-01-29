@@ -1649,6 +1649,24 @@ abstract class AppLocalizations {
   /// **'CLOSE'**
   String get closeButton;
 
+  /// No description provided for @requestTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Request timed out. Please check your connection and try again.'**
+  String get requestTimeout;
+
+  /// No description provided for @syncReportsSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} report(s) synced successfully'**
+  String syncReportsSuccess(Object count);
+
+  /// No description provided for @syncBookingsSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} booking(s) synced successfully'**
+  String syncBookingsSuccess(Object count);
+
   /// No description provided for @offline.
   ///
   /// In en, this message translates to:
@@ -1666,6 +1684,588 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get retry;
+
+  /// No description provided for @helpSupportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Help & Support'**
+  String get helpSupportTitle;
+
+  /// No description provided for @needHelpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Need Help?'**
+  String get needHelpTitle;
+
+  /// No description provided for @needHelpSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find answers to common questions or contact our support team.'**
+  String get needHelpSubtitle;
+
+  /// No description provided for @hideContactForm.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Contact Form'**
+  String get hideContactForm;
+
+  /// No description provided for @contactSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Support'**
+  String get contactSupport;
+
+  /// No description provided for @sendMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send us a message'**
+  String get sendMessageTitle;
+
+  /// No description provided for @messageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe your issue or question in detail...'**
+  String get messageHint;
+
+  /// No description provided for @messageRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your message'**
+  String get messageRequired;
+
+  /// No description provided for @messageTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Please provide more details (at least 10 characters)'**
+  String get messageTooShort;
+
+  /// No description provided for @messageSentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Message Sent!'**
+  String get messageSentTitle;
+
+  /// No description provided for @messageSentContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Your message has been successfully sent to our support team. We will get back to you within 24-48 hours.'**
+  String get messageSentContent;
+
+  /// No description provided for @sendMessageButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Message'**
+  String get sendMessageButton;
+
+  /// No description provided for @faqTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequently Asked Questions'**
+  String get faqTitle;
+
+  /// No description provided for @faqCategoryAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account & Authentication'**
+  String get faqCategoryAccount;
+
+  /// No description provided for @faqQuestionResetPass.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I reset my password?'**
+  String get faqQuestionResetPass;
+
+  /// No description provided for @faqAnswerResetPass.
+  ///
+  /// In en, this message translates to:
+  /// **'On the login screen, tap \'Forgot Password\' and enter your registered email address. You will receive a password reset link via email. Follow the instructions in the email to create a new password.'**
+  String get faqAnswerResetPass;
+
+  /// No description provided for @faqQuestionAnonymous.
+  ///
+  /// In en, this message translates to:
+  /// **'Can I use the app without registering?'**
+  String get faqQuestionAnonymous;
+
+  /// No description provided for @faqAnswerAnonymous.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes! You can browse and explore public spaces as an anonymous user. However, to report issues, book spaces, and track your activities, you\'ll need to create a registered account.'**
+  String get faqAnswerAnonymous;
+
+  /// No description provided for @faqQuestionUpdateProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I update my profile information?'**
+  String get faqQuestionUpdateProfile;
+
+  /// No description provided for @faqAnswerUpdateProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to your Profile page, tap the \'Edit Profile\' button, update your information, and save your changes. Make sure to use a valid email address for important notifications.'**
+  String get faqAnswerUpdateProfile;
+
+  /// No description provided for @faqCategoryReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports & Bookings'**
+  String get faqCategoryReports;
+
+  /// No description provided for @faqQuestionFindReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Where can I find my submitted reports?'**
+  String get faqQuestionFindReports;
+
+  /// No description provided for @faqAnswerFindReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigate to your Profile page and select \'My Reports\'. Here you can view all your submitted reports, track their progress, and see responses from authorities.'**
+  String get faqAnswerFindReports;
+
+  /// No description provided for @faqQuestionBookSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I book a public space?'**
+  String get faqQuestionBookSpace;
+
+  /// No description provided for @faqAnswerBookSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'Find the space you want on the Map or Home page, tap on it to view details, then click \'Book This Space\'. Fill in the required information including date, time, and purpose, then submit your booking request.'**
+  String get faqAnswerBookSpace;
+
+  /// No description provided for @faqQuestionCancelBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Can I cancel my booking?'**
+  String get faqQuestionCancelBooking;
+
+  /// No description provided for @faqAnswerCancelBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, you can cancel bookings from the \'My Bookings\' section in your profile. Please note that cancellations should be made at least 24 hours in advance when possible.'**
+  String get faqAnswerCancelBooking;
+
+  /// No description provided for @faqQuestionReportResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'How long does it take to get a response to my report?'**
+  String get faqQuestionReportResponse;
+
+  /// No description provided for @faqAnswerReportResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Response times vary depending on the severity and type of issue. Emergency issues are prioritized and typically addressed within 24-48 hours. General issues may take 3-7 business days.'**
+  String get faqAnswerReportResponse;
+
+  /// No description provided for @faqCategoryTechnical.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical Support'**
+  String get faqCategoryTechnical;
+
+  /// No description provided for @faqQuestionOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Does the app work offline?'**
+  String get faqQuestionOffline;
+
+  /// No description provided for @faqAnswerOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes! The app supports offline functionality. You can view previously loaded content and submit reports/bookings offline. Your data will automatically sync when you\'re back online.'**
+  String get faqAnswerOffline;
+
+  /// No description provided for @faqQuestionLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I change the app language?'**
+  String get faqQuestionLanguage;
+
+  /// No description provided for @faqAnswerLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Settings, select \'Language\', and choose between English and Swahili. The app will update immediately to your selected language.'**
+  String get faqAnswerLanguage;
+
+  /// No description provided for @faqQuestionMapIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Why can\'t I see the map?'**
+  String get faqQuestionMapIssue;
+
+  /// No description provided for @faqAnswerMapIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Make sure you have granted location permissions to the app and have an active internet connection for loading map data. Check your device settings if the issue persists.'**
+  String get faqAnswerMapIssue;
+
+  /// No description provided for @faqQuestionCrash.
+  ///
+  /// In en, this message translates to:
+  /// **'What should I do if the app crashes?'**
+  String get faqQuestionCrash;
+
+  /// No description provided for @faqAnswerCrash.
+  ///
+  /// In en, this message translates to:
+  /// **'Try closing and reopening the app. If the problem continues, clear the app cache from your device settings or reinstall the app. Contact support if the issue persists.'**
+  String get faqAnswerCrash;
+
+  /// No description provided for @stillNeedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Still need help?'**
+  String get stillNeedHelp;
+
+  /// No description provided for @contactEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get contactEmailLabel;
+
+  /// No description provided for @contactPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get contactPhoneLabel;
+
+  /// No description provided for @copyrightFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'© 2026 Kinondoni Municipal Council'**
+  String get copyrightFooter;
+
+  /// No description provided for @aboutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About {appName}'**
+  String aboutTitle(Object appName);
+
+  /// No description provided for @aboutMission.
+  ///
+  /// In en, this message translates to:
+  /// **'Our Mission'**
+  String get aboutMission;
+
+  /// No description provided for @aboutMissionContent.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenSpace App (OSA) is a community-driven platform designed to enhance public engagement in Kinondoni Municipality. Our mission is to empower citizens to report issues, book public spaces, and actively participate in improving their community.'**
+  String get aboutMissionContent;
+
+  /// No description provided for @aboutDeveloper.
+  ///
+  /// In en, this message translates to:
+  /// **'Developer'**
+  String get aboutDeveloper;
+
+  /// No description provided for @aboutDeveloperValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Kinondoni Municipal Council'**
+  String get aboutDeveloperValue;
+
+  /// No description provided for @aboutLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get aboutLocation;
+
+  /// No description provided for @aboutLocationValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Dar es Salaam, Tanzania'**
+  String get aboutLocationValue;
+
+  /// No description provided for @aboutContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get aboutContact;
+
+  /// No description provided for @aboutContactValue.
+  ///
+  /// In en, this message translates to:
+  /// **'support@openspace.go.tz'**
+  String get aboutContactValue;
+
+  /// No description provided for @aboutKeyFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'Key Features:'**
+  String get aboutKeyFeatures;
+
+  /// No description provided for @aboutFeature1.
+  ///
+  /// In en, this message translates to:
+  /// **'Report community issues with photos and location'**
+  String get aboutFeature1;
+
+  /// No description provided for @aboutFeature2.
+  ///
+  /// In en, this message translates to:
+  /// **'Book public spaces and facilities'**
+  String get aboutFeature2;
+
+  /// No description provided for @aboutFeature3.
+  ///
+  /// In en, this message translates to:
+  /// **'Track your reports and bookings'**
+  String get aboutFeature3;
+
+  /// No description provided for @aboutFeature4.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline functionality for uninterrupted access'**
+  String get aboutFeature4;
+
+  /// No description provided for @aboutFeature5.
+  ///
+  /// In en, this message translates to:
+  /// **'Multi-language support (English & Swahili)'**
+  String get aboutFeature5;
+
+  /// No description provided for @aboutCopyright.
+  ///
+  /// In en, this message translates to:
+  /// **'© 2025 Kinondoni Municipal Council\nAll rights reserved.'**
+  String get aboutCopyright;
+
+  /// No description provided for @termsUserResponsibilitiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'1. User Responsibilities'**
+  String get termsUserResponsibilitiesTitle;
+
+  /// No description provided for @termsUserResponsibilitiesContent.
+  ///
+  /// In en, this message translates to:
+  /// **'You agree to use OpenSpace for lawful purposes, ensuring all reports and bookings are accurate and respectful of community spaces. Misuse, including false reporting or unauthorized access, may result in account suspension.'**
+  String get termsUserResponsibilitiesContent;
+
+  /// No description provided for @termsAccountUsageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'2. Account Usage'**
+  String get termsAccountUsageTitle;
+
+  /// No description provided for @termsAccountUsageContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered users must provide accurate information during sign-up, including a valid username and contact details. Anonymous users can explore public spaces but cannot access tracking features for reports or bookings.'**
+  String get termsAccountUsageContent;
+
+  /// No description provided for @termsContentOwnershipTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'3. Content Ownership'**
+  String get termsContentOwnershipTitle;
+
+  /// No description provided for @termsContentOwnershipContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Content submitted (e.g., issue reports, booking requests) may be used by OpenSpace to improve services, anonymized where necessary, in accordance with Tanzania\'s Personal Data Protection Act, 2022. Users retain ownership of their content but grant OpenSpace a non-exclusive license to use it for operational purposes.'**
+  String get termsContentOwnershipContent;
+
+  /// No description provided for @termsLiabilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'4. Liability'**
+  String get termsLiabilityTitle;
+
+  /// No description provided for @termsLiabilityContent.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenSpace is not liable for damages arising from misuse of the platform or inaccuracies in user-submitted data. Users are responsible for complying with local laws and platform policies.'**
+  String get termsLiabilityContent;
+
+  /// No description provided for @termsUpdatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'5. Updates to Terms'**
+  String get termsUpdatesTitle;
+
+  /// No description provided for @termsUpdatesContent.
+  ///
+  /// In en, this message translates to:
+  /// **'We may update these terms periodically. Continued use of OpenSpace after updates constitutes acceptance. Notifications of changes will be provided via the app or official communication channels.'**
+  String get termsUpdatesContent;
+
+  /// No description provided for @privacyDataCollectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Data Collection'**
+  String get privacyDataCollectionTitle;
+
+  /// No description provided for @privacyDataCollectionContent.
+  ///
+  /// In en, this message translates to:
+  /// **'We collect minimal personal data (e.g., username, location for reports/bookings) to enable app functionality. Anonymous users\' interactions are not linked to personal identifiers.'**
+  String get privacyDataCollectionContent;
+
+  /// No description provided for @privacyDataUsageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'2. Data Usage'**
+  String get privacyDataUsageTitle;
+
+  /// No description provided for @privacyDataUsageContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Data is used to process reports, manage bookings, and enhance community services. Anonymized data may be shared with local authorities for urban planning and safety initiatives.'**
+  String get privacyDataUsageContent;
+
+  /// No description provided for @privacyDataSecurityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'3. Data Security'**
+  String get privacyDataSecurityTitle;
+
+  /// No description provided for @privacyDataSecurityContent.
+  ///
+  /// In en, this message translates to:
+  /// **'We employ encryption and secure protocols to protect registered users\' credentials and data. Regular security audits ensure compliance with national regulations.'**
+  String get privacyDataSecurityContent;
+
+  /// No description provided for @privacyCookiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'4. Cookies and Analytics'**
+  String get privacyCookiesTitle;
+
+  /// No description provided for @privacyCookiesContent.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenSpace may use cookies or analytics tools to improve user experience. You can opt out via the Settings page. Analytics data is anonymized and used to optimize app performance.'**
+  String get privacyCookiesContent;
+
+  /// No description provided for @privacyUserRightsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'5. Your Rights'**
+  String get privacyUserRightsTitle;
+
+  /// No description provided for @privacyUserRightsContent.
+  ///
+  /// In en, this message translates to:
+  /// **'You have the right to access, correct, or delete your personal data. Contact us via the Help & Support page. Requests for data access or deletion will be processed within 30 days, per regulatory requirements.'**
+  String get privacyUserRightsContent;
+
+  /// No description provided for @privacyInquiries.
+  ///
+  /// In en, this message translates to:
+  /// **'For further inquiries, contact support@openspace.go.tz or use the Help & Support page.'**
+  String get privacyInquiries;
+
+  /// No description provided for @languageSelectSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select your preferred language'**
+  String get languageSelectSubtitle;
+
+  /// No description provided for @languageEnglishDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic English language'**
+  String get languageEnglishDescription;
+
+  /// No description provided for @languageSwahiliDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Lugha ya Kiswahili fasaha'**
+  String get languageSwahiliDescription;
+
+  /// No description provided for @howToUseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How to Use the App'**
+  String get howToUseTitle;
+
+  /// No description provided for @offlineModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline Mode'**
+  String get offlineModeTitle;
+
+  /// No description provided for @offlineModeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This app supports offline functionality to ensure you can access features even without internet connection.'**
+  String get offlineModeDescription;
+
+  /// No description provided for @firstTimeUseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'First Time Use'**
+  String get firstTimeUseTitle;
+
+  /// No description provided for @firstTimeUseDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When you first use the app, you need to be online to download and cache data (reports, bookings, open spaces). This allows you to access the information later when offline.'**
+  String get firstTimeUseDescription;
+
+  /// No description provided for @offlineAccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline Access'**
+  String get offlineAccessTitle;
+
+  /// No description provided for @offlineAccessDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Once data is cached, you can view reports, bookings, and open spaces without internet. You can also submit new reports and bookings offline - they will be saved locally.'**
+  String get offlineAccessDescription;
+
+  /// No description provided for @autoSyncTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic Synchronization'**
+  String get autoSyncTitle;
+
+  /// No description provided for @autoSyncDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When your internet connection returns, the app automatically syncs all pending reports and bookings to the server. You\'ll see a notification when sync is complete.'**
+  String get autoSyncDescription;
+
+  /// No description provided for @offlineTipsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline Tips'**
+  String get offlineTipsTitle;
+
+  /// No description provided for @offlineTip1.
+  ///
+  /// In en, this message translates to:
+  /// **'Always connect to internet at least once to download initial data'**
+  String get offlineTip1;
+
+  /// No description provided for @offlineTip2.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted reports/bookings while offline will show \'Pending\' status'**
+  String get offlineTip2;
+
+  /// No description provided for @offlineTip3.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull down to refresh when online to get latest data'**
+  String get offlineTip3;
+
+  /// No description provided for @offlineTip4.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline indicator appears in the app bar when no connection'**
+  String get offlineTip4;
+
+  /// No description provided for @gotItButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Got It!'**
+  String get gotItButton;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

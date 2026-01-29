@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:kinondoni_openspace_app/data/repository/profile_repository.dart';
 import 'package:kinondoni_openspace_app/screens/userreports.dart';
 import 'package:kinondoni_openspace_app/utils/constants.dart';
-import 'package:kinondoni_openspace_app/screens/edit_profile.dart';
-import 'package:kinondoni_openspace_app/screens/pop_card.dart';
+import 'package:kinondoni_openspace_app/screens/misc/access_denied_screen.dart';
 import 'package:provider/provider.dart';
-import '../utils/alert/access_denied_dialog.dart';
 import '../widget/custom_navigation_bar.dart';
 import 'bookings.dart';
 import '../providers/user_provider.dart';
@@ -21,7 +19,6 @@ class UserProfilePage extends StatefulWidget {
 class _UserProfilePageState extends State<UserProfilePage> {
   Map<String, dynamic>? _profile;
   bool _isLoading = true;
-  String? _error;
   int _currentIndex = 2;
 
   @override
@@ -46,7 +43,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
       setState(() {
         _profile = profileData;
         _isLoading = false;
-        _error = null;
       });
     } catch (e) {
       if (!mounted) return;
@@ -55,7 +51,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
         errorMessage = errorMessage.substring("Exception: ".length);
       }
       setState(() {
-        _error = AppLocalizations.of(context)!.profileFailedLoad;
         _isLoading = false;
       });
 
@@ -85,17 +80,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   void _onNavTap(int index) {
     if (index == _currentIndex) return;
-    setState(() => _currentIndex = index);
 
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pop(context, 0);
         break;
       case 1:
-        Navigator.pushReplacementNamed(context, '/map');
+        Navigator.pushNamed(context, '/map');
         break;
       case 2:
-        Navigator.pushReplacementNamed(context, '/user-profile');
+        // Already on Profile
         break;
     }
   }
@@ -107,36 +101,107 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final theme = Theme.of(context);
 
     if (user.isAnonymous) {
+      // Extract placeholder data for anonymous
+      String name = "Guest User";
+      String email = "Sign in to see your profile";
+      
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        showAccessDeniedDialog(context, featureName: "profile");
+        // Navigate to access denied screen instead of showing dialog
+        // so user has the 'X' and 'Go Home' buttons
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => AccessDeniedScreen(featureName: "profile"),
+          ),
+        );
       });
-      return Container(
-        color: AppConstants.primaryBlue,
-        child: SafeArea(
-          top: false,
-          child: ClipRect(
-            child: Scaffold(
-              appBar: AppBar(
-                backgroundColor: AppConstants.primaryBlue,
+
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 280.0,
+              floating: false,
+              pinned: true,
+              backgroundColor: AppConstants.primaryBlue,
+              flexibleSpace: FlexibleSpaceBar(
+                centerTitle: true,
                 title: Text(
-                  loc.profileTitle,
+                  name,
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppConstants.white,
+                    color: Colors.white,
+                    fontSize: 16.0,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                centerTitle: true,
-              ),
-              body: Center(
-                child: Text(loc.profileNoLogin),
-              ),
-              bottomNavigationBar: CustomBottomNavBar(
-                currentIndex: _currentIndex,
-                onTap: _onNavTap,
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            AppConstants.primaryBlue,
+                            AppConstants.primaryBlue.withValues(alpha: 0.7),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 40),
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 3),
+                          ),
+                          child: const CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Colors.white24,
+                            child: Icon(Icons.person, size: 50, color: Colors.white),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          email,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader(context, loc.activitySection),
+                    const SizedBox(height: 10),
+                    _buildSettingsItem(
+                      context,
+                      icon: Icons.login_rounded,
+                      title: "Sign In Required",
+                      subtitle: "Please sign in to view your activity",
+                      onTap: () => Navigator.pushNamed(context, '/login'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: CustomBottomNavBar(
+          currentIndex: _currentIndex,
+          onTap: _onNavTap,
         ),
       );
     }
@@ -176,7 +241,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         end: Alignment.bottomCenter,
                         colors: [
                           AppConstants.primaryBlue,
-                          AppConstants.primaryBlue.withOpacity(0.7),
+                          AppConstants.primaryBlue.withValues(alpha: 0.7),
                         ],
                       ),
                     ),
@@ -191,7 +256,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           border: Border.all(color: Colors.white, width: 3),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: AppConstants.primaryBlue.withValues(alpha: 0.3),
                               blurRadius: 10,
                               offset: const Offset(0, 5),
                             ),
@@ -226,21 +291,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 icon: const Icon(Icons.refresh, color: Colors.white),
                 onPressed: _isLoading ? null : _fetchProfile,
               ),
-              IconButton(
-                icon: const Icon(Icons.edit, color: Colors.white),
-                onPressed: _isLoading || _error != null
-                    ? null
-                    : () {
-                        if (_profile != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const EditProfilePage(),
-                            ),
-                          );
-                        }
-                      },
-              ),
             ],
           ),
           SliverToBoxAdapter(
@@ -249,53 +299,18 @@ class _UserProfilePageState extends State<UserProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionHeader(context, loc.generalSection),
-                  const SizedBox(height: 10),
-                  _buildSettingsItem(
-                    context,
-                    icon: Icons.settings_outlined,
-                    title: loc.profileSettings,
-                    subtitle: loc.profileSettingsSubtitle,
-                    onTap: () {
-                      if (_profile != null) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const EditProfilePage(),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                  _buildSettingsItem(
-                    context,
-                    icon: Icons.lock_outline,
-                    title: loc.privacy,
-                    subtitle: loc.privacySubtitle,
-                    onTap: () {
-                      _showPopup(
-                        context,
-                        title: loc.privacyPopupTitle,
-                        message: loc.privacyPopupMessage,
-                        buttonText: loc.privacyPopupButton,
-                        icon: Icons.lock_outline,
-                        iconColor: Colors.blueAccent,
-                        onConfirm: () => Navigator.pop(context),
-                      );
-                    },
-                  ),
-                  _buildSettingsItem(
-                    context,
-                    icon: Icons.notifications_outlined,
-                    title: loc.notificationsTitle,
-                    subtitle: loc.notificationSettings,
-                    onTap: () {
-                      Navigator.pushNamed(context, '/user-notification');
-                    },
-                  ),
-                  const SizedBox(height: 24),
                   _buildSectionHeader(context, loc.activitySection),
                   const SizedBox(height: 10),
+                  if (!user.isAnonymous)
+                    _buildSettingsItem(
+                      context,
+                      icon: Icons.notifications_outlined,
+                      title: loc.notificationsTitle,
+                      subtitle: loc.notificationSettings,
+                      onTap: () {
+                        Navigator.pushNamed(context, '/user-notification');
+                      },
+                    ),
                   _buildSettingsItem(
                     context,
                     icon: Icons.report_problem_outlined,
@@ -363,7 +378,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       child: ListTile(
         leading: CircleAvatar(
           radius: 22,
-          backgroundColor: AppConstants.primaryBlue.withOpacity(0.15),
+          backgroundColor: AppConstants.primaryBlue.withValues(alpha: 0.15),
           child: Icon(icon, color: AppConstants.primaryBlue, size: 24),
         ),
         title: Text(
@@ -382,36 +397,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
         ),
         trailing: Icon(
           Icons.chevron_right,
-          color: AppConstants.grey.withOpacity(0.7),
+          color: AppConstants.grey.withValues(alpha: 0.7),
           size: 28,
         ),
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
       ),
-    );
-  }
-
-  void _showPopup(
-    BuildContext context, {
-    required String title,
-    required String message,
-    required String buttonText,
-    required IconData icon,
-    required Color iconColor,
-    required VoidCallback onConfirm,
-  }) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return PopupCard(
-          title: title,
-          message: message,
-          buttonText: buttonText,
-          icon: icon,
-          iconColor: iconColor,
-          onConfirm: onConfirm,
-        );
-      },
     );
   }
 }

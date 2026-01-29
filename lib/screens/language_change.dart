@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
+import 'package:kinondoni_openspace_app/utils/constants.dart';
 import '../providers/locale_provider.dart';
 import '../l10n/app_localizations.dart';
-import 'package:kinondoni_openspace_app/utils/constants.dart';
 
 class LanguageSettings extends StatelessWidget {
   const LanguageSettings({super.key});
@@ -10,89 +11,109 @@ class LanguageSettings extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localeProvider = Provider.of<LocaleProvider>(context);
+    final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppConstants.primaryBlue, 
-        elevation: 2,
+        backgroundColor: isDark ? theme.cardColor : AppConstants.primaryBlue,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          AppLocalizations.of(context)!.changeLanguage,
+          loc.languageTitle,
           style: const TextStyle(
             fontSize: 20,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Icon + description row
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.language,
-                    color: Colors.blue,
-                    size: 22,
-                  ),
+            // Header Section
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: isDark ? theme.cardColor : AppConstants.primaryBlue,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    AppLocalizations.of(context)!.changeLanguage,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color:
-                          Theme.of(context).textTheme.headlineSmall?.color,
+              ),
+              child: Column(
+                children: [
+                   Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.translate_rounded,
+                      color: Colors.white,
+                      size: 40,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  Text(
+                    loc.changeLanguage,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    loc.languageSelectSubtitle,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 30),
-
-            // Language options
-            Row(
-              children: [
-                Expanded(
-                  child: _buildLanguageOption(
+            
+            const SizedBox(height: 32),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  _buildLanguageOption(
                     context,
                     localeProvider,
                     'en',
-                    AppLocalizations.of(context)!.english,
+                    loc.english,
                     '🇺🇸',
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildLanguageOption(
+                  _buildLanguageOption(
                     context,
                     localeProvider,
                     'sw',
-                    AppLocalizations.of(context)!.kiswahili,
+                    loc.kiswahili,
                     '🇹🇿',
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
       ),
     );
   }
+
 
   Widget _buildLanguageOption(
     BuildContext context,
@@ -102,53 +123,113 @@ class LanguageSettings extends StatelessWidget {
     String flag,
   ) {
     final isSelected = localeProvider.locale.languageCode == languageCode;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context)!;
+
+    final String description = languageCode == 'en' 
+        ? loc.languageEnglishDescription 
+        : loc.languageSwahiliDescription;
 
     return GestureDetector(
-      onTap: () => localeProvider.setLocale(Locale(languageCode)),
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        localeProvider.setLocale(Locale(languageCode));
+      },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: isSelected
-              ? Colors.blue
-              : Theme.of(context).brightness == Brightness.dark
-                  ? Colors.grey[850]
-                  : Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
+              ? AppConstants.primaryBlue.withValues(alpha: 0.1)
+              : isDark
+                  ? theme.cardColor
+                  : Colors.white,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? Colors.blue : Colors.transparent,
+            color: isSelected
+                ? AppConstants.primaryBlue
+                : isDark
+                    ? Colors.white10
+                    : Colors.grey.shade200,
             width: 2,
           ),
-        ),
-        child: Column(
-          children: [
-            Text(
-              flag,
-              style: const TextStyle(fontSize: 26),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              languageName,
-              style: TextStyle(
-                color: isSelected
-                    ? Colors.white
-                    : Theme.of(context).textTheme.bodyMedium?.color,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                fontSize: 15,
+          boxShadow: [
+            if (isSelected)
+              BoxShadow(
+                color: AppConstants.primaryBlue.withValues(alpha: 0.2),
+                blurRadius: 15,
+                spreadRadius: 2,
+              )
+            else if (!isDark)
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-              textAlign: TextAlign.center,
+          ],
+        ),
+        child: Row(
+          children: [
+            // Flag Icon Container
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppConstants.primaryBlue
+                    : isDark
+                        ? Colors.white10
+                        : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                flag,
+                style: const TextStyle(fontSize: 32),
+              ),
             ),
-            if (isSelected) ...[
-              const SizedBox(height: 6),
+            const SizedBox(width: 20),
+            // Text Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    languageName,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: isSelected ? AppConstants.primaryBlue : null,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Selection Indicator
+            if (isSelected)
               Container(
-                width: 22,
-                height: 2,
-                decoration: BoxDecoration(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: AppConstants.primaryBlue,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check,
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(1),
+                  size: 16,
                 ),
               ),
-            ],
           ],
         ),
       ),

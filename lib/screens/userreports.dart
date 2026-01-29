@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../model/Report.dart';
 import '../service/userreports.dart';
 import '../data/repository/report_repository.dart';
 import '../data/local/report_local.dart';
+import '../core/network/connectivity_service.dart';
 import '../utils/constants.dart';
 
 class UserReportsPage extends StatefulWidget {
@@ -24,20 +26,102 @@ class _UserReportsPageState extends State<UserReportsPage> {
   }
 
   Future<List<Report>> _fetchUserReports() async {
-    final reportRepo = ReportRepository(localService: ReportLocal());
-    
     try {
-      // Try to fetch from API first  
-      final onlineReports = await ReportService().fetchUserReports();
-      print('Fetched ${onlineReports.length} reports from API');
-      return onlineReports;
+      // Reduce timeout to 8 seconds since API is timing out
+      return await _fetchUserReportsInternal().timeout(
+        const Duration(seconds: 8),
+        onTimeout: () async {
+          print('⚠️ Fetch timeout after 8s - returning local data only');
+          return _fetchLocalReportsOnly();
+        },
+      );
     } catch (e) {
-      debugPrint('Failed to fetch from API: $e. Using local data.');
-      // Fall back to local data if API fails
-      final localReports = await reportRepo.getAllReports();
-      print('Fetched ${localReports.length} local reports');
-      return localReports;
+      print('❌ Error in _fetchUserReports: $e');
+      // Return local data if anything fails
+      return _fetchLocalReportsOnly();
     }
+  }
+
+  Future<List<Report>> _fetchLocalReportsOnly() async {
+    try {
+      final reportRepo = ReportRepository(localService: ReportLocal());
+      final localReports = await reportRepo.getAllReports();
+      localReports.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      print('📦 Loaded ${localReports.length} local reports only');
+      return localReports;
+    } catch (e) {
+      print('❌ Error fetching local reports: $e');
+      return [];
+    }
+  }
+
+  Future<List<Report>> _fetchUserReportsInternal() async {
+    final reportRepo = ReportRepository(localService: ReportLocal());
+    List<Report> allReports = [];
+    
+    // 1. Get Pending/Offline Reports - simplified to avoid blocking
+    try {
+       final pending = await reportRepo.getPendingReports().timeout(
+         const Duration(seconds: 2),
+         onTimeout: () {
+           print('⚠️ Pending reports fetch timeout');
+           return <Report>[];
+         },
+       );
+       allReports.addAll(pending);
+       print('📝 Loaded ${pending.length} pending reports');
+    } catch (e) {
+       print('⚠️ Error fetching pending reports: $e');
+    }
+
+    // 2. Get Online/Submitted Reports
+    
+    // Check connectivity first to avoid long timeout if offline
+    final isOnline = await context.read<ConnectivityService>().checkConnectivity();
+    
+    if (isOnline) {
+      try {
+        // Add timeout since server is returning 408 errors
+        final onlineReports = await ReportService().fetchUserReports().timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            print('⚠️ API timeout after 5s - using local data');
+            return <Report>[];
+          },
+        );
+        print('✅ Fetched ${onlineReports.length} reports from API');
+        allReports.addAll(onlineReports);
+      } catch (e) {
+        print('⚠️ API error: $e - using local data');
+        // Fall back to local data if API fails
+        final localReports = await reportRepo.getAllReports();
+        _mergeLocalReports(allReports, localReports);
+      }
+    } else {
+       // Device is offline - load local data immediately
+       print('📴 Device offline, loading local reports immediately');
+       final localReports = await reportRepo.getAllReports();
+       _mergeLocalReports(allReports, localReports);
+    }
+
+    // Sort by Date DESC
+    allReports.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    
+    return allReports;
+  }
+  
+  void _mergeLocalReports(List<Report> allReports, List<Report> localReports) {
+      // Avoid duplicates if we already have pending reports
+      if (allReports.isEmpty) {
+        allReports.addAll(localReports);
+      } else {
+        final existingIds = allReports.map((r) => r.id).toSet();
+        for (var r in localReports) {
+           if (!existingIds.contains(r.id)) {
+             allReports.add(r);
+           }
+        }
+      }
   }
 
   String formatDate(DateTime date) {
@@ -47,11 +131,13 @@ class _UserReportsPageState extends State<UserReportsPage> {
   Widget _buildReportCard(Report report) {
     final status = (report.status ?? 'submitted').toLowerCase();
     final statusColor = _getStatusColor(status);
+    final isOffline = status == 'pending';
+    final theme = Theme.of(context);
 
     return Container(
       margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -66,7 +152,12 @@ class _UserReportsPageState extends State<UserReportsPage> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            // Navigate to details if needed
+            // Navigate to details if needed, pass report object
+             Navigator.pushNamed(
+                context,
+                '/report-detail',
+                arguments: report,
+             );
           },
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -80,9 +171,9 @@ class _UserReportsPageState extends State<UserReportsPage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
+                        color: statusColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: statusColor.withOpacity(0.3)),
+                        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -97,7 +188,7 @@ class _UserReportsPageState extends State<UserReportsPage> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            status.toUpperCase(),
+                            isOffline ? 'OFFLINE / PENDING' : status.toUpperCase(),
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -110,24 +201,25 @@ class _UserReportsPageState extends State<UserReportsPage> {
                     ),
                     const Spacer(),
                     // Report ID
-                    Text(
-                      '#${report.reportId}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[600],
+                    if (!isOffline)
+                      Text(
+                        '#${report.reportId}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 // Description
                 Text(
                   report.description,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1A1A),
+                    color: Theme.of(context).colorScheme.onSurface,
                     height: 1.4,
                   ),
                   maxLines: 2,
@@ -145,24 +237,7 @@ class _UserReportsPageState extends State<UserReportsPage> {
                 ],
                 _buildDetailRow(Icons.access_time, formatDate(report.createdAt)),
                 // Attachment indicator
-                if (report.file != null && report.file!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Row(
-                      children: [
-                        Icon(Icons.attachment, size: 16, color: AppConstants.primaryBlue),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Has attachment',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppConstants.primaryBlue,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+
               ],
             ),
           ),
@@ -172,16 +247,17 @@ class _UserReportsPageState extends State<UserReportsPage> {
   }
 
   Widget _buildDetailRow(IconData icon, String text) {
+    final theme = Theme.of(context);
     return Row(
       children: [
-        Icon(icon, size: 14, color: Colors.grey[600]),
+        Icon(icon, size: 14, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
               fontSize: 13,
-              color: Colors.grey[700],
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -194,6 +270,7 @@ class _UserReportsPageState extends State<UserReportsPage> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'pending':
+        return Colors.orange; // Distinct orange for offline pending
       case 'submitted':
         return const Color(0xFFF59E0B);
       case 'resolved':
@@ -224,7 +301,7 @@ class _UserReportsPageState extends State<UserReportsPage> {
         });
       },
       selectedColor: AppConstants.primaryBlue,
-      backgroundColor: AppConstants.primaryBlue.withOpacity(0.1),
+      backgroundColor: AppConstants.primaryBlue.withValues(alpha: 0.1),
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : AppConstants.primaryBlue,
         fontWeight: FontWeight.w600,
@@ -233,7 +310,7 @@ class _UserReportsPageState extends State<UserReportsPage> {
       shape: RoundedRectangleBorder(
         borderRadius:BorderRadius.circular(20),
         side: BorderSide(
-          color: isSelected ? AppConstants.primaryBlue : AppConstants.primaryBlue.withOpacity(0.3),
+          color: isSelected ? AppConstants.primaryBlue : AppConstants.primaryBlue.withValues(alpha: 0.3),
         ),
       ),
     );
@@ -241,8 +318,9 @@ class _UserReportsPageState extends State<UserReportsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('My Reports', style: TextStyle(fontWeight: FontWeight.w600)),
         backgroundColor: AppConstants.primaryBlue,
@@ -265,18 +343,18 @@ class _UserReportsPageState extends State<UserReportsPage> {
           // Filter chips
           Container(
             padding: const EdgeInsets.all(16),
-            color: Colors.white,
+            color: theme.cardColor,
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
                   _buildFilterChip('All', 'all', Icons.list),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Pending', 'pending', Icons.pending),
+                  _buildFilterChip('Offline', 'pending', Icons.wifi_off),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Resolved', 'resolved', Icons.check_circle),
+                  _buildFilterChip('Submitted (Pending)', 'submitted', Icons.upload),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Rejected', 'rejected', Icons.cancel),
+                  _buildFilterChip('Completed', 'resolved', Icons.check_circle),
                 ],
               ),
             ),
@@ -296,16 +374,16 @@ class _UserReportsPageState extends State<UserReportsPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline, size: 60, color: Colors.grey[400]),
+                        Icon(Icons.error_outline, size: 60, color: theme.dividerColor),
                         const SizedBox(height: 16),
                         Text(
                           'Error loading reports',
-                          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                          style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           '${snapshot.error}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                          style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -314,29 +392,35 @@ class _UserReportsPageState extends State<UserReportsPage> {
                 }
 
                 final allReports = snapshot.data ?? [];
-                print('Total reports loaded: ${allReports.length}');
                 
                 // Filter reports
                 final filteredReports = _selectedFilter == 'all'
                     ? allReports
                     : allReports.where((r) {
                         final status = (r.status ?? 'submitted').toLowerCase();
-                        return status == _selectedFilter || 
-                               (_selectedFilter == 'pending' && status == 'submitted');
+                        if (_selectedFilter == 'resolved') {
+                          return status == 'resolved' || status == 'approved';
+                        }
+                        return status == _selectedFilter;
                       }).toList();
-
-                print('Filtered reports (${_selectedFilter}): ${filteredReports.length}');
 
                 if (filteredReports.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.inbox, size: 60, color: Colors.grey[400]),
+                        Icon(
+                             _selectedFilter == 'pending' ? Icons.wifi_off : Icons.inbox, 
+                             size: 60, color: theme.dividerColor
+                        ),
                         const SizedBox(height: 16),
                         Text(
-                          _selectedFilter == 'all' ? 'No reports yet' : 'No $_selectedFilter reports',
-                          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                          _selectedFilter == 'all' 
+                              ? 'No reports yet' 
+                              : _selectedFilter == 'pending' 
+                                  ? 'No offline reports waiting to sync' 
+                                  : 'No $_selectedFilter reports',
+                          style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                         ),
                       ],
                     ),

@@ -140,7 +140,7 @@ class Report {
     DateTime? parsedCreatedAt;
     try {
       parsedCreatedAt = DateTime.parse(json['createdAt'] as String);
-    } catch (e, s) {
+    } catch (e) {
       print("Error parsing createdAt: ${json['createdAt']}. Error: $e");
       throw FormatException("Invalid date format for 'createdAt'");
     }

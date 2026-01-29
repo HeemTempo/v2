@@ -43,20 +43,21 @@ import 'package:kinondoni_openspace_app/screens/userreports.dart';
 import 'package:kinondoni_openspace_app/screens/pending_reports.dart';
 import 'package:kinondoni_openspace_app/screens/report_detail.dart';
 import 'package:kinondoni_openspace_app/model/Report.dart';
-import 'package:kinondoni_openspace_app/utils/alert/access_denied_dialog.dart';
-import 'package:kinondoni_openspace_app/utils/alert/error_dialog.dart';
 import 'package:kinondoni_openspace_app/utils/permission.dart';
 import 'package:kinondoni_openspace_app/utils/theme.dart';
 import 'package:kinondoni_openspace_app/services/notification_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:kinondoni_openspace_app/screens/misc/access_denied_screen.dart';
+import 'package:kinondoni_openspace_app/screens/misc/not_found_screen.dart';
 import 'l10n/app_localizations.dart';
 
 Future<void> main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-    print("DEBUG: WidgetsFlutterBinding initialized");
+    await initHiveForFlutter();
+    print("DEBUG: WidgetsFlutterBinding & Hive initialized (Standard)");
 
     try {
       await requestNotificationPermission();
@@ -98,7 +99,12 @@ Future<void> main() async {
         print("Report IDs: $reportIds");
         
         // Show user-friendly notification
-        NotificationService.showSyncSuccess(reportCount, bookingCount, reportIds);
+        if (reportCount > 0 || bookingCount > 0) {
+          NotificationService.showSuccess(
+            'Sync completed! $reportCount reports and $bookingCount bookings synced.',
+            duration: const Duration(seconds: 5),
+          );
+        }
       };
       syncService.init();
       print("DEBUG: SyncService initialized");
@@ -158,42 +164,35 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: _initializeApp(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const MaterialApp(
-            home: Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            ),
-          );
-        }
-        
-        if (snapshot.hasError) {
-          return ErrorApp(message: 'Initialization failed: ${snapshot.error}');
-        }
-        
-        return _buildApp();
-      },
-    );
-  }
-  
-  Future<void> _initializeApp() async {
-    await Future.delayed(const Duration(milliseconds: 100));
+    print('🏗️ MyApp.build() called - starting app build');
+    return _buildApp();
   }
   
   Widget _buildApp() {
+    print('🔧 _buildApp() called - initializing services');
     final client = GraphQLService().client;
+    print('✅ GraphQL client initialized');
     final connectivityService = ConnectivityService();
+    print('✅ ConnectivityService initialized');
     final reportLocal = ReportLocal();
     final reportRepository = ReportRepository(localService: reportLocal);
+    print('✅ ReportRepository initialized');
 
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ConnectivityService()),
+        ChangeNotifierProvider(create: (_) {
+          print('✅ Creating ConnectivityService provider');
+          return ConnectivityService();
+        }),
         ChangeNotifierProvider.value(value: themeProvider),
-        ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider(create: (_) {
+          print('✅ Creating UserProvider');
+          return UserProvider();
+        }),
+        ChangeNotifierProvider(create: (_) {
+          print('✅ Creating LocaleProvider');
+          return LocaleProvider();
+        }),
        
         ChangeNotifierProvider(
           create: (_) => ReportProvider(
@@ -216,9 +215,27 @@ class MyApp extends StatelessWidget {
         Provider<ValueNotifier<GraphQLClient>>(
           create: (_) => ValueNotifier(client),
         ),
-        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProxyProvider<ConnectivityService, NotificationProvider>(
+          create: (context) {
+            print('✅ Creating NotificationProvider');
+            return NotificationProvider(
+              connectivityService: context.read<ConnectivityService>(),
+            );
+          },
+          update: (context, connectivity, previous) =>
+              previous ??
+              NotificationProvider(
+                connectivityService: connectivity,
+              ),
+        ),
         Provider<Future<SharedPreferences>>(
-          create: (_) => SharedPreferences.getInstance(),
+          create: (_) {
+            print('⏳ Starting SharedPreferences.getInstance() - this might hang...');
+            return SharedPreferences.getInstance().then((prefs) {
+              print('✅ SharedPreferences initialized successfully');
+              return prefs;
+            });
+          },
           lazy: false, // Ensure SharedPreferences is initialized early
         ),
       ],
@@ -292,7 +309,6 @@ class MyApp extends StatelessWidget {
                 );
 
                 final protectedRoutes = [
-                  '/user-profile',
                   '/edit-profile',
                   '/bookings-list',
                   '/userReports',
@@ -301,19 +317,10 @@ class MyApp extends StatelessWidget {
                 // Handle protected routes for anonymous users
                 if (protectedRoutes.contains(settings.name) &&
                     userProvider.user.isAnonymous) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    showAccessDeniedDialog(
-                      context,
-                      featureName: settings.name!.split('/').last,
-                    );
-                  });
                   return MaterialPageRoute(
-                    builder:
-                        (_) => const Scaffold(
-                          body: Center(
-                            child: Text("Access Denied. Please log in."),
-                          ),
-                        ),
+                    builder: (context) => AccessDeniedScreen(
+                      featureName: settings.name?.split('/').last ?? 'Feature',
+                    ),
                   );
                 }
 
@@ -498,22 +505,8 @@ class MyApp extends StatelessWidget {
                 print(
                   "Route ${settings.name} not found, showing default PageNotFound.",
                 );
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  showErrorDialog(
-                    context,
-                    routeName: settings.name ?? "unknown route",
-                  );
-                });
                 return MaterialPageRoute(
-                  builder:
-                      (_) => Scaffold(
-                        appBar: AppBar(title: const Text("Page Not Found")),
-                        body: Center(
-                          child: Text(
-                            "Sorry, the page '${settings.name}' could not be found.",
-                          ),
-                        ),
-                      ),
+                  builder: (context) => NotFoundScreen(routeName: settings.name),
                 );
               },
             ),

@@ -84,8 +84,9 @@ class AuthService {
         }
 
         final userJson = data['user'];
-        if (userJson == null)
+        if (userJson == null) {
           throw Exception("Login failed: missing user data.");
+        }
 
         var user = User.fromLoginJson({'user': userJson});
 

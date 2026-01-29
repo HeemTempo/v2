@@ -38,19 +38,11 @@ class _SplashScreenContentState extends State<SplashScreenContent>
   @override
   Widget build(BuildContext context) {
     Provider.of<LocaleProvider>(context, listen: false);
-
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppConstants.primaryBlue,
-            // ignore: deprecated_member_use
-            AppConstants.primaryBlue.withOpacity(0.8),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
+      color: theme.scaffoldBackgroundColor,
       child: Center(
         child: ScaleTransition(
           scale: _scaleAnimation,
@@ -59,19 +51,21 @@ class _SplashScreenContentState extends State<SplashScreenContent>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.public,
                   size: 120,
-                  color: AppConstants.white,
+                  color: isDark ? Colors.greenAccent : AppConstants.primaryBlue,
                 ),
                 const SizedBox(height: 16),
 
                 // ✅ Localized App Name
                 Text(
                   AppLocalizations.of(context)!.appName,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        letterSpacing: 1.2,
-                      ),
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppConstants.primaryBlue,
+                  ),
                 ),
 
                 const SizedBox(height: 8),
@@ -79,9 +73,10 @@ class _SplashScreenContentState extends State<SplashScreenContent>
                 // ✅ Localized tagline
                 Text(
                   AppLocalizations.of(context)!.splashTagline,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white70 : Colors.grey[700],
+                  ),
                 ),
               ],
             ),

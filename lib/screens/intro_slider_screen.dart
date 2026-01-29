@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kinondoni_openspace_app/screens/how_to_use_page.dart';
 import 'package:kinondoni_openspace_app/screens/splash_screen.dart';
+import 'package:kinondoni_openspace_app/service/auth_service.dart';
 import 'package:kinondoni_openspace_app/screens/user_type.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,7 +32,12 @@ class _IntroSliderScreenState extends State<IntroSliderScreen> with SingleTicker
   @override
   void initState() {
     super.initState();
-    _checkOnboardingStatus();
+    
+    // Check onboarding AFTER the frame is built to avoid white screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkOnboardingStatus();
+    });
+    
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
@@ -43,21 +50,30 @@ class _IntroSliderScreenState extends State<IntroSliderScreen> with SingleTicker
   }
 
   void _checkOnboardingStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
-    if (hasSeenOnboarding) {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      if (!userProvider.user.isAnonymous) {
+    try {
+      // Check for saved registered user session
+      final authService = AuthService();
+      final user = await authService.getOfflineUser();
+
+      if (user != null && mounted) {
+        // Found registered user - Restore session and go to Home
+        print("✅ Session restored for: ${user.username}");
+        Provider.of<UserProvider>(context, listen: false).setUser(user);
         Navigator.pushReplacementNamed(context, '/home');
-      } else {
-        Navigator.pushReplacementNamed(context, '/login');
+        return;
       }
+      
+      // If no registered user found, stay on Intro Screen (Fresh start for Anonymous)
+      print("ℹ️ No registered session found. Starting fresh.");
+      
+    } catch (e) {
+      print('❌ Error checking session status: $e');
     }
   }
 
   void _startAutoScroll() {
     _autoScrollTimer?.cancel();
-    if (_autoScrollEnabled && _currentPage < 3) {
+    if (_autoScrollEnabled && _currentPage < 4) {
       _autoScrollTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
         if (!mounted || !_pageController.hasClients) return;
         _nextPage();
@@ -82,7 +98,7 @@ class _IntroSliderScreenState extends State<IntroSliderScreen> with SingleTicker
 
   void _nextPage() {
     if (!mounted || !_pageController.hasClients) return;
-    if (_currentPage < 3) {
+    if (_currentPage < 4) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -135,6 +151,7 @@ class _IntroSliderScreenState extends State<IntroSliderScreen> with SingleTicker
               physics: const BouncingScrollPhysics(),
               children: [
                 const SplashScreenContent(),
+                _HowToUseOnboardingContent(),
                 OnboardingScreenContent(
                   title: loc.onboardingTitle1,
                   description: loc.onboardingDescription1,
@@ -154,19 +171,23 @@ class _IntroSliderScreenState extends State<IntroSliderScreen> with SingleTicker
           Positioned(
             top: 40,
             right: 16,
-            child: TextButton(
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                _skipOnboarding();
-              },
-              child: Text(
-                loc.skipButton,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppConstants.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+            child: _currentPage < 4
+                ? TextButton(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      _skipOnboarding();
+                    },
+                    child: Text(
+                      loc.skipButton,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? Colors.white70 
+                            : AppConstants.primaryBlue,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
           ),
           Positioned(
             bottom: 50,
@@ -176,10 +197,14 @@ class _IntroSliderScreenState extends State<IntroSliderScreen> with SingleTicker
               children: [
                 SmoothPageIndicator(
                   controller: _pageController,
-                  count: 4,
-                  effect: const WormEffect(
-                    dotColor: AppConstants.grey,
-                    activeDotColor: AppConstants.white,
+                  count: 5,
+                  effect: WormEffect(
+                    dotColor: Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.grey[700]! 
+                        : Colors.grey[300]!,
+                    activeDotColor: Theme.of(context).brightness == Brightness.dark 
+                        ? AppConstants.primaryBlue 
+                        : AppConstants.primaryBlue,
                     dotHeight: 10,
                     dotWidth: 10,
                     spacing: 16,
@@ -206,29 +231,36 @@ class _IntroSliderScreenState extends State<IntroSliderScreen> with SingleTicker
                                 HapticFeedback.lightImpact();
                                 _previousPage();
                               },
-                              style: Theme.of(context).elevatedButtonTheme.style?.copyWith(
-                                backgroundColor: WidgetStateProperty.all(AppConstants.white),
-                                foregroundColor: WidgetStateProperty.all(AppConstants.primaryBlue),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                                    ? Colors.grey[800] 
+                                    : Colors.grey[200],
+                                foregroundColor: Theme.of(context).textTheme.bodyMedium?.color,
                               ),
                               child: Text(
                                 loc.backButton,
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w600,
-                                  color: AppConstants.primaryBlue,
+                                  color: Theme.of(context).textTheme.bodyMedium?.color,
                                 ),
                               ),
                             )
                           : const SizedBox(width: 60),
-                      _currentPage < 3
+                      _currentPage < 4
                           ? ElevatedButton(
                               onPressed: () {
                                 HapticFeedback.lightImpact();
                                 _nextPage();
                               },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppConstants.primaryBlue,
+                                foregroundColor: Colors.white,
+                              ),
                               child: Text(
                                 loc.nextButton,
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                style: const TextStyle(
                                   fontWeight: FontWeight.w600,
+                                  color: Colors.white,
                                 ),
                               ),
                             )
@@ -240,6 +272,123 @@ class _IntroSliderScreenState extends State<IntroSliderScreen> with SingleTicker
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HowToUseOnboardingContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accentColor = isDark ? Colors.greenAccent : AppConstants.primaryBlue;
+
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.info_outline, size: 80, color: accentColor),
+              ),
+              const SizedBox(height: 32),
+              Text(
+                loc.howToUseTitle,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: accentColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              _buildInfoCard(
+                context,
+                Icons.wifi,
+                loc.firstTimeUseTitle,
+                loc.firstTimeUseDescription,
+                Colors.green,
+              ),
+              const SizedBox(height: 16),
+              _buildInfoCard(
+                context,
+                Icons.offline_bolt,
+                loc.offlineAccessTitle,
+                loc.offlineAccessDescription,
+                Colors.orange,
+              ),
+              const SizedBox(height: 16),
+              _buildInfoCard(
+                context,
+                Icons.sync,
+                loc.autoSyncTitle,
+                loc.autoSyncDescription,
+                Colors.purple,
+              ),
+              const SizedBox(height: 80),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(
+    BuildContext context,
+    IconData icon,
+    String title,
+    String description,
+    Color color,
+  ) {
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color;
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: TextStyle(fontSize: 12, height: 1.4, color: textColor),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

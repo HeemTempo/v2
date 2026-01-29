@@ -126,7 +126,7 @@ class NotificationDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${notification.createdAt.toString().substring(0, 16)}', // Format: YYYY-MM-DD HH:MM
+                  notification.createdAt.toString().substring(0, 16), // Format: YYYY-MM-DD HH:MM
                   style: const TextStyle(fontSize: 16, color: Colors.black87),
                 ),
                 const SizedBox(height: 16),

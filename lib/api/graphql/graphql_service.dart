@@ -22,10 +22,10 @@ class GraphQLService {
     );
 
     client = GraphQLClient(
-      cache: GraphQLCache(),
+      cache: GraphQLCache(store: HiveStore()),
       link: httpLink,
       defaultPolicies: DefaultPolicies(
-        query: Policies(fetch: FetchPolicy.networkOnly),
+        query: Policies(fetch: FetchPolicy.cacheAndNetwork),
         mutate: Policies(fetch: FetchPolicy.networkOnly),
       ),
     );
@@ -43,7 +43,7 @@ class GraphQLService {
       () => client.query(QueryOptions(
         document: gql(queryString),
         variables: variables ?? {},
-        fetchPolicy: FetchPolicy.networkOnly,
+        fetchPolicy: FetchPolicy.cacheAndNetwork,
       )),
       label: 'QUERY',
     );

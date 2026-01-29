@@ -798,6 +798,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get closeButton => 'CLOSE';
 
   @override
+  String get requestTimeout => 'Request timed out. Please check your connection and try again.';
+
+  @override
+  String syncReportsSuccess(Object count) {
+    return '$count report(s) synced successfully';
+  }
+
+  @override
+  String syncBookingsSuccess(Object count) {
+    return '$count booking(s) synced successfully';
+  }
+
+  @override
   String get offline => 'No internet';
 
   @override
@@ -805,4 +818,297 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get retry => 'Retry';
+
+  @override
+  String get helpSupportTitle => 'Help & Support';
+
+  @override
+  String get needHelpTitle => 'Need Help?';
+
+  @override
+  String get needHelpSubtitle => 'Find answers to common questions or contact our support team.';
+
+  @override
+  String get hideContactForm => 'Hide Contact Form';
+
+  @override
+  String get contactSupport => 'Contact Support';
+
+  @override
+  String get sendMessageTitle => 'Send us a message';
+
+  @override
+  String get messageHint => 'Describe your issue or question in detail...';
+
+  @override
+  String get messageRequired => 'Please enter your message';
+
+  @override
+  String get messageTooShort => 'Please provide more details (at least 10 characters)';
+
+  @override
+  String get messageSentTitle => 'Message Sent!';
+
+  @override
+  String get messageSentContent => 'Your message has been successfully sent to our support team. We will get back to you within 24-48 hours.';
+
+  @override
+  String get sendMessageButton => 'Send Message';
+
+  @override
+  String get faqTitle => 'Frequently Asked Questions';
+
+  @override
+  String get faqCategoryAccount => 'Account & Authentication';
+
+  @override
+  String get faqQuestionResetPass => 'How do I reset my password?';
+
+  @override
+  String get faqAnswerResetPass => 'On the login screen, tap \'Forgot Password\' and enter your registered email address. You will receive a password reset link via email. Follow the instructions in the email to create a new password.';
+
+  @override
+  String get faqQuestionAnonymous => 'Can I use the app without registering?';
+
+  @override
+  String get faqAnswerAnonymous => 'Yes! You can browse and explore public spaces as an anonymous user. However, to report issues, book spaces, and track your activities, you\'ll need to create a registered account.';
+
+  @override
+  String get faqQuestionUpdateProfile => 'How do I update my profile information?';
+
+  @override
+  String get faqAnswerUpdateProfile => 'Go to your Profile page, tap the \'Edit Profile\' button, update your information, and save your changes. Make sure to use a valid email address for important notifications.';
+
+  @override
+  String get faqCategoryReports => 'Reports & Bookings';
+
+  @override
+  String get faqQuestionFindReports => 'Where can I find my submitted reports?';
+
+  @override
+  String get faqAnswerFindReports => 'Navigate to your Profile page and select \'My Reports\'. Here you can view all your submitted reports, track their progress, and see responses from authorities.';
+
+  @override
+  String get faqQuestionBookSpace => 'How do I book a public space?';
+
+  @override
+  String get faqAnswerBookSpace => 'Find the space you want on the Map or Home page, tap on it to view details, then click \'Book This Space\'. Fill in the required information including date, time, and purpose, then submit your booking request.';
+
+  @override
+  String get faqQuestionCancelBooking => 'Can I cancel my booking?';
+
+  @override
+  String get faqAnswerCancelBooking => 'Yes, you can cancel bookings from the \'My Bookings\' section in your profile. Please note that cancellations should be made at least 24 hours in advance when possible.';
+
+  @override
+  String get faqQuestionReportResponse => 'How long does it take to get a response to my report?';
+
+  @override
+  String get faqAnswerReportResponse => 'Response times vary depending on the severity and type of issue. Emergency issues are prioritized and typically addressed within 24-48 hours. General issues may take 3-7 business days.';
+
+  @override
+  String get faqCategoryTechnical => 'Technical Support';
+
+  @override
+  String get faqQuestionOffline => 'Does the app work offline?';
+
+  @override
+  String get faqAnswerOffline => 'Yes! The app supports offline functionality. You can view previously loaded content and submit reports/bookings offline. Your data will automatically sync when you\'re back online.';
+
+  @override
+  String get faqQuestionLanguage => 'How do I change the app language?';
+
+  @override
+  String get faqAnswerLanguage => 'Go to Settings, select \'Language\', and choose between English and Swahili. The app will update immediately to your selected language.';
+
+  @override
+  String get faqQuestionMapIssue => 'Why can\'t I see the map?';
+
+  @override
+  String get faqAnswerMapIssue => 'Make sure you have granted location permissions to the app and have an active internet connection for loading map data. Check your device settings if the issue persists.';
+
+  @override
+  String get faqQuestionCrash => 'What should I do if the app crashes?';
+
+  @override
+  String get faqAnswerCrash => 'Try closing and reopening the app. If the problem continues, clear the app cache from your device settings or reinstall the app. Contact support if the issue persists.';
+
+  @override
+  String get stillNeedHelp => 'Still need help?';
+
+  @override
+  String get contactEmailLabel => 'Email';
+
+  @override
+  String get contactPhoneLabel => 'Phone';
+
+  @override
+  String get copyrightFooter => '© 2026 Kinondoni Municipal Council';
+
+  @override
+  String aboutTitle(Object appName) {
+    return 'About $appName';
+  }
+
+  @override
+  String get aboutMission => 'Our Mission';
+
+  @override
+  String get aboutMissionContent => 'OpenSpace App (OSA) is a community-driven platform designed to enhance public engagement in Kinondoni Municipality. Our mission is to empower citizens to report issues, book public spaces, and actively participate in improving their community.';
+
+  @override
+  String get aboutDeveloper => 'Developer';
+
+  @override
+  String get aboutDeveloperValue => 'Kinondoni Municipal Council';
+
+  @override
+  String get aboutLocation => 'Location';
+
+  @override
+  String get aboutLocationValue => 'Dar es Salaam, Tanzania';
+
+  @override
+  String get aboutContact => 'Contact';
+
+  @override
+  String get aboutContactValue => 'support@openspace.go.tz';
+
+  @override
+  String get aboutKeyFeatures => 'Key Features:';
+
+  @override
+  String get aboutFeature1 => 'Report community issues with photos and location';
+
+  @override
+  String get aboutFeature2 => 'Book public spaces and facilities';
+
+  @override
+  String get aboutFeature3 => 'Track your reports and bookings';
+
+  @override
+  String get aboutFeature4 => 'Offline functionality for uninterrupted access';
+
+  @override
+  String get aboutFeature5 => 'Multi-language support (English & Swahili)';
+
+  @override
+  String get aboutCopyright => '© 2025 Kinondoni Municipal Council\nAll rights reserved.';
+
+  @override
+  String get termsUserResponsibilitiesTitle => '1. User Responsibilities';
+
+  @override
+  String get termsUserResponsibilitiesContent => 'You agree to use OpenSpace for lawful purposes, ensuring all reports and bookings are accurate and respectful of community spaces. Misuse, including false reporting or unauthorized access, may result in account suspension.';
+
+  @override
+  String get termsAccountUsageTitle => '2. Account Usage';
+
+  @override
+  String get termsAccountUsageContent => 'Registered users must provide accurate information during sign-up, including a valid username and contact details. Anonymous users can explore public spaces but cannot access tracking features for reports or bookings.';
+
+  @override
+  String get termsContentOwnershipTitle => '3. Content Ownership';
+
+  @override
+  String get termsContentOwnershipContent => 'Content submitted (e.g., issue reports, booking requests) may be used by OpenSpace to improve services, anonymized where necessary, in accordance with Tanzania\'s Personal Data Protection Act, 2022. Users retain ownership of their content but grant OpenSpace a non-exclusive license to use it for operational purposes.';
+
+  @override
+  String get termsLiabilityTitle => '4. Liability';
+
+  @override
+  String get termsLiabilityContent => 'OpenSpace is not liable for damages arising from misuse of the platform or inaccuracies in user-submitted data. Users are responsible for complying with local laws and platform policies.';
+
+  @override
+  String get termsUpdatesTitle => '5. Updates to Terms';
+
+  @override
+  String get termsUpdatesContent => 'We may update these terms periodically. Continued use of OpenSpace after updates constitutes acceptance. Notifications of changes will be provided via the app or official communication channels.';
+
+  @override
+  String get privacyDataCollectionTitle => '1. Data Collection';
+
+  @override
+  String get privacyDataCollectionContent => 'We collect minimal personal data (e.g., username, location for reports/bookings) to enable app functionality. Anonymous users\' interactions are not linked to personal identifiers.';
+
+  @override
+  String get privacyDataUsageTitle => '2. Data Usage';
+
+  @override
+  String get privacyDataUsageContent => 'Data is used to process reports, manage bookings, and enhance community services. Anonymized data may be shared with local authorities for urban planning and safety initiatives.';
+
+  @override
+  String get privacyDataSecurityTitle => '3. Data Security';
+
+  @override
+  String get privacyDataSecurityContent => 'We employ encryption and secure protocols to protect registered users\' credentials and data. Regular security audits ensure compliance with national regulations.';
+
+  @override
+  String get privacyCookiesTitle => '4. Cookies and Analytics';
+
+  @override
+  String get privacyCookiesContent => 'OpenSpace may use cookies or analytics tools to improve user experience. You can opt out via the Settings page. Analytics data is anonymized and used to optimize app performance.';
+
+  @override
+  String get privacyUserRightsTitle => '5. Your Rights';
+
+  @override
+  String get privacyUserRightsContent => 'You have the right to access, correct, or delete your personal data. Contact us via the Help & Support page. Requests for data access or deletion will be processed within 30 days, per regulatory requirements.';
+
+  @override
+  String get privacyInquiries => 'For further inquiries, contact support@openspace.go.tz or use the Help & Support page.';
+
+  @override
+  String get languageSelectSubtitle => 'Select your preferred language';
+
+  @override
+  String get languageEnglishDescription => 'Classic English language';
+
+  @override
+  String get languageSwahiliDescription => 'Lugha ya Kiswahili fasaha';
+
+  @override
+  String get howToUseTitle => 'How to Use the App';
+
+  @override
+  String get offlineModeTitle => 'Offline Mode';
+
+  @override
+  String get offlineModeDescription => 'This app supports offline functionality to ensure you can access features even without internet connection.';
+
+  @override
+  String get firstTimeUseTitle => 'First Time Use';
+
+  @override
+  String get firstTimeUseDescription => 'When you first use the app, you need to be online to download and cache data (reports, bookings, open spaces). This allows you to access the information later when offline.';
+
+  @override
+  String get offlineAccessTitle => 'Offline Access';
+
+  @override
+  String get offlineAccessDescription => 'Once data is cached, you can view reports, bookings, and open spaces without internet. You can also submit new reports and bookings offline - they will be saved locally.';
+
+  @override
+  String get autoSyncTitle => 'Automatic Synchronization';
+
+  @override
+  String get autoSyncDescription => 'When your internet connection returns, the app automatically syncs all pending reports and bookings to the server. You\'ll see a notification when sync is complete.';
+
+  @override
+  String get offlineTipsTitle => 'Offline Tips';
+
+  @override
+  String get offlineTip1 => 'Always connect to internet at least once to download initial data';
+
+  @override
+  String get offlineTip2 => 'Submitted reports/bookings while offline will show \'Pending\' status';
+
+  @override
+  String get offlineTip3 => 'Pull down to refresh when online to get latest data';
+
+  @override
+  String get offlineTip4 => 'Offline indicator appears in the app bar when no connection';
+
+  @override
+  String get gotItButton => 'Got It!';
 }

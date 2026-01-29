@@ -43,7 +43,6 @@ class OpenSpaceService {
           reportId
           spaceName
           file
-        
         }
       }
     """;
@@ -120,7 +119,6 @@ class OpenSpaceService {
           spaceName
           file
           type
-        
         }
       }
     """;

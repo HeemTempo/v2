@@ -336,7 +336,132 @@
   "routeSearching": "Finding route...",
   "searchLocation": "Search location",
   "closeButton": "CLOSE",
+  "requestTimeout": "Request timed out. Please check your connection and try again.",
+  "syncReportsSuccess": "{count} report(s) synced successfully",
+  "@syncReportsSuccess": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "syncBookingsSuccess": "{count} booking(s) synced successfully",
+  "@syncBookingsSuccess": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "offline": "No internet",
   "reconnecting": "Reconnecting...",
-  "retry": "Retry"
+  "retry": "Retry",
+  
+  "helpSupportTitle": "Help & Support",
+  "needHelpTitle": "Need Help?",
+  "needHelpSubtitle": "Find answers to common questions or contact our support team.",
+  "hideContactForm": "Hide Contact Form",
+  "contactSupport": "Contact Support",
+  "sendMessageTitle": "Send us a message",
+  "messageHint": "Describe your issue or question in detail...",
+  "messageRequired": "Please enter your message",
+  "messageTooShort": "Please provide more details (at least 10 characters)",
+  "messageSentTitle": "Message Sent!",
+  "messageSentContent": "Your message has been successfully sent to our support team. We will get back to you within 24-48 hours.",
+  "sendMessageButton": "Send Message",
+  "faqTitle": "Frequently Asked Questions",
+  
+  "faqCategoryAccount": "Account & Authentication",
+  "faqQuestionResetPass": "How do I reset my password?",
+  "faqAnswerResetPass": "On the login screen, tap 'Forgot Password' and enter your registered email address. You will receive a password reset link via email. Follow the instructions in the email to create a new password.",
+  "faqQuestionAnonymous": "Can I use the app without registering?",
+  "faqAnswerAnonymous": "Yes! You can browse and explore public spaces as an anonymous user. However, to report issues, book spaces, and track your activities, you'll need to create a registered account.",
+  "faqQuestionUpdateProfile": "How do I update my profile information?",
+  "faqAnswerUpdateProfile": "Go to your Profile page, tap the 'Edit Profile' button, update your information, and save your changes. Make sure to use a valid email address for important notifications.",
+  
+  "faqCategoryReports": "Reports & Bookings",
+  "faqQuestionFindReports": "Where can I find my submitted reports?",
+  "faqAnswerFindReports": "Navigate to your Profile page and select 'My Reports'. Here you can view all your submitted reports, track their progress, and see responses from authorities.",
+  "faqQuestionBookSpace": "How do I book a public space?",
+  "faqAnswerBookSpace": "Find the space you want on the Map or Home page, tap on it to view details, then click 'Book This Space'. Fill in the required information including date, time, and purpose, then submit your booking request.",
+  "faqQuestionCancelBooking": "Can I cancel my booking?",
+  "faqAnswerCancelBooking": "Yes, you can cancel bookings from the 'My Bookings' section in your profile. Please note that cancellations should be made at least 24 hours in advance when possible.",
+  "faqQuestionReportResponse": "How long does it take to get a response to my report?",
+  "faqAnswerReportResponse": "Response times vary depending on the severity and type of issue. Emergency issues are prioritized and typically addressed within 24-48 hours. General issues may take 3-7 business days.",
+  
+  "faqCategoryTechnical": "Technical Support",
+  "faqQuestionOffline": "Does the app work offline?",
+  "faqAnswerOffline": "Yes! The app supports offline functionality. You can view previously loaded content and submit reports/bookings offline. Your data will automatically sync when you're back online.",
+  "faqQuestionLanguage": "How do I change the app language?",
+  "faqAnswerLanguage": "Go to Settings, select 'Language', and choose between English and Swahili. The app will update immediately to your selected language.",
+  "faqQuestionMapIssue": "Why can't I see the map?",
+  "faqAnswerMapIssue": "Make sure you have granted location permissions to the app and have an active internet connection for loading map data. Check your device settings if the issue persists.",
+  "faqQuestionCrash": "What should I do if the app crashes?",
+  "faqAnswerCrash": "Try closing and reopening the app. If the problem continues, clear the app cache from your device settings or reinstall the app. Contact support if the issue persists.",
+  
+  "stillNeedHelp": "Still need help?",
+  "contactEmailLabel": "Email",
+  "contactPhoneLabel": "Phone",
+  "copyrightFooter": "© 2026 Kinondoni Municipal Council",
+
+  "aboutTitle": "About {appName}",
+  "@aboutTitle": {
+    "placeholders": {
+      "appName": {}
+    }
+  },
+  "aboutMission": "Our Mission",
+  "aboutMissionContent": "OpenSpace App (OSA) is a community-driven platform designed to enhance public engagement in Kinondoni Municipality. Our mission is to empower citizens to report issues, book public spaces, and actively participate in improving their community.",
+  "aboutDeveloper": "Developer",
+  "aboutDeveloperValue": "Kinondoni Municipal Council",
+  "aboutLocation": "Location",
+  "aboutLocationValue": "Dar es Salaam, Tanzania",
+  "aboutContact": "Contact",
+  "aboutContactValue": "support@openspace.go.tz",
+  "aboutKeyFeatures": "Key Features:",
+  "aboutFeature1": "Report community issues with photos and location",
+  "aboutFeature2": "Book public spaces and facilities",
+  "aboutFeature3": "Track your reports and bookings",
+  "aboutFeature4": "Offline functionality for uninterrupted access",
+  "aboutFeature5": "Multi-language support (English & Swahili)",
+  "aboutCopyright": "© 2025 Kinondoni Municipal Council\nAll rights reserved.",
+
+  "termsUserResponsibilitiesTitle": "1. User Responsibilities",
+  "termsUserResponsibilitiesContent": "You agree to use OpenSpace for lawful purposes, ensuring all reports and bookings are accurate and respectful of community spaces. Misuse, including false reporting or unauthorized access, may result in account suspension.",
+  "termsAccountUsageTitle": "2. Account Usage",
+  "termsAccountUsageContent": "Registered users must provide accurate information during sign-up, including a valid username and contact details. Anonymous users can explore public spaces but cannot access tracking features for reports or bookings.",
+  "termsContentOwnershipTitle": "3. Content Ownership",
+  "termsContentOwnershipContent": "Content submitted (e.g., issue reports, booking requests) may be used by OpenSpace to improve services, anonymized where necessary, in accordance with Tanzania's Personal Data Protection Act, 2022. Users retain ownership of their content but grant OpenSpace a non-exclusive license to use it for operational purposes.",
+  "termsLiabilityTitle": "4. Liability",
+  "termsLiabilityContent": "OpenSpace is not liable for damages arising from misuse of the platform or inaccuracies in user-submitted data. Users are responsible for complying with local laws and platform policies.",
+  "termsUpdatesTitle": "5. Updates to Terms",
+  "termsUpdatesContent": "We may update these terms periodically. Continued use of OpenSpace after updates constitutes acceptance. Notifications of changes will be provided via the app or official communication channels.",
+
+  "privacyDataCollectionTitle": "1. Data Collection",
+  "privacyDataCollectionContent": "We collect minimal personal data (e.g., username, location for reports/bookings) to enable app functionality. Anonymous users' interactions are not linked to personal identifiers.",
+  "privacyDataUsageTitle": "2. Data Usage",
+  "privacyDataUsageContent": "Data is used to process reports, manage bookings, and enhance community services. Anonymized data may be shared with local authorities for urban planning and safety initiatives.",
+  "privacyDataSecurityTitle": "3. Data Security",
+  "privacyDataSecurityContent": "We employ encryption and secure protocols to protect registered users' credentials and data. Regular security audits ensure compliance with national regulations.",
+  "privacyCookiesTitle": "4. Cookies and Analytics",
+  "privacyCookiesContent": "OpenSpace may use cookies or analytics tools to improve user experience. You can opt out via the Settings page. Analytics data is anonymized and used to optimize app performance.",
+  "privacyUserRightsTitle": "5. Your Rights",
+  "privacyUserRightsContent": "You have the right to access, correct, or delete your personal data. Contact us via the Help & Support page. Requests for data access or deletion will be processed within 30 days, per regulatory requirements.",
+  "privacyInquiries": "For further inquiries, contact support@openspace.go.tz or use the Help & Support page.",
+
+  "languageSelectSubtitle": "Select your preferred language",
+  "languageEnglishDescription": "Classic English language",
+  "languageSwahiliDescription": "Lugha ya Kiswahili fasaha",
+
+  "howToUseTitle": "How to Use the App",
+  "offlineModeTitle": "Offline Mode",
+  "offlineModeDescription": "This app supports offline functionality to ensure you can access features even without internet connection.",
+  "firstTimeUseTitle": "First Time Use",
+  "firstTimeUseDescription": "When you first use the app, you need to be online to download and cache data (reports, bookings, open spaces). This allows you to access the information later when offline.",
+  "offlineAccessTitle": "Offline Access",
+  "offlineAccessDescription": "Once data is cached, you can view reports, bookings, and open spaces without internet. You can also submit new reports and bookings offline - they will be saved locally.",
+  "autoSyncTitle": "Automatic Synchronization",
+  "autoSyncDescription": "When your internet connection returns, the app automatically syncs all pending reports and bookings to the server. You'll see a notification when sync is complete.",
+  "offlineTipsTitle": "Offline Tips",
+  "offlineTip1": "Always connect to internet at least once to download initial data",
+  "offlineTip2": "Submitted reports/bookings while offline will show 'Pending' status",
+  "offlineTip3": "Pull down to refresh when online to get latest data",
+  "offlineTip4": "Offline indicator appears in the app bar when no connection",
+  "gotItButton": "Got It!"
 }

@@ -5,6 +5,9 @@ import 'package:kinondoni_openspace_app/data/repository/booking_repository.dart'
 import 'package:kinondoni_openspace_app/data/local/booking_local.dart';
 import 'package:kinondoni_openspace_app/utils/constants.dart';
 
+import 'dart:async';
+import 'package:kinondoni_openspace_app/core/sync/sync_service.dart';
+
 class MyBookingsPage extends StatefulWidget {
   const MyBookingsPage({super.key});
 
@@ -16,17 +19,37 @@ class _MyBookingsPageState extends State<MyBookingsPage> {
   late Future<List<Booking>> _futureBookings;
   late BookingRepository _bookingRepository;
   String _selectedFilter = 'all';
+  StreamSubscription? _syncSubscription;
 
   @override
   void initState() {
     super.initState();
     _bookingRepository = BookingRepository();
     _futureBookings = _fetchBookings();
+    
+    // Listen to global sync service events to refresh list automatically
+    _syncSubscription = SyncService().onSyncCompletedStream.listen((_) {
+      if (mounted) {
+        setState(() {
+          _futureBookings = _fetchBookings();
+        });
+      }
+    });
+  }
+  
+  @override
+  void dispose() {
+    _syncSubscription?.cancel();
+    super.dispose();
   }
 
   Future<List<Booking>> _fetchBookings() async {
     try {
       final bookings = await _bookingRepository.getMyBookings();
+      
+      // Sort: Newest created first
+      bookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      
       print('Fetched ${bookings.length} bookings');
       return bookings;
     } catch (e) {
@@ -42,11 +65,12 @@ class _MyBookingsPageState extends State<MyBookingsPage> {
   Widget _buildBookingCard(Booking booking) {
     final status = booking.status.toLowerCase();
     final statusColor = _getStatusColor(status);
+    final theme = Theme.of(context);
 
     return Container(
       margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -92,7 +116,7 @@ class _MyBookingsPageState extends State<MyBookingsPage> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            status.replaceAll('_', ' ').toUpperCase(),
+                            status == 'pending_offline' ? 'OFFLINE / PENDING' : status.replaceAll('_', ' ').toUpperCase(),
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -105,14 +129,15 @@ class _MyBookingsPageState extends State<MyBookingsPage> {
                     ),
                     const Spacer(),
                     // Booking ID
-                    Text(
-                      '#${booking.id}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[600],
+                    if (status != 'pending_offline')
+                      Text(
+                        '#${booking.id}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[600],
+                        ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -232,8 +257,9 @@ class _MyBookingsPageState extends State<MyBookingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('My Bookings', style: TextStyle(fontWeight: FontWeight.w600)),
         backgroundColor: AppConstants.primaryBlue,
@@ -256,14 +282,16 @@ class _MyBookingsPageState extends State<MyBookingsPage> {
           // Filter chips
           Container(
             padding: const EdgeInsets.all(16),
-            color: Colors.white,
+            color: theme.cardColor,
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
                   _buildFilterChip('All', 'all', Icons.list),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Pending', 'pending', Icons.pending),
+                  _buildFilterChip('Offline', 'pending_offline', Icons.wifi_off),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('Submitted', 'pending', Icons.pending_actions),
                   const SizedBox(width: 8),
                   _buildFilterChip('Approved', 'approved', Icons.check_circle),
                   const SizedBox(width: 8),
@@ -312,21 +340,28 @@ class _MyBookingsPageState extends State<MyBookingsPage> {
                     ? allBookings
                     : allBookings.where((b) {
                         final status = b.status.toLowerCase();
-                        return status == _selectedFilter || 
-                               (_selectedFilter == 'pending' && status == 'pending_offline');
+                        return status == _selectedFilter;
                       }).toList();
 
-                print('Filtered bookings (${_selectedFilter}): ${filteredBookings.length}');
+                print('Filtered bookings ($_selectedFilter): ${filteredBookings.length}');
 
                 if (filteredBookings.isEmpty) {
+                  String emptyMessage = 'No $_selectedFilter bookings';
+                  if (_selectedFilter == 'all') emptyMessage = 'No bookings yet';
+                  if (_selectedFilter == 'pending_offline') emptyMessage = 'No offline bookings waiting to sync';
+                  if (_selectedFilter == 'pending') emptyMessage = 'No submitted bookings pending approval';
+
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.event_busy, size: 60, color: Colors.grey[400]),
+                        Icon(
+                          _selectedFilter == 'pending_offline' ? Icons.wifi_off : Icons.event_busy, 
+                          size: 60, color: Colors.grey[400]
+                        ),
                         const SizedBox(height: 16),
                         Text(
-                          _selectedFilter == 'all' ? 'No bookings yet' : 'No $_selectedFilter bookings',
+                          emptyMessage,
                           style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                         ),
                       ],

@@ -4,6 +4,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:kinondoni_openspace_app/data/local/report_local.dart';
 import 'package:kinondoni_openspace_app/model/Report.dart';
 import 'package:kinondoni_openspace_app/service/report_service.dart';
+import 'package:kinondoni_openspace_app/service/openspace_service.dart';
 
 class ReportRepository {
   final ReportLocal localService;
@@ -21,10 +22,9 @@ class ReportRepository {
         return false;
       }
       
-      // Then verify we can actually reach the internet
-      final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 3));
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+      // We rely on the actual request to fail if there's no real internet.
+      // The google.com check was causing false negatives.
+      return true;
     } catch (e) {
       print('Connectivity check failed: $e');
       return false;
@@ -137,31 +137,44 @@ class ReportRepository {
   }
 
 
+  // Static lock to prevent concurrent syncs across multiple repository instances
+  static bool _isSyncing = false;
+
   /// Sync all pending reports to backend
   Future<void> syncPendingReports() async {
+    if (_isSyncing) {
+      print('ReportRepository: Sync already in progress (static lock). Skipping.');
+      return;
+    }
+    
     final isOnline = await _isConnected();
     if (!isOnline) {
-      print('Device offline. Skipping sync.');
       return;
     }
 
     final pendingReports = await localService.getPendingReports();
     
     if (pendingReports.isEmpty) {
-      print('No pending reports to sync.');
       return;
     }
     
-    print('Syncing ${pendingReports.length} pending reports in background...');
-
-    // Run sync asynchronously without blocking UI
-    unawaited(_doSync(pendingReports));
+    _isSyncing = true;
+    
+    // Run sync in background without blocking
+    _doSync(pendingReports).then((_) {
+      _isSyncing = false;
+    }).catchError((e) {
+      print('[ReportRepository] Sync error: $e');
+      _isSyncing = false;
+    });
   }
 
   Future<void> _doSync(List<Report> pendingReports) async {
     int successCount = 0;
+    
+    final reportsToSync = pendingReports.reversed.toList();
 
-    for (final report in pendingReports) {
+    for (final report in reportsToSync) {
       try {
         final response = await ReportingService.createReport(
           description: report.description,
@@ -174,25 +187,21 @@ class ReportRepository {
           userId: report.userId,
           latitude: report.latitude,
           longitude: report.longitude,
-        );
+        ).timeout(const Duration(seconds: 10));
 
-        final syncedReport = Report.fromRestJson(response, localId: report.id);
-        await localService.saveReport(syncedReport.copyWith(status: 'submitted'));
+        final serverReport = Report.fromRestJson(response);
+        await localService.saveReport(serverReport.copyWith(status: 'submitted'));
+        await localService.removeReport(report.id);
         
         successCount++;
-        print('✓ Successfully synced report: ${report.id}');
-      } on SocketException catch (e) {
-        print('✗ Network error syncing report ${report.id}: $e');
+      } on SocketException {
         break;
-      } on TimeoutException catch (e) {
-        print('✗ Timeout syncing report ${report.id}: $e');
+      } on TimeoutException {
         break;
       } catch (e) {
-        print('✗ Failed to sync report ${report.id}: $e');
+        continue;
       }
     }
-    
-    print('Sync complete: $successCount synced.');
   }
 
   Future<List<Report>> getPendingReports() => localService.getPendingReports();
@@ -206,6 +215,28 @@ class ReportRepository {
       }
     }
     
+    final isOnline = await _isConnected();
+    
+    if (isOnline) {
+      try {
+        // Fetch from server
+        final serverReports = await OpenSpaceService().getAllReports();
+        
+        // Save to local database
+        for (final report in serverReports) {
+          await localService.saveReport(report);
+        }
+        
+        _cachedReports = serverReports;
+        _lastFetch = DateTime.now();
+        return serverReports;
+      } catch (e) {
+        print('Failed to fetch from server: $e. Loading from local DB.');
+        // Fallback to local if server fails
+      }
+    }
+    
+    // Load from local database (offline or server failed)
     final reports = await localService.getAllReports();
     _cachedReports = reports;
     _lastFetch = DateTime.now();

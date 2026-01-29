@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:kinondoni_openspace_app/core/network/connectivity_service.dart';
+import 'package:kinondoni_openspace_app/core/sync/sync_service.dart';
 import 'package:kinondoni_openspace_app/data/repository/report_repository.dart';
 import 'package:kinondoni_openspace_app/model/Report.dart';
 
@@ -22,6 +23,8 @@ class ReportProvider with ChangeNotifier {
   bool _wasOnline = false;
   Timer? _syncDebounceTimer;
   bool _isSyncing = false;
+  
+  StreamSubscription? _syncSubscription;
 
   ReportProvider({
     required ReportRepository repository,
@@ -31,6 +34,13 @@ class ReportProvider with ChangeNotifier {
     _wasOnline = _connectivity.isOnline;
     // Auto-sync when coming back online
     _connectivity.addListener(_onConnectivityChanged);
+    
+    // Listen to global sync service events
+    _syncSubscription = SyncService().onSyncCompletedStream.listen((_) {
+      print('[ReportProvider] SyncService completed. Refreshing pending reports list.');
+      _loadPendingReports();
+    });
+
     // Load pending reports on initialization
     _loadPendingReports();
   }
@@ -170,6 +180,7 @@ class ReportProvider with ChangeNotifier {
   @override
   void dispose() {
     _syncDebounceTimer?.cancel();
+    _syncSubscription?.cancel();
     _connectivity.removeListener(_onConnectivityChanged);
     super.dispose();
   }

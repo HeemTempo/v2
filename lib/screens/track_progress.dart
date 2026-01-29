@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -79,6 +80,8 @@ class _TrackProgressScreenState extends State<TrackProgressScreen> with SingleTi
           _errorMessage = AppLocalizations.of(context)!.noReportFound(enteredRefId);
         } else {
           _animationController.forward(from: 0);
+          // Debug: Check if email/phone are present in the response
+          print('DEBUG: Report found with email: ${matchingReport.email}, phone: ${matchingReport.phone}');
         }
       });
     } catch (e) {
@@ -115,7 +118,7 @@ class _TrackProgressScreenState extends State<TrackProgressScreen> with SingleTi
     final loc = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           loc.trackProgress,
@@ -166,7 +169,7 @@ class _TrackProgressScreenState extends State<TrackProgressScreen> with SingleTi
                       decoration: InputDecoration(
                         hintText: loc.enterReferenceIdHint,
                         hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[400],
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
                             ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -177,7 +180,7 @@ class _TrackProgressScreenState extends State<TrackProgressScreen> with SingleTi
                           borderSide: BorderSide(color: AppConstants.primaryBlue, width: 2),
                         ),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: Theme.of(context).cardColor,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       ),
                       style: Theme.of(context).textTheme.bodyMedium,
@@ -245,7 +248,7 @@ class _TrackProgressScreenState extends State<TrackProgressScreen> with SingleTi
                               child: Text(
                                 loc.enterReferenceIdPrompt,
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: Colors.grey[600],
+                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                                       fontSize: 16,
                                     ),
                                 textAlign: TextAlign.center,
@@ -263,23 +266,18 @@ class _TrackProgressScreenState extends State<TrackProgressScreen> with SingleTi
 
   Widget _buildReportDetailsView(Report currentReport) {
     final loc = AppLocalizations.of(context)!;
-    final String? reportId = currentReport.reportId;
+    final String reportId = currentReport.reportId;
     final String spaceName = currentReport.spaceName ?? loc.notAvailable;
     final String formattedDate = DateFormat('MMMM dd, yyyy').format(currentReport.createdAt.toLocal());
     final String description = currentReport.description;
-    final String email = currentReport.email ?? loc.notAvailable;
-    final String? fileUrl = currentReport.file;
-    final bool hasAttachment = fileUrl != null && fileUrl.isNotEmpty;
-    final String attachmentName = hasAttachment ? fileUrl.split('/').last : loc.noAttachments;
     final String status = currentReport.status ?? 'Pending';
     final Color statusColor = _getStatusColor(status);
-    final String userName = currentReport.user?.username ?? loc.anonymousUser;
 
     return SingleChildScrollView(
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        color: Colors.grey[50],
+        color: Theme.of(context).cardColor,
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
@@ -356,43 +354,8 @@ class _TrackProgressScreenState extends State<TrackProgressScreen> with SingleTi
               ),
               const SizedBox(height: 16),
 
-              // Submitted by & Email
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: Row(
-                      children: [
-                        _icon(Icons.person, size: 20),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            userName,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 16),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Flexible(
-                    child: Row(
-                      children: [
-                        _icon(Icons.email, size: 20),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            email,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 16),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
+
 
               // Description
               Text(
@@ -407,51 +370,12 @@ class _TrackProgressScreenState extends State<TrackProgressScreen> with SingleTi
               Text(
                 description,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[700],
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
                       height: 1.5,
                       fontSize: 16,
                     ),
               ),
-              const SizedBox(height: 24),
 
-              // Attachments
-              Text(
-                loc.attachments,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppConstants.primaryBlue,
-                      fontSize: 18,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              hasAttachment
-                  ? Wrap(
-                      spacing: 12,
-                      children: [
-                        ActionChip(
-                          avatar: Icon(Icons.insert_drive_file, color: AppConstants.primaryBlue),
-                          label: Text(
-                            attachmentName,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 16),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(loc.attachmentViewNotImplemented)),
-                            );
-                          },
-                        ),
-                      ],
-                    )
-                  : Text(
-                      loc.noAttachments,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[500],
-                            fontSize: 16,
-                            fontStyle: FontStyle.italic,
-                          ),
-                    ),
               const SizedBox(height: 24),
 
               // Location

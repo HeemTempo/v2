@@ -12,102 +12,126 @@ class UserTypeScreenContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accentColor = isDark ? Colors.greenAccent : AppConstants.primaryBlue;
 
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppConstants.primaryBlue,
-            AppConstants.primaryBlue.withOpacity(0.8),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
+      color: theme.scaffoldBackgroundColor,
       child: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Spacer(),
-            Semantics(
-              label: loc.userTypeTitle,
-              child: Text(
-                loc.userTypeTitle,
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Text(
-                loc.userTypeDescription,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 40),
+                // 🔹 Attractive Illustration Placeholder (Using Icon for now)
+                Container(
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.groups_rounded,
+                    size: 100,
+                    color: accentColor,
+                  ),
+                ),
+                const SizedBox(height: 40),
+                Semantics(
+                  label: loc.userTypeTitle,
+                  child: Text(
+                    loc.userTypeTitle,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : AppConstants.primaryBlue,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    loc.userTypeDescription,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge?.copyWith(
                       height: 1.5,
+                      color: isDark ? Colors.white70 : Colors.black54,
                     ),
-              ),
-            ),
-            const SizedBox(height: 32),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Column(
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      onUserTypeSelected('Registered User');
-                    },
-                    style: Theme.of(context).elevatedButtonTheme.style?.copyWith(
-                          minimumSize: WidgetStateProperty.all(
-                            const Size(double.infinity, 56),
+                  ),
+                ),
+                const SizedBox(height: 48),
+                Column(
+                  children: [
+                    // 🔹 Registered User Button (Primary Action)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          onUserTypeSelected('Registered User');
+                        },
+                        icon: const Icon(Icons.login_rounded),
+                        label: Text(loc.signInRegisteredButton),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppConstants.primaryBlue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          elevation: 2,
                         ),
-                    child: Semantics(
-                      label: loc.signInRegisteredButton,
-                      child: Text(
-                        loc.signInRegisteredButton,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  OutlinedButton(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      onUserTypeSelected('Anonymous User');
-                    },
-                    style: Theme.of(context).outlinedButtonTheme.style?.copyWith(
-                          minimumSize: WidgetStateProperty.all(
-                            const Size(double.infinity, 56),
+                    const SizedBox(height: 16),
+                    // 🔹 Anonymous User Button (Secondary Action)
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          onUserTypeSelected('Anonymous User');
+                        },
+                        icon: Icon(Icons.person_outline, 
+                          color: isDark ? Colors.white70 : Colors.black87),
+                        label: Text(
+                          loc.continueAnonymousButton,
+                          style: TextStyle(
+                            color: isDark ? Colors.white70 : Colors.black87,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                    child: Semantics(
-                      label: loc.continueAnonymousButton,
-                      child: Text(
-                        loc.continueAnonymousButton,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: BorderSide(color: isDark ? Colors.white24 : Colors.grey.shade300),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => Navigator.pushNamed(context, '/terms'),
-                    child: Text(
-                      loc.termsPrivacyButton,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppConstants.white,
-                          ),
+                    const SizedBox(height: 24),
+                    TextButton(
+                      onPressed: () => Navigator.pushNamed(context, '/terms'),
+                      child: Text(
+                        loc.termsPrivacyButton,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: accentColor,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+                const SizedBox(height: 40),
+              ],
             ),
-            const Spacer(),
-          ],
+          ),
         ),
       ),
     );

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kinondoni_openspace_app/utils/constants.dart';
-import '../service/openspace_service.dart';
+import 'package:provider/provider.dart';
 import '../model/Report.dart';
+import '../providers/report_provider.dart';
+import '../core/network/connectivity_service.dart';
 
 class ReportedIssuesPage extends StatefulWidget {
   const ReportedIssuesPage({super.key});
@@ -17,13 +19,11 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
   bool _isLoading = true;
   String? _errorMessage;
   List<Report> _allFetchedIssues = [];
-  late final OpenSpaceService _openSpaceService;
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _openSpaceService = OpenSpaceService();
     _fetchReports();
 
     _scrollController.addListener(() {
@@ -39,13 +39,28 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
       _isLoading = true;
       _errorMessage = null;
     });
+    
     try {
-      final reports = await _openSpaceService.getAllReports();
-      if (!mounted) return;
-      setState(() {
-        _allFetchedIssues = reports;
-        _isLoading = false;
-      });
+      final reportProvider = context.read<ReportProvider>();
+      final connectivityService = context.read<ConnectivityService>();
+      
+      if (connectivityService.isOnline) {
+        // Online: Fetch from server and save locally
+        final reports = await reportProvider.repository.getAllReports(forceRefresh: true);
+        if (!mounted) return;
+        setState(() {
+          _allFetchedIssues = reports;
+          _isLoading = false;
+        });
+      } else {
+        // Offline: Load from local database
+        final localReports = await reportProvider.repository.localService.getAllReports();
+        if (!mounted) return;
+        setState(() {
+          _allFetchedIssues = localReports;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -68,6 +83,7 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
   Widget build(BuildContext context) {
     final List<Report> displayedIssues =
         _allFetchedIssues.take(currentMax).toList();
+    final connectivityService = context.watch<ConnectivityService>();
 
     return Scaffold(
       appBar: AppBar(
@@ -87,6 +103,13 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          if (!connectivityService.isOnline)
+            const Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: Icon(Icons.cloud_off, color: Colors.white70, size: 20),
+            ),
+        ],
       ),
       body: _buildBodyContent(displayedIssues),
     );
@@ -98,10 +121,17 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
     }
 
     if (_errorMessage != null) {
+      final connectivityService = context.watch<ConnectivityService>();
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Icon(
+              connectivityService.isOnline ? Icons.error_outline : Icons.cloud_off,
+              size: 60,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 16),
             Text(_errorMessage!,
                 style: const TextStyle(color: Colors.red, fontSize: 16),
                 textAlign: TextAlign.center),
@@ -162,10 +192,6 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
     final formattedDate =
         DateFormat('yyyy-MM-dd').format(issue.createdAt.toLocal());
 
-    final String imageUrl = (issue.file != null && issue.file!.isNotEmpty)
-        ? issue.file!
-        : 'https://via.placeholder.com/150';
-
     final bool hasCoordinates =
         issue.latitude != null && issue.longitude != null;
 
@@ -176,7 +202,7 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: () =>
-            Navigator.pushNamed(context, '/issue_detail', arguments: issue),
+            Navigator.pushNamed(context, '/report-detail', arguments: issue),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
@@ -191,20 +217,20 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      _getStatusColor(issue.status ?? '').withOpacity(0.2),
-                      _getStatusColor(issue.status ?? '').withOpacity(0.05),
+                      _getStatusColor(issue.status ?? 'submitted').withValues(alpha: 0.2),
+                      _getStatusColor(issue.status ?? 'submitted').withValues(alpha: 0.05),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: _getStatusColor(issue.status ?? '').withOpacity(0.3),
+                    color: _getStatusColor(issue.status ?? 'submitted').withValues(alpha: 0.3),
                     width: 1.5,
                   ),
                 ),
                 child: Icon(
                   Icons.description_outlined,
                   size: 38,
-                  color: _getStatusColor(issue.status ?? ''),
+                  color: _getStatusColor(issue.status ?? 'submitted'),
                 ),
               ),
               const SizedBox(width: 14),
@@ -228,7 +254,7 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        _buildStatusChip(issue.status),
+                        _buildStatusChip(issue.status ?? 'submitted'),
                       ],
                     ),
                     const SizedBox(height: 6),
@@ -304,6 +330,8 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
         return Colors.red;
       case 'in_progress':
         return Colors.blue;
+      case 'submitted':
+        return Colors.purple;
       default:
         return Colors.grey;
     }
@@ -327,6 +355,14 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
       case "rejected":
         bgColor = Colors.red;
         label = "Rejected";
+        break;
+      case "in_progress":
+        bgColor = Colors.blue;
+        label = "In Progress";
+        break;
+      case "submitted":
+        bgColor = Colors.purple;
+        label = "Submitted";
         break;
       default:
         bgColor = Colors.grey;

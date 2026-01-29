@@ -13,9 +13,11 @@ import 'package:provider/provider.dart';
 import '../model/openspace.dart';
 
 import '../utils/location_service.dart';
+import '../utils/constants.dart';
 import '../utils/alert/access_denied_dialog.dart';
 import '../providers/user_provider.dart';
 import '../widget/custom_navigation_bar.dart';
+import '../l10n/app_localizations.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -129,18 +131,29 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   void _onNavTap(int index) {
     if (index == _currentIndex) return;
-    setState(() => _currentIndex = index);
 
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/home');
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/map');
-        break;
-      case 2:
-        Navigator.pushReplacementNamed(context, '/user-profile');
-        break;
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final isAnonymous = userProvider.user.isAnonymous;
+
+    if (isAnonymous) {
+      // Anonymous users: 0 (Home), 1 (Map/Explore)
+      if (index == 0) {
+        Navigator.pop(context, 0);
+      }
+      // Index 1 is current screen
+    } else {
+      // Registered users: 0 (Home), 1 (Map), 2 (Profile)
+      switch (index) {
+        case 0:
+          Navigator.pop(context, 0);
+          break;
+        case 1:
+          // Already on Map
+          break;
+        case 2:
+          Navigator.pushNamed(context, '/user-profile');
+          break;
+      }
     }
   }
 
@@ -174,7 +187,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error fetching open spaces')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.errorGeneric)),
         );
       }
       if (kDebugMode) print('Fetch open spaces error: $e');
@@ -198,6 +211,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _selectedAreaNameNotifier.dispose();
     _controller.dispose();
     _mapController.dispose();
     super.dispose();
@@ -218,7 +232,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           _mapController.move(userLocation, 15.0);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Unable to fetch location.")),
+            SnackBar(content: Text(AppLocalizations.of(context)!.unableFetchLocation)),
           );
         }
       }
@@ -229,7 +243,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text("Location error")));
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.locationError)));
       }
     }
   }
@@ -247,46 +261,64 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     });
   }
 
+  // Use a ValueNotifier to update the bottom sheet reactively without blocking the main UI
+  final ValueNotifier<String?> _selectedAreaNameNotifier = ValueNotifier<String?>(null);
+
   Future<void> _showLocationPopup(
     LatLng position, {
     OpenSpaceMarker? openSpace,
   }) async {
     if (!mounted) return;
 
+    // 1. Prepare initial state
     setState(() {
       _selectedSpace = openSpace ?? _emptyMarker(position);
       _selectedPosition = position;
+      _selectedAreaName = null; // Still keep for compatibility or other checks
+    });
+    _selectedAreaNameNotifier.value = null; // Reset notifier for the new tap
+
+    // 2. Show the bottom sheet IMMEDIATELY
+    // We don't await this because we want to start geocoding concurrently
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      builder: (context) {
+        return ValueListenableBuilder<String?>(
+          valueListenable: _selectedAreaNameNotifier,
+          builder: (context, areaName, _) {
+            return _buildBottomSheetWithContent(areaName);
+          },
+        );
+      },
+    ).then((_) {
+      if (mounted) _closePopup();
     });
 
+    // 3. Start geocoding in the background
     try {
-      final areaName =
-          await _locationService.getAreaName(position) ?? "Unknown Area";
-
+      final areaName = await _locationService.getAreaName(position) ?? "Unknown Area";
+      
+      // 4. Update the sheet reactively
       if (mounted) {
+        _selectedAreaNameNotifier.value = areaName;
         setState(() {
           _selectedAreaName = areaName;
         });
-
-        await showModalBottomSheet(
-          context: context,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          backgroundColor: Colors.white,
-          isScrollControlled: true,
-          builder: (context) => _buildBottomSheetContent(),
-        );
-
-        if (mounted) _closePopup();
       }
     } catch (e) {
       if (mounted) {
+        _selectedAreaNameNotifier.value = "Unknown Area";
         setState(() => _selectedAreaName = "Unknown Area");
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text("Error fetching area name")));
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.errorGeneric)));
       }
-      if (kDebugMode) print('Error showing location popup: $e');
+      if (kDebugMode) print('Error background geocoding: $e');
     }
   }
 
@@ -297,13 +329,14 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         _selectedSpace = null;
         _selectedAreaName = null;
       });
+      _selectedAreaNameNotifier.value = null;
     }
   }
 
   void _bookSpace() {
     if (_selectedSpace == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("No space selected for booking.")),
+        SnackBar(content: Text(AppLocalizations.of(context)!.noSpaceSelected)),
       );
       return;
     }
@@ -321,7 +354,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           print('Invalid space ID: ${_selectedSpace!.id}');
         }
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Error: Invalid space ID for booking.")),
+          SnackBar(content: Text(AppLocalizations.of(context)!.errorGeneric)),
         );
         return;
       }
@@ -335,8 +368,8 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("This space is currently not available for booking."),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.spaceNotAvailable),
         ),
       );
     }
@@ -370,8 +403,8 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Pinpointed area is not a Public open space"),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.pinpointedNotPublic),
         ),
       );
     }
@@ -400,16 +433,14 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          "Directions to ${_selectedAreaName ?? 'selected location'}:\n"
-          "Straight-line distance: $distanceInKm km.\n"
-          "(Implement a directions API for detailed navigation.)",
+          AppLocalizations.of(context)!.distanceInfo(_selectedAreaName ?? 'selected location', distanceInKm),
         ),
         duration: const Duration(seconds: 5),
       ),
     );
   }
 
-  Widget _buildBottomSheetContent() {
+  Widget _buildBottomSheetWithContent(String? areaName) {
     final isOpenSpace = _selectedSpace != null && _selectedSpace!.id.isNotEmpty;
 
     return Padding(
@@ -435,25 +466,43 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               onPressed: () => Navigator.pop(context),
             ),
           ),
-          Text(
-            isOpenSpace
-                ? _selectedSpace!.name
-                : _selectedAreaName ?? "Unknown Area",
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+          // Title
+          if (isOpenSpace)
+            Text(
+              _selectedSpace!.name,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            )
+          else if (areaName != null)
+            Text(
+              areaName,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            )
+          else
+            const Center(
+              child: SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
           const SizedBox(height: 12),
 
           // Details for OpenSpace or normal point
-          _buildDetailRow("District", _selectedSpace?.district ?? "N/A"),
-          _buildDetailRow("Street", _selectedSpace?.street ?? "N/A"),
+          _buildDetailRow(AppLocalizations.of(context)!.districtLabel, _selectedSpace?.district ?? "N/A"),
+          _buildDetailRow(AppLocalizations.of(context)!.streetLabel, _selectedSpace?.street ?? "N/A"),
           if (isOpenSpace)
             _buildDetailRow(
-              "Status",
+              AppLocalizations.of(context)!.status,
               _selectedSpace!.status,
               valueColor:
                   _selectedSpace!.isAvailable ? Colors.green : Colors.red,
@@ -482,9 +531,9 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
-                  "Get Directions",
-                  style: TextStyle(color: Colors.white, fontSize: 14),
+                child: Text(
+                  AppLocalizations.of(context)!.getDirectionsButton,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ),
               if (isOpenSpace) ...[
@@ -506,9 +555,9 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(
-                    "Book Now",
-                    style: TextStyle(color: Colors.white, fontSize: 14),
+                  child: Text(
+                    AppLocalizations.of(context)!.bookNowButton,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ),
                 ElevatedButton(
@@ -526,9 +575,9 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(
-                    "Report",
-                    style: TextStyle(color: Colors.white, fontSize: 14),
+                  child: Text(
+                    AppLocalizations.of(context)!.reportButton,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ),
               ],
@@ -537,9 +586,9 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           const SizedBox(height: 8),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Cancel",
-              style: TextStyle(
+            child: Text(
+              AppLocalizations.of(context)!.cancelButton,
+              style: const TextStyle(
                 color: Colors.red,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -556,7 +605,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Open Spaces Map"),
+        title: Text(AppLocalizations.of(context)!.mapScreenAppBar),
         centerTitle: true,
         actions: [
           PopupMenuButton<int>(
@@ -629,6 +678,19 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
               CurrentLocationLayer(
                 positionStream: _locationService.getLocationStream(),
+                style: LocationMarkerStyle(
+                  marker: DefaultLocationMarker(
+                    color: AppConstants.primaryBlue,
+                    child: Icon(
+                      Icons.navigation,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                  markerSize: Size(35, 35),
+                  showAccuracyCircle: true,
+                  accuracyCircleColor: Color(0x332196F3),
+                ),
               ),
               MarkerLayer(
                 markers:
@@ -666,7 +728,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               right: 20,
               child: Container(
                 padding: const EdgeInsets.all(8),
-                color: Colors.red.withOpacity(0.8),
+                color: Colors.red.withValues(alpha: 0.8),
                 child: Text(
                   _errorMessage!,
                   style: const TextStyle(color: Colors.white),
@@ -685,7 +747,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   controller: controller,
                   focusNode: focusNode,
                   decoration: InputDecoration(
-                    hintText: 'Search public open space',
+                    hintText: AppLocalizations.of(context)!.searchHint,
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
                     fillColor: Colors.white,
@@ -714,7 +776,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                         .toList();
                 final locationSuggestions = await _locationService
                     .searchLocation(pattern);
-                return [...backendSuggestions];
+                return [...backendSuggestions, ...locationSuggestions];
               },
               itemBuilder:
                   (context, suggestion) => ListTile(
@@ -765,6 +827,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: _currentIndex,
         onTap: _onNavTap,
+        isAnonymous: Provider.of<UserProvider>(context, listen: false).user.isAnonymous,
       ),
     );
   }
@@ -835,9 +898,4 @@ void zoomOut(MapController mapController) {
   }
 }
 
-class LocationSuggestion {
-  final String name;
-  final LatLng position;
 
-  LocationSuggestion({required this.name, required this.position});
-}

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/constants.dart';
 import '../widget/custom_navigation_bar.dart';
@@ -9,10 +9,8 @@ import 'side_bar.dart';
 import '../data/repository/report_repository.dart';
 import '../data/repository/booking_repository.dart';
 import '../data/local/report_local.dart';
-import '../model/Report.dart';
-import '../model/Booking.dart';
 import '../service/openspace_service.dart';
-import '../utils/error_handler.dart' as app_error;
+import '../providers/user_provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -34,21 +32,7 @@ class _CardData {
   });
 }
 
-class _ActivityItem {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final DateTime date;
-  final Color iconColor;
 
-  _ActivityItem({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.date,
-    required this.iconColor,
-  });
-}
 
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   int _currentIndex = 0;
@@ -58,9 +42,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   late AnimationController _animationController;
   Timer? _autoScrollTimer;
   bool _isAppInForeground = true;
-  
-  List<_ActivityItem> _recentActivities = [];
-  bool _isLoadingActivities = true;
   
   // Quick Stats counts
   int _openSpacesCount = 0;
@@ -90,7 +71,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _fetchQuickStats();
-        _fetchRecentActivities();
       }
     });
   }
@@ -118,114 +98,64 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     if (!mounted) return;
     setState(() => _isLoadingStats = true);
 
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final isAnonymous = userProvider.user.isAnonymous;
+
+    int openSpaces = 0;
+    int reports = 0;
+    int bookings = 0;
+
     try {
-      final reportRepo = ReportRepository(localService: ReportLocal());
-      final bookingRepo = BookingRepository();
-      final openSpaceService = OpenSpaceService();
+      // 1. Fetch Open Spaces (For Everyone)
+      try {
+        final openSpaceService = OpenSpaceService();
+        openSpaces = await openSpaceService.getOpenSpaceCount().timeout(const Duration(seconds: 10));
+      } catch (e) {
+        debugPrint('Error fetching open spaces: $e');
+      }
 
-      // Fetch with timeout to prevent hanging
-      final results = await Future.wait([
-        reportRepo.getAllReports().timeout(const Duration(seconds: 5)),
-        bookingRepo.getMyBookings().timeout(const Duration(seconds: 5)),
-        openSpaceService.getOpenSpaceCount().timeout(const Duration(seconds: 5)),
-      ]).timeout(const Duration(seconds: 10));
+      // 2. Fetch Personal Stats (Authenticated Only)
+      if (!isAnonymous) {
+        // Fetch Reports
+        try {
+          final reportRepo = ReportRepository(localService: ReportLocal());
+          // Repo handles caching/offline logic
+          final allReports = await reportRepo.getAllReports(); 
+          
+          final activeReports = allReports.where((r) => 
+            r.status?.toLowerCase() == 'pending' || 
+            r.status?.toLowerCase() == 'in_progress'
+          ).toList();
+          reports = activeReports.length;
+        } catch (e) {
+          debugPrint('Error fetching reports stats: $e');
+        }
 
-      final allReports = results[0] as List<Report>;
-      final allBookings = results[1] as List<Booking>;
-      final openSpacesCount = results[2] as int;
-
-      final activeReports = allReports.where((r) => 
-        r.status?.toLowerCase() == 'pending' || 
-        r.status?.toLowerCase() == 'in_progress'
-      ).toList();
+        // Fetch Bookings
+        try {
+          final bookingRepo = BookingRepository();
+          final allBookings = await bookingRepo.getMyBookings();
+          bookings = allBookings.length;
+        } catch (e) {
+          debugPrint('Error fetching bookings stats: $e');
+        }
+      }
 
       if (mounted) {
         setState(() {
-          _activeReportsCount = activeReports.length;
-          _bookingsCount = allBookings.length;
-          _openSpacesCount = openSpacesCount;
+          _openSpacesCount = openSpaces;
+          _activeReportsCount = reports;
+          _bookingsCount = bookings;
           _isLoadingStats = false;
         });
       }
     } catch (e) {
-      final errorMessage = app_error.AppErrorHandler.getUserFriendlyMessage(e);
-      debugPrint('Error fetching quick stats: $errorMessage');
-      if (mounted) {
-        setState(() {
-          _activeReportsCount = 0;
-          _bookingsCount = 0;
-          _openSpacesCount = 0;
-          _isLoadingStats = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
+       debugPrint('Unexpected error in _fetchQuickStats: $e');
+       if (mounted) setState(() => _isLoadingStats = false);
     }
   }
 
-  Future<void> _fetchRecentActivities() async {
-    if (!mounted) return;
-    setState(() => _isLoadingActivities = true);
 
-    try {
-      final reportRepo = ReportRepository(localService: ReportLocal());
-      final bookingRepo = BookingRepository();
-
-      // Fetch with timeout
-      final results = await Future.wait([
-        reportRepo.getAllReports().timeout(const Duration(seconds: 5)),
-        bookingRepo.getMyBookings().timeout(const Duration(seconds: 5)),
-      ]).timeout(const Duration(seconds: 10));
-
-      final allReports = results[0] as List<Report>;
-      final allBookings = results[1] as List<Booking>;
-
-      List<_ActivityItem> activities = [];
-
-      for (var report in allReports.take(5)) {
-        activities.add(_ActivityItem(
-          icon: Icons.report_problem,
-          title: 'Report: ${report.spaceName ?? "Unknown Space"}',
-          subtitle: report.description,
-          date: report.createdAt ?? DateTime.now(),
-          iconColor: Colors.orange,
-        ));
-      }
-
-      for (var booking in allBookings.take(5)) {
-        activities.add(_ActivityItem(
-          icon: Icons.event,
-          title: 'Booking: Space #${booking.spaceId}',
-          subtitle: 'Status: ${booking.status}',
-          date: booking.startDate,
-          iconColor: Colors.blue,
-        ));
-      }
-
-      // Sort by date descending
-      activities.sort((a, b) => b.date.compareTo(a.date));
-
-      // Take top 5
-      if (activities.length > 5) {
-        activities = activities.sublist(0, 5);
-      }
-
-      if (mounted) {
-        setState(() {
-          _recentActivities = activities;
-          _isLoadingActivities = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error fetching activities: $e');
-      if (mounted) setState(() => _isLoadingActivities = false);
-    }
-  }
 
   void _startAutoScroll() {
     _autoScrollTimer?.cancel();
@@ -252,19 +182,34 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     super.dispose();
   }
 
-  void _onNavTap(int index) {
+  void _onTabTapped(int index) {
     if (index == _currentIndex) return;
-    setState(() => _currentIndex = index);
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/home');
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/map');
-        break;
-      case 2:
-        Navigator.pushReplacementNamed(context, '/user-profile');
-        break;
+
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final isAnonymous = userProvider.user.isAnonymous;
+
+    if (isAnonymous) {
+      // Anonymous users: Home (0), Explore/Map (1)
+      if (index == 0) {
+        setState(() => _currentIndex = 0);
+      } else if (index == 1) {
+        Navigator.pushNamed(context, '/map').then((_) {
+          if (mounted) setState(() => _currentIndex = 0);
+        });
+      }
+    } else {
+      // Registered users: Home (0), Explore (1), Profile (2)
+      if (index == 0) {
+        setState(() => _currentIndex = 0);
+      } else if (index == 2) {
+        Navigator.pushNamed(context, '/user-profile').then((_) {
+          if (mounted) setState(() => _currentIndex = 0);
+        });
+      } else if (index == 1) {
+        Navigator.pushNamed(context, '/map').then((_) {
+          if (mounted) setState(() => _currentIndex = 0);
+        });
+      }
     }
   }
 
@@ -318,9 +263,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     return Scaffold(
       backgroundColor: isDarkMode ? AppConstants.darkBackground : AppConstants.white,
       drawer: const Sidebar(),
-      appBar: _buildAppBar(locale, theme, isDarkMode),
+      appBar: _buildAppBar(locale, theme, isDarkMode, Provider.of<UserProvider>(context, listen: false).user.isAnonymous),
       body: RefreshIndicator(
-        onRefresh: _fetchRecentActivities,
+        onRefresh: _fetchQuickStats,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
@@ -341,10 +286,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     _buildSectionTitle(locale.quickActions, theme, isDarkMode),
                     const SizedBox(height: 12),
                     _buildActionCards(cards, theme, isDarkMode),
-                    const SizedBox(height: 24),
-                    _buildSectionTitle(locale.recentActivities, theme, isDarkMode),
-                    const SizedBox(height: 12),
-                    _buildRecentActivities(locale, theme, isDarkMode),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -355,7 +296,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       ),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: _currentIndex,
-        onTap: _onNavTap,
+        onTap: _onTabTapped,
+        isAnonymous: Provider.of<UserProvider>(context, listen: false).user.isAnonymous,
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppConstants.primaryBlue,
@@ -365,7 +307,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  PreferredSizeWidget _buildAppBar(AppLocalizations locale, ThemeData theme, bool isDarkMode) {
+  PreferredSizeWidget _buildAppBar(AppLocalizations locale, ThemeData theme, bool isDarkMode, bool isAnonymous) {
     return AppBar(
       backgroundColor: isDarkMode ? AppConstants.darkBackground : AppConstants.primaryBlue,
       elevation: 0,
@@ -392,39 +334,40 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       ),
       centerTitle: true,
       actions: [
-        Stack(
-          children: [
-            IconButton(
-              icon: Icon(Icons.notifications, color: isDarkMode ? Colors.white : Colors.white),
-              onPressed: () {
-                Navigator.pushNamed(context, '/user-notification');
-                if (_notificationCount > 0) {
-                  setState(() => _notificationCount = 0);
-                }
-              },
-            ),
-            if (_notificationCount > 0)
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.redAccent,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    '$_notificationCount',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+        if (!isAnonymous)
+          Stack(
+            children: [
+              IconButton(
+                icon: Icon(Icons.notifications, color: isDarkMode ? Colors.white : Colors.white),
+                onPressed: () {
+                  Navigator.pushNamed(context, '/user-notification');
+                  if (_notificationCount > 0) {
+                    setState(() => _notificationCount = 0);
+                  }
+                },
+              ),
+              if (_notificationCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '$_notificationCount',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
-              ),
-          ],
-        ),
+            ],
+          ),
       ],
     );
   }
@@ -437,7 +380,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: isDarkMode ? Colors.black.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+            color: isDarkMode ? Colors.black.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.2),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -456,7 +399,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   _horizontalImages[index],
                   fit: BoxFit.cover,
                   filterQuality: FilterQuality.high,
-                  color: isDarkMode ? Colors.black.withOpacity(0.3) : null,
+                  color: isDarkMode ? Colors.black.withValues(alpha: 0.3) : null,
                   colorBlendMode: isDarkMode ? BlendMode.darken : null,
                 );
               },
@@ -522,7 +465,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: isDarkMode ? Colors.black.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+            color: isDarkMode ? Colors.black.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -534,7 +477,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: isDarkMode ? AppConstants.primaryBlue.withOpacity(0.1) : AppConstants.primaryBlue.withOpacity(0.1),
+              color: isDarkMode ? AppConstants.primaryBlue.withValues(alpha: 0.1) : AppConstants.primaryBlue.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(Icons.account_balance, color: AppConstants.primaryBlue, size: 24),
@@ -632,7 +575,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: isDarkMode ? Colors.black.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+            color: isDarkMode ? Colors.black.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -643,7 +586,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: isDarkMode ? AppConstants.primaryBlue.withOpacity(0.1) : AppConstants.primaryBlue.withOpacity(0.1),
+              color: isDarkMode ? AppConstants.primaryBlue.withValues(alpha: 0.1) : AppConstants.primaryBlue.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: AppConstants.primaryBlue, size: 28),
@@ -689,7 +632,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: isDarkMode ? Colors.black.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+                    color: isDarkMode ? Colors.black.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -701,7 +644,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: isDarkMode ? AppConstants.primaryBlue.withOpacity(0.1) : AppConstants.primaryBlue.withOpacity(0.1),
+                      color: isDarkMode ? AppConstants.primaryBlue.withValues(alpha: 0.1) : AppConstants.primaryBlue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(card.icon, color: AppConstants.primaryBlue, size: 28),
@@ -731,117 +674,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildRecentActivities(AppLocalizations locale, ThemeData theme, bool isDarkMode) {
-    if (_isLoadingActivities) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_recentActivities.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            "No recent activities found.",
-            style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.grey),
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: _recentActivities.map((activity) {
-        return _buildActivityItem(
-          activity.icon,
-          activity.title,
-          activity.subtitle,
-          _formatDate(activity.date),
-          activity.iconColor,
-          theme,
-          isDarkMode,
-        );
-      }).toList(),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    // Show actual time instead of relative time
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    final activityDate = DateTime(date.year, date.month, date.day);
-    
-    final timeFormat = DateFormat('h:mm a'); // e.g., "2:30 PM"
-    final dateFormat = DateFormat('MMM d'); // e.g., "Dec 3"
-    
-    if (activityDate == today) {
-      return 'Today at ${timeFormat.format(date)}';
-    } else if (activityDate == yesterday) {
-      return 'Yesterday at ${timeFormat.format(date)}';
-    } else {
-      return '${dateFormat.format(date)} at ${timeFormat.format(date)}';
-    }
-  }
-
-  Widget _buildActivityItem(
-    IconData icon,
-    String title,
-    String subtitle,
-    String time,
-    Color iconColor,
-    ThemeData theme,
-    bool isDarkMode,
-  ) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      color: isDarkMode ? AppConstants.darkCard : Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: isDarkMode ? Colors.white10 : Colors.grey.shade200),
-      ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: iconColor),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-            color: isDarkMode ? Colors.white : AppConstants.black,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 14,
-                color: isDarkMode ? Colors.white70 : AppConstants.grey,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              time,
-              style: TextStyle(
-                fontSize: 12,
-                color: isDarkMode ? Colors.white38 : Colors.grey,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

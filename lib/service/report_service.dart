@@ -24,12 +24,12 @@ class ReportingService {
     String? authToken,
   }) async {
     final token = authToken ?? await AuthService.getToken();
-    if (token == null) throw Exception('Authentication token missing');
-
     final uri = Uri.parse('$_baseUrl$_reportEndpoint');
 
     final request = http.MultipartRequest('POST', uri);
-    request.headers['Authorization'] = 'Bearer $token';
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
 
     // Add text fields
     request.fields['description'] = description;

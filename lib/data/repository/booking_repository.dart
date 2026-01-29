@@ -21,10 +21,8 @@ class BookingRepository {
         return false;
       }
       
-      // Then verify we can actually reach the internet
-      final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 3));
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+      // We rely on the actual request to fail if there's no real internet.
+      return true;
     } catch (e) {
       print('Connectivity check failed: $e');
       return false;
@@ -216,26 +214,31 @@ class BookingRepository {
     return await _local.getPendingBookings();
   }
 
+  /// Get local bookings only (cached + pending) without network call
+  Future<List<Booking>> getLocalBookings() async {
+    final localData = await _local.getBookings();
+    _cachedBookings = localData;
+    _lastFetch = DateTime.now(); // Mark as fresh to prevent immediate network re-fetch
+    return localData;
+  }
+
 
   /// Sync all pending bookings to backend
   Future<void> syncPendingBookings() async {
     final isOnline = await _isConnected();
     if (!isOnline) {
-      print('Cannot sync bookings: device is offline');
       return;
     }
 
     final pending = await _local.getPendingBookings();
 
     if (pending.isEmpty) {
-      print('No pending bookings to sync');
       return;
     }
 
-    print('Syncing ${pending.length} pending bookings in background...');
-
-    // Run sync asynchronously without blocking UI
-    unawaited(_doSync(pending));
+    _doSync(pending).catchError((e) {
+      print('[BookingRepository] Sync error: $e');
+    });
   }
 
   Future<void> _doSync(List<Booking> pending) async {
@@ -252,33 +255,27 @@ class BookingRepository {
           purpose: booking.purpose,
           district: booking.district,
           file: booking.fileUrl != null ? File(booking.fileUrl!) : null,
-        );
+        ).timeout(const Duration(seconds: 10));
 
         if (success) {
           await _local.removeBooking(booking.id);
           successCount++;
-          print('✓ Successfully synced booking: ${booking.id}');
         }
-      } on SocketException catch (e) {
-        print('✗ Network error syncing booking ${booking.id}: $e');
+      } on SocketException {
         break;
-      } on TimeoutException catch (e) {
-        print('✗ Timeout syncing booking ${booking.id}: $e');
+      } on TimeoutException {
         break;
       } catch (e) {
-        print('✗ Failed to sync booking ${booking.id}: $e');
+        continue;
       }
     }
 
-    print('Sync complete: $successCount synced.');
-
-    // Refresh bookings from server after sync
     if (successCount > 0) {
       try {
         final onlineBookings = await _service.fetchMyBookings();
         await _local.saveBookings(onlineBookings);
       } catch (e) {
-        print('Failed to refresh bookings after sync: $e');
+        // Ignore refresh errors
       }
     }
   }

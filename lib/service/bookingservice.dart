@@ -86,7 +86,7 @@ class BookingService {
         'BookingService: Sending multipart request with fields: ${request.fields}, file: ${file.path}',
       );
       var streamedResponse = await request.send().timeout(
-        const Duration(seconds: 60),
+        const Duration(seconds: 20),
       );
       response = await http.Response.fromStream(streamedResponse);
     } else {
@@ -99,7 +99,7 @@ class BookingService {
       );
       response = await http
           .post(url, headers: headers, body: jsonEncode(fields))
-          .timeout(const Duration(seconds: 60));
+          .timeout(const Duration(seconds: 20));
     }
 
     print(
@@ -167,7 +167,7 @@ class BookingService {
           HttpHeaders.contentTypeHeader: 'application/json',
         },
       )
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 15));
 
       print('BookingService: fetchMyBookings Status: ${response.statusCode}');
       print('BookingService: fetchMyBookings Body: ${response.body}');

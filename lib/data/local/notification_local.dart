@@ -66,4 +66,9 @@ class NotificationLocalDataSource {
       whereArgs: [id],
     );
   }
+
+  Future<void> clearAllNotifications() async {
+    final db = await LocalDb.getDb();
+    await db.delete('notifications');
+  }
 }

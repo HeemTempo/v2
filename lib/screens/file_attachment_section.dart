@@ -21,9 +21,11 @@ class FileAttachmentSection extends StatelessWidget {
     final Color enabledButtonColor = Theme.of(context).colorScheme.primary;
     final Color disabledButtonColor = Colors.grey.shade400;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       elevation: 2,
-      color: Colors.white,
+      color: Theme.of(context).cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -35,7 +37,7 @@ class FileAttachmentSection extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade800,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 12),
@@ -100,7 +102,7 @@ class FileAttachmentSection extends StatelessWidget {
                   child: Text(
                     "No Files Chosen",
                     style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                         fontSize: 15,
                         fontStyle: FontStyle.italic),
                   ),
@@ -132,10 +134,11 @@ class FileAttachmentSection extends StatelessWidget {
                             size: 18, color: Colors.red.shade400),
                         onDeleted:
                             removeFile != null ? () => removeFile!(index) : null,
-                        backgroundColor: Colors.grey.shade100,
+                        backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
+                        labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
-                          side: BorderSide(color: Colors.grey.shade300),
+                          side: BorderSide(color: isDark ? Colors.white10 : Colors.grey.shade300),
                         ),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),

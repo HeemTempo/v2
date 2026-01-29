@@ -17,17 +17,19 @@ class OnboardingScreenContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    // Environment-aware colors
+    final backgroundColor = theme.scaffoldBackgroundColor;
+    final accentColor = isDark ? Colors.greenAccent : AppConstants.primaryBlue;
+    final iconBgColor = isDark 
+        ? Colors.greenAccent.withOpacity(0.1) 
+        : AppConstants.primaryBlue.withOpacity(0.1);
+    final cardColor = theme.cardColor;
+    
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppConstants.primaryBlue,
-            AppConstants.primaryBlue.withOpacity(0.8),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
+      color: backgroundColor,
       child: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -37,11 +39,11 @@ class OnboardingScreenContent extends StatelessWidget {
               width: 200,
               height: 200,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: iconBgColor,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: accentColor.withOpacity(0.2),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -50,13 +52,13 @@ class OnboardingScreenContent extends StatelessWidget {
               child: Container(
                 margin: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: cardColor,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
                   size: 100,
-                  color: AppConstants.primaryBlue,
+                  color: accentColor,
                 ),
               ),
             ),
@@ -65,10 +67,9 @@ class OnboardingScreenContent extends StatelessWidget {
               label: title,
               child: Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 28,
+                style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: theme.textTheme.headlineMedium?.color,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -81,10 +82,9 @@ class OnboardingScreenContent extends StatelessWidget {
                 child: Text(
                   description,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
+                  style: theme.textTheme.bodyLarge?.copyWith(
                     height: 1.6,
+                    color: theme.textTheme.bodyMedium?.color,
                   ),
                 ),
               ),

@@ -1,89 +1,49 @@
-import 'dart:io';
-import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:quickalert/quickalert.dart';
 
 class AppErrorHandler {
   static String getUserFriendlyMessage(dynamic error) {
-    final errorString = error.toString().toLowerCase();
-
-    // Network errors
-    if (errorString.contains('socketexception') ||
-        errorString.contains('failed host lookup') ||
-        errorString.contains('network is unreachable')) {
-      return 'Unable to connect to server. Please check your internet connection.';
+    if (error is DioException) {
+      switch (error.type) {
+        case DioExceptionType.connectionTimeout:
+          return "Connection timeout. Please check your internet connection.";
+        case DioExceptionType.sendTimeout:
+          return "Request timeout. Please try again later.";
+        case DioExceptionType.receiveTimeout:
+          return "Response timeout. Please try again later.";
+        case DioExceptionType.badResponse:
+          return "Server error: ${error.response?.statusCode}. Please try again.";
+        case DioExceptionType.cancel:
+          return "Request cancelled.";
+        case DioExceptionType.connectionError:
+          return "No internet connection. Please check your network.";
+        default:
+          return "An unexpected network error occurred.";
+      }
+    } else if (error is FormatException) {
+      return "Data format error. Please try again.";
+    } else {
+      return error.toString().isNotEmpty 
+          ? error.toString() 
+          : "An unexpected error occurred. Please try again.";
     }
-
-    if (errorString.contains('timeout') || errorString.contains('timed out')) {
-      return 'Connection timed out. Please try again.';
-    }
-
-    if (errorString.contains('connection refused') ||
-        errorString.contains('connection reset')) {
-      return 'Server is not responding. Please try again later.';
-    }
-
-    // HTTP errors
-    if (errorString.contains('400')) {
-      return 'Invalid request. Please check your input and try again.';
-    }
-
-    if (errorString.contains('401') || errorString.contains('unauthorized')) {
-      return 'Session expired. Please log in again.';
-    }
-
-    if (errorString.contains('403') || errorString.contains('forbidden')) {
-      return 'Access denied. You don\'t have permission to perform this action.';
-    }
-
-    if (errorString.contains('404') || errorString.contains('not found')) {
-      return 'Requested resource not found.';
-    }
-
-    if (errorString.contains('500') || errorString.contains('internal server')) {
-      return 'Server error. Please try again later.';
-    }
-
-    if (errorString.contains('502') || errorString.contains('bad gateway')) {
-      return 'Server is temporarily unavailable. Please try again later.';
-    }
-
-    if (errorString.contains('503') || errorString.contains('service unavailable')) {
-      return 'Service is temporarily unavailable. Please try again later.';
-    }
-
-    // GraphQL errors
-    if (errorString.contains('graphql')) {
-      return 'Unable to process request. Please try again.';
-    }
-
-    // Database errors
-    if (errorString.contains('database') || errorString.contains('sql')) {
-      return 'Data error occurred. Please try again.';
-    }
-
-    // Permission errors
-    if (errorString.contains('permission')) {
-      return 'Permission denied. Please grant necessary permissions.';
-    }
-
-    // File errors
-    if (errorString.contains('file') && errorString.contains('not found')) {
-      return 'File not found. Please try again.';
-    }
-
-    // Format errors
-    if (errorString.contains('format') || errorString.contains('parse')) {
-      return 'Invalid data format. Please try again.';
-    }
-
-    // Default message
-    return 'Something went wrong. Please try again.';
   }
 
-  static String getErrorType(dynamic error) {
-    if (error is SocketException) return 'Network Error';
-    if (error is TimeoutException) return 'Timeout Error';
-    if (error is FormatException) return 'Format Error';
-    if (error is HttpException) return 'Server Error';
-    return 'Error';
+  static void showError(BuildContext context, dynamic error, {String? title}) {
+    final message = getUserFriendlyMessage(error);
+    
+    // Check if we can use the QuickAlert or custom dialog
+    // Assuming showErrorDialog uses QuickAlert or similar internally based on existing imports
+    // If showErrorDialog is simple, we might want to use QuickAlert directly here for better UI
+    
+    QuickAlert.show(
+      context: context,
+      type: QuickAlertType.error,
+      title: title ?? "Error",
+      text: message,
+      confirmBtnText: 'Okay',
+      confirmBtnColor: Theme.of(context).primaryColor,
+    );
   }
 }

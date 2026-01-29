@@ -1,8 +1,7 @@
-import 'package:flutter/foundation.dart';
-import 'package:kinondoni_openspace_app/config/app_config.dart';
-import 'package:kinondoni_openspace_app/data/local/notification_local.dart';
+import 'package:flutter/material.dart';
 import 'package:kinondoni_openspace_app/data/repository/notification_repository.dart';
 import 'package:kinondoni_openspace_app/model/Notification.dart';
+import 'package:kinondoni_openspace_app/core/network/connectivity_service.dart';
 
 class NotificationProvider extends ChangeNotifier {
   final NotificationRepository _repository;
@@ -10,15 +9,16 @@ class NotificationProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
-  NotificationProvider()
+  NotificationProvider({required ConnectivityService connectivityService})
       : _repository = NotificationRepository(
-          baseUrl: AppConfig.baseUrl,
-          localDataSource: NotificationLocalDataSource(),
+          connectivityService: connectivityService,
         );
 
   List<ReportNotification> get notifications => _notifications;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  int get unreadCount => _notifications.where((n) => !n.isRead).length;
 
   /// Fetch notifications (online from API or offline from local database)
   Future<void> fetchNotifications() async {
@@ -28,8 +28,10 @@ class NotificationProvider extends ChangeNotifier {
 
     try {
       _notifications = await _repository.getNotifications();
+      _error = null;
     } catch (e) {
       _error = 'Failed to load notifications: $e';
+      print('NotificationProvider: Error fetching notifications: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -37,16 +39,36 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   /// Mark notification as read (locally and queue for sync if offline)
-  Future<void> markAsRead(int id) async {
+  Future<void> markAsRead(int notificationId) async {
     try {
-      await _repository.markAsRead(id);
-      final index = _notifications.indexWhere((n) => n.id == id);
+      await _repository.markAsRead(notificationId);
+      
+      // Update local state
+      final index = _notifications.indexWhere((n) => n.id == notificationId);
       if (index != -1) {
         _notifications[index].isRead = true;
         notifyListeners();
       }
     } catch (e) {
+      print('NotificationProvider: Error marking notification as read: $e');
       _error = 'Failed to mark notification as read: $e';
+      notifyListeners();
+    }
+  }
+
+  /// Mark all notifications as read
+  Future<void> markAllAsRead() async {
+    try {
+      await _repository.markAllAsRead();
+      
+      // Update local state
+      for (var notification in _notifications) {
+        notification.isRead = true;
+      }
+      notifyListeners();
+    } catch (e) {
+      print('NotificationProvider: Error marking all as read: $e');
+      _error = 'Failed to mark all as read: $e';
       notifyListeners();
     }
   }
@@ -58,8 +80,20 @@ class NotificationProvider extends ChangeNotifier {
       // Refresh notifications after sync
       await fetchNotifications();
     } catch (e) {
+      print('NotificationProvider: Error syncing notifications: $e');
       _error = 'Failed to sync notifications: $e';
       notifyListeners();
+    }
+  }
+
+  /// Clear all notifications (useful for logout)
+  Future<void> clearAllNotifications() async {
+    try {
+      await _repository.clearAllNotifications();
+      _notifications.clear();
+      notifyListeners();
+    } catch (e) {
+      print('NotificationProvider: Error clearing notifications: $e');
     }
   }
 }

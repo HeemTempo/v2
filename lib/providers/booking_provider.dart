@@ -67,13 +67,23 @@ class BookingProvider extends ChangeNotifier {
 
     try {
       _bookings = await _repository.getMyBookings();
-      print('Loaded ${_bookings.length} bookings (${pendingBookingsCount} pending)');
+      print('Loaded ${_bookings.length} bookings ($pendingBookingsCount pending)');
     } catch (e) {
       _bookings = [];
       debugPrint('[BookingProvider] Error loading bookings: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Load only local bookings (fast, no network)
+  Future<void> _loadLocalBookings() async {
+    try {
+      _bookings = await _repository.getLocalBookings();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[BookingProvider] Error loading local bookings: $e');
     }
   }
 
@@ -107,7 +117,13 @@ class BookingProvider extends ChangeNotifier {
 
       // Reload bookings after adding
       if (success) {
-        await loadBookings();
+        // ALWAYS refresh local first for instant UI response
+        await _loadLocalBookings();
+        
+        // If online, trigger background refresh from server without blocking UI
+        if (_connectivity.isOnline) {
+          unawaited(loadBookings());
+        }
       }
     } catch (e) {
       debugPrint('[BookingProvider] Error adding booking: $e');
@@ -136,10 +152,10 @@ class BookingProvider extends ChangeNotifier {
     // Don't notify start of background sync to avoid UI rebuilds while typing
 
     try {
-      print('Starting sync of ${pendingBookingsCount} pending bookings...');
+      print('Starting sync of $pendingBookingsCount pending bookings...');
       await _repository.syncPendingBookings();
       await loadBookings(); // Refresh the list after sync
-      print('Sync completed. ${pendingBookingsCount} bookings still pending');
+      print('Sync completed. $pendingBookingsCount bookings still pending');
     } catch (e) {
       print('Failed to sync pending bookings: $e');
     } finally {

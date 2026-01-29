@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kinondoni_openspace_app/screens/how_to_use_page.dart';
 import 'package:kinondoni_openspace_app/screens/language_change.dart';
 import 'package:kinondoni_openspace_app/screens/reported_issue.dart';
 import 'package:kinondoni_openspace_app/screens/theme_change.dart';
@@ -27,6 +28,17 @@ class SettingsPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _buildListTile(
+            context,
+            Icons.help_outline,
+            locale.howToUseTitle,
+            () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const HowToUsePage()),
+              );
+            },
+          ),
           _buildListTile(
             context,
             Icons.language,

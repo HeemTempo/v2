@@ -1,77 +1,78 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:kinondoni_openspace_app/model/Notification.dart';
-import 'package:kinondoni_openspace_app/service/auth_service.dart';
+import 'package:kinondoni_openspace_app/service/notification_api_service.dart';
+import 'package:kinondoni_openspace_app/core/network/connectivity_service.dart';
+import '../local/notification_local.dart';
 
 class NotificationRepository {
-  final String _baseUrl;
-  final dynamic _localDataSource;
+  final NotificationApiService _apiService;
+  final NotificationLocalDataSource _localDataSource;
+  final ConnectivityService _connectivityService;
 
   NotificationRepository({
-    String? baseUrl,
-    dynamic localDataSource,
-  })  : _baseUrl = baseUrl ?? 'http://your-server-url.com',
-        _localDataSource = localDataSource;
+    NotificationApiService? apiService,
+    NotificationLocalDataSource? localDataSource,
+    required ConnectivityService connectivityService,
+  })  : _apiService = apiService ?? NotificationApiService(),
+        _localDataSource = localDataSource ?? NotificationLocalDataSource(),
+        _connectivityService = connectivityService;
 
-  Future<bool> _isOnline() async {
-    // Simple connectivity check
-    try {
-      final result = await InternetAddress.lookup('google.com');
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
-    } catch (_) {
-      return false;
-    }
-  }
-
+  /// Fetch notifications from API if online, otherwise from local cache
   Future<List<ReportNotification>> getNotifications() async {
-    if (await _isOnline()) {
+    if (_connectivityService.isOnline) {
       try {
-        final token = await AuthService.getToken();
-        if (token == null) throw Exception('Not authenticated');
+        debugPrint('NotificationRepository: Fetching notifications from API (online)');
+        final notifications = await _apiService.fetchNotifications();
         
-        final response = await http.get(
-          Uri.parse('$_baseUrl/api/v1/notifications/'),
-          headers: {'Authorization': 'Bearer $token'},
-        );
-        
-        if (response.statusCode == 200) {
-          final List<dynamic> data = jsonDecode(response.body);
-          final notifications = data.map((e) => ReportNotification.fromJson(e)).toList();
-          
-          for (var notification in notifications) {
+        // Cache notifications locally for offline access
+        for (var notification in notifications) {
+          try {
             await _localDataSource.saveNotification(notification);
+          } catch (e) {
+            debugPrint('NotificationRepository: Error caching notification ${notification.id}: $e');
           }
-          return notifications;
         }
-        return await _localDataSource.getNotifications();
+        
+        debugPrint('NotificationRepository: Successfully fetched and cached ${notifications.length} notifications');
+        return notifications;
       } catch (e) {
-        debugPrint('Error fetching notifications: $e');
+        debugPrint('NotificationRepository: Error fetching from API: $e, falling back to local cache');
+        // Fallback to local cache if API fails
         return await _localDataSource.getNotifications();
       }
     } else {
+      debugPrint('NotificationRepository: Offline mode, fetching from local cache');
       return await _localDataSource.getNotifications();
     }
   }
 
+  /// Mark notification as read, sync to server if online
   Future<void> markAsRead(int notificationId) async {
-    // Update local database
-    final notifications = await _localDataSource.getNotifications();
-    final notification = notifications.firstWhere((n) => n.id == notificationId, orElse: () => throw Exception('Notification not found'));
-    notification.isRead = true;
-    await _localDataSource.updateNotification(notification);
+    debugPrint('NotificationRepository: Marking notification $notificationId as read');
+    
+    // Update local database first
+    try {
+      final notifications = await _localDataSource.getNotifications();
+      final notification = notifications.firstWhere(
+        (n) => n.id == notificationId,
+        orElse: () => throw Exception('Notification not found'),
+      );
+      notification.isRead = true;
+      await _localDataSource.updateNotification(notification);
+      debugPrint('NotificationRepository: Updated local notification $notificationId as read');
+    } catch (e) {
+      debugPrint('NotificationRepository: Error updating local notification: $e');
+    }
 
-    if (await _isOnline()) {
+    // Sync to server if online
+    if (_connectivityService.isOnline) {
       try {
-        final token = await AuthService.getToken();
-        if (token != null) {
-          await http.post(
-          Uri.parse('$_baseUrl/api/v1/notifications/mark-read/$notificationId/'),
-            headers: {'Authorization': 'Bearer $token'},
-          );
-        }
+        await _apiService.markNotificationAsRead(notificationId);
+        debugPrint('NotificationRepository: Successfully synced read status to server');
       } catch (e) {
+        debugPrint('NotificationRepository: Error syncing to server: $e, queuing for later sync');
+        // Queue for sync when connection is restored
         await _localDataSource.queueForSync(
           'update',
           'notification',
@@ -79,6 +80,7 @@ class NotificationRepository {
         );
       }
     } else {
+      debugPrint('NotificationRepository: Offline, queuing read status for sync');
       // Queue for sync
       await _localDataSource.queueForSync(
         'update',
@@ -88,26 +90,60 @@ class NotificationRepository {
     }
   }
 
+  /// Sync pending updates to server when connection is restored
   Future<void> syncNotifications() async {
-    if (await _isOnline()) {
-      final queuedActions = await _localDataSource.getQueuedActions();
-      for (var action in queuedActions) {
+    if (!_connectivityService.isOnline) {
+      debugPrint('NotificationRepository: Offline, skipping sync');
+      return;
+    }
+
+    debugPrint('NotificationRepository: Starting notification sync');
+    final queuedActions = await _localDataSource.getQueuedActions();
+    int successCount = 0;
+    int failCount = 0;
+
+    for (var action in queuedActions) {
+      try {
         final data = jsonDecode(action['data']);
         if (action['entity'] == 'notification' && action['action'] == 'update') {
           try {
-            final token = await AuthService.getToken();
-            if (token != null) {
-              await http.post(
-                Uri.parse('$_baseUrl/api/v1/notifications/mark-read/${data['id']}/'),
-                headers: {'Authorization': 'Bearer $token'},
-              );
-              await _localDataSource.clearQueuedAction(action['id']);
-            }
+            await _apiService.markNotificationAsRead(data['id']);
+            await _localDataSource.clearQueuedAction(action['id']);
+            successCount++;
+            debugPrint('NotificationRepository: Synced notification ${data['id']}');
           } catch (e) {
-            debugPrint('Sync error: $e');
+            failCount++;
+            debugPrint('NotificationRepository: Failed to sync notification ${data['id']}: $e');
           }
         }
+      } catch (e) {
+        failCount++;
+        debugPrint('NotificationRepository: Error processing queued action: $e');
       }
     }
+
+    debugPrint('NotificationRepository: Sync complete - Success: $successCount, Failed: $failCount');
+  }
+
+  /// Get count of unread notifications
+  Future<int> getUnreadCount() async {
+    final notifications = await _localDataSource.getNotifications();
+    return notifications.where((n) => !n.isRead).length;
+  }
+
+  /// Mark all notifications as read
+  Future<void> markAllAsRead() async {
+    final notifications = await _localDataSource.getNotifications();
+    final unreadIds = notifications.where((n) => !n.isRead).map((n) => n.id).toList();
+
+    for (final id in unreadIds) {
+      await markAsRead(id);
+    }
+  }
+
+  /// Clear all local notifications (useful for logout)
+  Future<void> clearAllNotifications() async {
+    await _localDataSource.clearAllNotifications();
+    debugPrint('NotificationRepository: Cleared all local notifications');
   }
 }

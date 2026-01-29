@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:kinondoni_openspace_app/core/network/connectivity_service.dart';
-import 'package:kinondoni_openspace_app/l10n/app_localizations.dart';
 
 class ConnectivityBanner extends StatelessWidget {
   const ConnectivityBanner({super.key});
@@ -60,7 +59,7 @@ class ConnectivityBanner extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       minimumSize: const Size(60, 32),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6),
                       ),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kinondoni_openspace_app/core/network/connectivity_service.dart';
 import 'package:quickalert/quickalert.dart';
@@ -40,17 +41,30 @@ class _SignInScreenState extends State<SignInScreen> {
 
   // Check if user can auto-login (offline mode with cached credentials)
   Future<void> _checkAutoLogin() async {
+    print('🔐 SignInScreen: Starting auto-login check...');
     try {
+      // Add timeout to prevent hanging
+      await Future.delayed(const Duration(milliseconds: 100));
+      
       final connectivityService = Provider.of<ConnectivityService>(
         context,
         listen: false,
       );
+      print('🔐 SignInScreen: Connectivity service obtained');
 
       // Only auto-login if offline and has cached credentials
       if (!connectivityService.isOnline) {
-        final offlineUser = await _authService.getOfflineUser();
+        print('📴 SignInScreen: Device offline, checking cached credentials...');
+        final offlineUser = await _authService.getOfflineUser().timeout(
+          const Duration(seconds: 2),
+          onTimeout: () {
+            print('⚠️ SignInScreen: getOfflineUser timeout');
+            return null;
+          },
+        );
         
         if (offlineUser != null && mounted) {
+          print('✅ SignInScreen: Found cached user, auto-logging in');
           final userProvider = Provider.of<UserProvider>(
             context,
             listen: false,
@@ -60,11 +74,16 @@ class _SignInScreenState extends State<SignInScreen> {
           // Navigate to home
           Navigator.pushReplacementNamed(context, '/home');
           return;
+        } else {
+          print('ℹ️ SignInScreen: No cached user found');
         }
+      } else {
+        print('🌐 SignInScreen: Device online, skipping auto-login');
       }
     } catch (e) {
-      print('Auto-login error: $e');
+      print('❌ SignInScreen: Auto-login error: $e');
     } finally {
+      print('✅ SignInScreen: Auto-login check complete, showing login screen');
       if (mounted) {
         setState(() => _isCheckingAutoLogin = false);
       }
@@ -127,6 +146,11 @@ class _SignInScreenState extends State<SignInScreen> {
     final user = await _authService.login(
       _usernameController.text.trim(),
       _passwordController.text.trim(),
+    ).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        throw Exception(loc.errorTimeout);
+      },
     );
 
     
@@ -141,6 +165,11 @@ class _SignInScreenState extends State<SignInScreen> {
       onConfirmed: () {
         if (mounted) Navigator.pushReplacementNamed(context, '/home');
       },
+    );
+  } on TimeoutException catch (_) {
+    _showAlert(
+      QuickAlertType.error,
+      loc.errorTimeout,
     );
   } catch (e) {
     final errorMessage = e.toString().replaceFirst('Exception: ', '');

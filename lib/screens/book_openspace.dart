@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -6,8 +5,8 @@ import 'package:kinondoni_openspace_app/providers/booking_provider.dart';
 import 'package:kinondoni_openspace_app/service/auth_service.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:kinondoni_openspace_app/utils/constants.dart';
+import 'package:kinondoni_openspace_app/l10n/app_localizations.dart';
 
 class BookingPage extends StatefulWidget {
   final int spaceId;
@@ -30,7 +29,6 @@ class _BookingPageState extends State<BookingPage> {
 
   DateTime? _startDate;
   DateTime? _endDate;
-  File? _selectedFile;
 
   @override
   void initState() {
@@ -38,8 +36,6 @@ class _BookingPageState extends State<BookingPage> {
     if (widget.spaceName != null) {
       _locationController.text = widget.spaceName!;
     }
-    // Sync is handled automatically by BookingProvider when connectivity changes
-    // No need to sync on every screen load - this prevents UI freezing
   }
 
   Future<void> _selectDate(BuildContext context, bool isStart) async {
@@ -64,17 +60,6 @@ class _BookingPageState extends State<BookingPage> {
     }
   }
 
-  Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['jpg', 'pdf', 'doc', 'png'],
-    );
-
-    if (result != null && result.files.single.path != null) {
-      setState(() => _selectedFile = File(result.files.single.path!));
-    }
-  }
-
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -84,16 +69,6 @@ class _BookingPageState extends State<BookingPage> {
         type: QuickAlertType.error,
         title: 'Validation Error',
         text: 'Please select a start date.',
-      );
-      return;
-    }
-
-    if (_endDate != null && _endDate!.isBefore(_startDate!)) {
-      QuickAlert.show(
-        context: context,
-        type: QuickAlertType.error,
-        title: 'Validation Error',
-        text: 'End date cannot be before start date.',
       );
       return;
     }
@@ -127,37 +102,26 @@ class _BookingPageState extends State<BookingPage> {
             _locationController.text.isNotEmpty
                 ? _locationController.text
                 : "Kinondoni",
-        file: _selectedFile,
+        file: null, // Removed attachment support
       );
 
       if (!mounted) return;
 
       if (success) {
-        final pendingCount = bookingProvider.pendingBookingsCount;
-
-        // Check if this booking is offline
-        final isOffline = pendingCount > 0;
-
         QuickAlert.show(
           context: context,
-          type: isOffline ? QuickAlertType.info : QuickAlertType.success,
-          title: isOffline ? 'Booking Saved Offline' : 'Booking Submitted!',
-          text:
-              isOffline
-                  ? 'You are offline. Your booking has been saved locally and will be submitted automatically when you reconnect.\n\n$pendingCount pending booking(s) waiting to sync.'
-                  : 'Your booking has been successfully submitted!\n\nOur team will review your request shortly.',
-          confirmBtnText: 'OK',
+          type: QuickAlertType.success,
+          title: 'Booking Submitted!',
+          text: 'Your booking has been successfully submitted! Our team will review your request shortly.',
+          confirmBtnText: 'Great!',
           onConfirmBtnTap: () {
             Navigator.of(context).pop(); // Close alert
             Navigator.of(context).pop(); // Close booking page
           },
         );
       }
-    } catch (e, stackTrace) {
-      debugPrint('Booking Error: $e\nStackTrace: $stackTrace');
-
+    } catch (e) {
       if (!mounted) return;
-
       QuickAlert.show(
         context: context,
         type: QuickAlertType.error,
@@ -173,305 +137,268 @@ class _BookingPageState extends State<BookingPage> {
     
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(color: primaryColor),
+      labelStyle: TextStyle(color: isDark ? Colors.white70 : Colors.grey[700], fontWeight: FontWeight.w500),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey.shade300),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: primaryColor, width: 2),
       ),
       filled: true,
-      fillColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+      fillColor: isDark ? const Color(0xFF2C2C2C) : Colors.grey[50],
       prefixIcon: Icon(icon, color: primaryColor),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    );
-  }
-
-  Widget _buildFormField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-    int maxLines = 1,
-    AutovalidateMode? autovalidateMode,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        controller: controller,
-        decoration: _buildInputDecoration(label, icon),
-        keyboardType: keyboardType,
-        validator: validator,
-        autovalidateMode: autovalidateMode ?? AutovalidateMode.disabled,
-        maxLines: maxLines,
-        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-      ),
-    );
-  }
-
-  Widget _buildDateTimeField({
-    required String label,
-    required IconData icon,
-    required DateTime? date,
-    required VoidCallback onTap,
-    bool isRequired = false,
-  }) {
-    final isSubmitting = context.watch<BookingProvider>().isSubmitting;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: isSubmitting ? null : onTap,
-        child: InputDecorator(
-          decoration: _buildInputDecoration(
-            label + (isRequired ? ' *' : ''),
-            icon,
-          ),
-          child: Text(
-            date != null ? DateFormat('yyyy-MM-dd').format(date) : 'YYYY-MM-DD',
-            style: TextStyle(
-              color: date != null ? Theme.of(context).colorScheme.onSurface : Colors.grey,
-            ),
-          ),
-        ),
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final isSubmitting = context.watch<BookingProvider>().isSubmitting;
+    final primaryColor = AppConstants.primaryBlue;
+    final loc = AppLocalizations.of(context)!;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Book Community Space'),
+        title: Text(loc.bookSpace),
+        backgroundColor: primaryColor,
         centerTitle: true,
-        actions: [
-          Consumer<BookingProvider>(
-            builder: (context, provider, _) {
-              final count =
-                  provider.pendingBookingsCount; // You must expose this getter
-              if (count == 0) return const SizedBox.shrink();
-
-              return GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(context, '/pending-bookings');
-                },
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.orange,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '$count pending',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-
-        backgroundColor: AppConstants.primaryBlue,
-        foregroundColor: Colors.white,
-        elevation: 2,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: isSubmitting ? null : () => Navigator.pop(context),
-        ),
+        elevation: 0,
       ),
-      body: Container(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              Text(
-                'Booking Details',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          children: [
+            // Top branding/welcome section
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+              decoration: BoxDecoration(
+                color: primaryColor,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
                 ),
               ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                controller: _nameController,
-                label: 'Full Name *',
-                icon: Icons.person_outline,
-                validator:
-                    (v) =>
-                        v == null || v.isEmpty
-                            ? 'Please enter your name'
-                            : null,
-              ),
-              _buildFormField(
-                controller: _phoneController,
-                label: 'Phone Number *',
-                icon: Icons.phone,
-                keyboardType: TextInputType.phone,
-                validator:
-                    (v) =>
-                        v == null || v.isEmpty
-                            ? 'Please enter phone number'
-                            : null,
-              ),
-              _buildFormField(
-                controller: _emailController,
-                label: 'Email (Optional)',
-                icon: Icons.email,
-                keyboardType: TextInputType.emailAddress,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                validator: (v) {
-                  if (v != null && v.isNotEmpty) {
-                    final valid = RegExp(
-                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                    ).hasMatch(v);
-                    if (!valid) return 'Enter a valid email';
-                  }
-                  return null;
-                },
-              ),
-              _buildFormField(
-                controller: _locationController,
-                label: 'Space Name / District *',
-                icon: Icons.location_on,
-                validator:
-                    (v) =>
-                        v == null || v.isEmpty
-                            ? 'Specify location/district'
-                            : null,
-              ),
-              Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: _buildDateTimeField(
-                      label: 'Start Date *',
-                      icon: Icons.calendar_today,
-                      date: _startDate,
-                      onTap: () => _selectDate(context, true),
-                      isRequired: true,
+                  Text(
+                    loc.bookingHeader,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildDateTimeField(
-                      label: 'End Date',
-                      icon: Icons.calendar_today,
-                      date: _endDate,
-                      onTap: () => _selectDate(context, false),
-                    ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Complete the form below to reserve this open space.',
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
               ),
-              _buildFormField(
-                controller: _activitiesController,
-                label: 'Activities Planned *',
-                icon: Icons.description,
-                maxLines: 3,
-                validator:
-                    (v) =>
-                        v == null || v.isEmpty
-                            ? 'Describe planned activities'
-                            : null,
-              ),
-              const SizedBox(height: 20),
-
-              // File picker
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+            ),
+            
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Form(
+                key: _formKey,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Attachment (Optional)',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                    // Personal Information Category
+                    _buildSectionHeader(Icons.person_outline, loc.yourInfoTitle),
+                    _buildTextFormField(
+                      controller: _nameController,
+                      label: loc.fullNameLabel,
+                      icon: Icons.person_outline,
+                      validator: (v) => v == null || v.isEmpty ? loc.fullNameLabel : null,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
+                    _buildTextFormField(
+                      controller: _phoneController,
+                      label: loc.phoneBookingLabel,
+                      icon: Icons.phone_android,
+                      keyboardType: TextInputType.phone,
+                      validator: (v) => v == null || v.isEmpty ? loc.phoneBookingLabel : null,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTextFormField(
+                      controller: _emailController,
+                      label: loc.emailBookingLabel,
+                      icon: Icons.mail_outline,
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    
+                    const SizedBox(height: 30),
+                    
+                    // Space & Schedule Category
+                    _buildSectionHeader(Icons.map_outlined, loc.locationDetailsTitle),
+                    _buildTextFormField(
+                      controller: _locationController,
+                      label: loc.spaceDistrictLabel,
+                      icon: Icons.location_on_outlined,
+                      readOnly: true,
+                    ),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
-                        ElevatedButton.icon(
-                          onPressed: isSubmitting ? null : _pickFile,
-                          icon: const Icon(Icons.attach_file),
-                          label: const Text('Select File'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppConstants.primaryBlue,
-                            foregroundColor: Colors.white,
+                        Expanded(
+                          child: _buildDatePickerField(
+                            label: loc.startDateLabel,
+                            date: _startDate,
+                            onTap: () => _selectDate(context, true),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text(
-                            _selectedFile != null
-                                ? _selectedFile!.path
-                                    .split(Platform.pathSeparator)
-                                    .last
-                                : 'No file selected',
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color:
-                                  _selectedFile != null
-                                      ? Theme.of(context).colorScheme.onSurface
-                                      : Colors.grey,
-                            ),
+                          child: _buildDatePickerField(
+                            label: loc.endDateLabel,
+                            date: _endDate,
+                            onTap: () => _selectDate(context, false),
                           ),
                         ),
                       ],
                     ),
+                    
+                    const SizedBox(height: 30),
+                    
+                    // Details Category
+                    _buildSectionHeader(Icons.info_outline, loc.activitiesLabel),
+                    _buildTextFormField(
+                      controller: _activitiesController,
+                      label: loc.activitiesLabel,
+                      icon: Icons.notes_outlined,
+                      maxLines: 4,
+                      validator: (v) => v == null || v.isEmpty ? loc.activitiesLabel : null,
+                    ),
+                    
+                    const SizedBox(height: 40),
+                    
+                    // Submit Button
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                      onPressed: isSubmitting ? null : _submitForm,
+                      child: isSubmitting
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            )
+                          : Text(
+                              loc.submitBookingButton,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                    ),
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-              const SizedBox(height: 8),
+  Widget _buildSectionHeader(IconData icon, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16, left: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: AppConstants.primaryBlue),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppConstants.primaryBlue,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppConstants.primaryBlue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+  Widget _buildTextFormField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    int maxLines = 1,
+    bool readOnly = false,
+  }) {
+    return TextFormField(
+      controller: controller,
+      decoration: _buildInputDecoration(label, icon),
+      keyboardType: keyboardType,
+      validator: validator,
+      maxLines: maxLines,
+      readOnly: readOnly,
+      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+    );
+  }
+
+  Widget _buildDatePickerField({
+    required String label,
+    required DateTime? date,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF2C2C2C) : Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade300),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppConstants.primaryBlue,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.calendar_month, size: 16, color: Colors.grey),
+                const SizedBox(width: 8),
+                Text(
+                  date != null ? DateFormat('MMM dd, yyyy').format(date) : 'Select date',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: date != null ? Theme.of(context).colorScheme.onSurface : Colors.grey,
                   ),
                 ),
-                onPressed: isSubmitting ? null : _submitForm,
-                child:
-                    isSubmitting
-                        ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 3,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                        : const Text(
-                          'Submit Booking Request',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
     );

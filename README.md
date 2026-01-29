@@ -69,7 +69,7 @@ The OpenSpace Mobile App is designed to facilitate the sustainable management an
    ENVIRONMENT=production
    ```
 
-4. **Run the app**
+4. **Run the app**                                                                                                  
    ```bash
    flutter run
    ```

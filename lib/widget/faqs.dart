@@ -22,6 +22,8 @@ class _FAQItemState extends State<FAQItem> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Column(
       children: [
         GestureDetector(
@@ -29,15 +31,31 @@ class _FAQItemState extends State<FAQItem> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(10),
-              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                ),
+              ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(widget.question, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Icon(_isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
+                Expanded(
+                  child: Text(
+                    widget.question,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  color: theme.iconTheme.color,
+                ),
               ],
             ),
           ),
@@ -47,7 +65,12 @@ class _FAQItemState extends State<FAQItem> {
           child: _isExpanded
               ? Padding(
             padding: const EdgeInsets.all(12),
-            child: Text(widget.answer, style: const TextStyle(fontSize: 16)),
+            child: Text(
+              widget.answer,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                height: 1.5,
+              ),
+            ),
           )
               : const SizedBox.shrink(),
         ),
