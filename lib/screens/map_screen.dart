@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:latlong2/latlong.dart';
@@ -9,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:kinondoni_openspace_app/data/local/openspace_local.dart';
 import 'package:kinondoni_openspace_app/data/repository/openspace_repository.dart';
 import 'package:kinondoni_openspace_app/service/openspace_service.dart';
+import 'package:kinondoni_openspace_app/service/offline_map_service.dart';
 import 'package:provider/provider.dart';
 import '../model/openspace.dart';
 
@@ -20,7 +20,8 @@ import '../widget/custom_navigation_bar.dart';
 import '../l10n/app_localizations.dart';
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  final bool showBottomNav;
+  const MapScreen({super.key, this.showBottomNav = true});
 
   @override
   MapScreenState createState() => MapScreenState();
@@ -48,7 +49,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   // final int _selectedIndex = 1;
   bool _isLoading = true;
   String? _errorMessage;
-  int _currentIndex = 1;
+  final int _currentIndex = 1;
 
   OpenSpaceMarker _emptyMarker(LatLng point) {
     return OpenSpaceMarker(
@@ -667,14 +668,16 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               },
             ),
             children: [
-              TileLayer(
-                key: ValueKey(selectedLayerIndex),
-                urlTemplate: tileLayers[selectedLayerIndex].url,
-                userAgentPackageName: "com.example.openspace_mobile_app",
-                tileProvider: CancellableNetworkTileProvider(),
-                keepBuffer: 5,
-                maxZoom: 19,
-              ),
+              // Use offline-capable tile layer
+              if (selectedLayerIndex == 0)
+                OfflineMapService.getTileLayer()
+              else
+                TileLayer(
+                  key: ValueKey(selectedLayerIndex),
+                  urlTemplate: tileLayers[selectedLayerIndex].url,
+                  userAgentPackageName: "com.kinondoni.openspace",
+                  maxZoom: 19,
+                ),
 
               CurrentLocationLayer(
                 positionStream: _locationService.getLocationStream(),
@@ -824,11 +827,13 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           ),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onNavTap,
-        isAnonymous: Provider.of<UserProvider>(context, listen: false).user.isAnonymous,
-      ),
+      bottomNavigationBar: widget.showBottomNav
+          ? CustomBottomNavBar(
+              currentIndex: _currentIndex,
+              onTap: _onNavTap,
+              isAnonymous: Provider.of<UserProvider>(context, listen: false).user.isAnonymous,
+            )
+          : null,
     );
   }
 
@@ -897,5 +902,3 @@ void zoomOut(MapController mapController) {
     mapController.move(mapController.camera.center, currentZoom - 1);
   }
 }
-
-

@@ -166,11 +166,13 @@ class ReportDetailPage extends StatelessWidget {
       case 'pending':
         return Colors.orange.shade700;
       case 'submitted':
-        return Colors.purple;
+        return AppConstants.primaryBlue;
       case 'in_progress':
-        return Colors.blue;
+        return AppConstants.primaryBlue;
       case 'resolved':
         return Colors.green.shade700;
+      case 'rejected':
+        return Colors.red;
       default:
         return Colors.grey.shade700;
     }

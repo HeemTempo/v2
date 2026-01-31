@@ -10,7 +10,8 @@ import '../providers/user_provider.dart';
 import '../l10n/app_localizations.dart';
 
 class UserProfilePage extends StatefulWidget {
-  const UserProfilePage({super.key});
+  final bool showBottomNav;
+  const UserProfilePage({super.key, this.showBottomNav = true});
 
   @override
   _UserProfilePageState createState() => _UserProfilePageState();
@@ -19,7 +20,7 @@ class UserProfilePage extends StatefulWidget {
 class _UserProfilePageState extends State<UserProfilePage> {
   Map<String, dynamic>? _profile;
   bool _isLoading = true;
-  int _currentIndex = 2;
+  final int _currentIndex = 2;
 
   @override
   void initState() {
@@ -199,10 +200,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
             ),
           ],
         ),
-        bottomNavigationBar: CustomBottomNavBar(
-          currentIndex: _currentIndex,
-          onTap: _onNavTap,
-        ),
+        bottomNavigationBar: widget.showBottomNav
+            ? CustomBottomNavBar(
+                currentIndex: _currentIndex,
+                onTap: _onNavTap,
+              )
+            : null,
       );
     }
 
@@ -342,10 +345,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
           ),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onNavTap,
-      ),
+      bottomNavigationBar: widget.showBottomNav
+          ? CustomBottomNavBar(
+              currentIndex: _currentIndex,
+              onTap: _onNavTap,
+            )
+          : null,
     );
   }
 

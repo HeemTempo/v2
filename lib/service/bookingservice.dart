@@ -7,8 +7,8 @@ import 'package:kinondoni_openspace_app/service/auth_service.dart';
 
 class BookingService {
   final String _baseUrl;
-  final String _createBookingEndpoint = '/api/v1/booking/spaces/bookings/';
-  final String _myBookingsEndpoint = '/api/v1/booking/my-bookings/';
+  final String _createBookingEndpoint = '/api/v1/book-open-space/';
+  final String _myBookingsEndpoint = '/api/v1/my-bookings/';
   String? _lastError;
 
   BookingService({String? baseUrl})

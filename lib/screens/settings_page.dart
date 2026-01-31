@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kinondoni_openspace_app/screens/how_to_use_page.dart';
 import 'package:kinondoni_openspace_app/screens/language_change.dart';
+import 'package:kinondoni_openspace_app/screens/offline_map_download_screen.dart';
 import 'package:kinondoni_openspace_app/screens/reported_issue.dart';
 import 'package:kinondoni_openspace_app/screens/theme_change.dart';
 import 'package:kinondoni_openspace_app/utils/constants.dart';
@@ -36,6 +37,17 @@ class SettingsPage extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const HowToUsePage()),
+              );
+            },
+          ),
+          _buildListTile(
+            context,
+            Icons.map_outlined,
+            'Offline Maps',
+            () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const OfflineMapDownloadScreen()),
               );
             },
           ),

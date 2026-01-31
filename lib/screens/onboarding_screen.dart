@@ -69,7 +69,7 @@ class OnboardingScreenContent extends StatelessWidget {
                 title,
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: theme.textTheme.headlineMedium?.color,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -84,7 +84,7 @@ class OnboardingScreenContent extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyLarge?.copyWith(
                     height: 1.6,
-                    color: theme.textTheme.bodyMedium?.color,
+                    color: isDark ? Colors.white70 : Colors.black87,
                   ),
                 ),
               ),

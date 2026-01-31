@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kinondoni_openspace_app/config/app_config.dart';
+import 'package:kinondoni_openspace_app/service/offline_map_service.dart';
 import 'package:kinondoni_openspace_app/widget/connectivity_banner.dart';
 import 'package:kinondoni_openspace_app/widget/environment_badge.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
@@ -29,6 +30,7 @@ import 'package:kinondoni_openspace_app/screens/home_page.dart';
 import 'package:kinondoni_openspace_app/screens/intro_slider_screen.dart';
 import 'package:kinondoni_openspace_app/screens/language_change.dart';
 import 'package:kinondoni_openspace_app/screens/map_screen.dart';
+import 'package:kinondoni_openspace_app/screens/offline_map_download_screen.dart';
 import 'package:kinondoni_openspace_app/screens/pending_bookings.dart';
 import 'package:kinondoni_openspace_app/screens/profile.dart';
 import 'package:kinondoni_openspace_app/screens/report_screen.dart';
@@ -91,6 +93,13 @@ Future<void> main() async {
     }
 
     // Initialize services
+    try {
+      await OfflineMapService.initialize();
+      print("DEBUG: Offline map service initialized");
+    } catch (e) {
+      print("WARNING: Failed to initialize offline maps: $e");
+    }
+
     try {
       final syncService = SyncService();
       syncService.onSyncComplete = (successCount, failCount, reportCount, bookingCount, reportIds) {
@@ -477,6 +486,7 @@ class MyApp extends StatelessWidget {
                   '/user-profile': (context) => const UserProfilePage(),
                   '/edit-profile': (context) => const EditProfilePage(),
                   '/map': (context) => const MapScreen(),
+                  '/offline-maps': (context) => const OfflineMapDownloadScreen(),
                   '/reported-issue': (context) => const ReportedIssuesPage(),
                   '/setting': (context) => const SettingsPage(),
                   '/change-theme': (context) => const ThemeChangePage(),

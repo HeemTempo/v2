@@ -329,9 +329,9 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
       case 'rejected':
         return Colors.red;
       case 'in_progress':
-        return Colors.blue;
+        return AppConstants.primaryBlue;
       case 'submitted':
-        return Colors.purple;
+        return AppConstants.primaryBlue;
       default:
         return Colors.grey;
     }
@@ -357,11 +357,11 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
         label = "Rejected";
         break;
       case "in_progress":
-        bgColor = Colors.blue;
+        bgColor = AppConstants.primaryBlue;
         label = "In Progress";
         break;
       case "submitted":
-        bgColor = Colors.purple;
+        bgColor = AppConstants.primaryBlue;
         label = "Submitted";
         break;
       default:

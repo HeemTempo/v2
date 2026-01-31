@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kinondoni_openspace_app/model/Booking.dart';
 import 'package:kinondoni_openspace_app/data/repository/booking_repository.dart';
-import 'package:kinondoni_openspace_app/data/local/booking_local.dart';
 import 'package:kinondoni_openspace_app/utils/constants.dart';
 
 import 'dart:async';
@@ -211,11 +210,9 @@ class _MyBookingsPageState extends State<MyBookingsPage> {
       case 'pending':
       case 'pending_offline':
         return const Color(0xFFF59E0B);
-      case 'approved':
-      case 'confirmed':
+      case 'accepted':
         return const Color(0xFF10B981);
       case 'rejected':
-      case 'cancelled':
         return const Color(0xFFEF4444);
       default:
         return Colors.grey;
@@ -293,7 +290,7 @@ class _MyBookingsPageState extends State<MyBookingsPage> {
                   const SizedBox(width: 8),
                   _buildFilterChip('Submitted', 'pending', Icons.pending_actions),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Approved', 'approved', Icons.check_circle),
+                  _buildFilterChip('Accepted', 'accepted', Icons.check_circle),
                   const SizedBox(width: 8),
                   _buildFilterChip('Rejected', 'rejected', Icons.cancel),
                 ],

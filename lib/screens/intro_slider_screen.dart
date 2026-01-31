@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:kinondoni_openspace_app/screens/how_to_use_page.dart';
 import 'package:kinondoni_openspace_app/screens/splash_screen.dart';
 import 'package:kinondoni_openspace_app/service/auth_service.dart';
 import 'package:kinondoni_openspace_app/screens/user_type.dart';
