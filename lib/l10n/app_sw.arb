@@ -459,5 +459,40 @@
   "offlineTip2": "Ripoti/hifadhi zilizowasilishwa bila mtandao zitaonyesha hali ya 'Inasubiri'",
   "offlineTip3": "Vuta chini ili kuonyesha upya unapokuwa mtandaoni ili kupata data mpya",
   "offlineTip4": "Kiashiria cha nje ya mtandao kinaonekana kwenye upau wa programu wakati hakuna muunganisho",
-  "gotItButton": "Nimeelewa!"
+  "gotItButton": "Nimeelewa!",
+  "offlineMapsTitle": "Ramani za Nje ya Mtandao",
+  "downloadOfflineMap": "Pakua Ramani ya Nje ya Mtandao",
+  "deleteOfflineMap": "Futa Ramani ya Nje ya Mtandao",
+  "mapDownloadProgress": "Inapakua: {progress}%",
+  "@mapDownloadProgress": {
+    "placeholders": {
+      "progress": {}
+    }
+  },
+  "mapDownloadComplete": "Ramani imepakuwa kwa mafanikio!",
+  "mapDownloadError": "Hitilafu ya kupakua ramani. Tafadhali jaribu tena.",
+  "mapDeleteConfirm": "Una uhakika unataka kufuta ramani ya nje ya mtandao?",
+  "mapDeleteSuccess": "Ramani ya nje ya mtandao imefutwa kwa mafanikio!",
+  "mapStorageInfo": "Hifadhi: {size} MB ({tiles} vigae)",
+  "@mapStorageInfo": {
+    "placeholders": {
+      "size": {},
+      "tiles": {}
+    }
+  },
+  "howToUseApp": "Jinsi ya Kutumia Programu",
+  "permissionDenied": "Ruhusa imekataliwa. Tafadhali ruhusu ruhusa ya eneo katika mipangilio.",
+  "routeDistance": "Umbali: {distance} km",
+  "@routeDistance": {
+    "placeholders": {
+      "distance": {}
+    }
+  },
+  "routeDuration": "Muda: {duration} dakika",
+  "@routeDuration": {
+    "placeholders": {
+      "duration": {}
+    }
+  },
+  "clearRoute": "Futa Njia"
 }

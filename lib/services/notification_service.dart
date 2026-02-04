@@ -22,6 +22,7 @@ class NotificationService {
         backgroundColor: Colors.green,
         duration: duration,
         behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(top: 60, right: 20, left: 20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
@@ -45,6 +46,7 @@ class NotificationService {
         backgroundColor: Colors.red,
         duration: duration,
         behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(top: 60, right: 20, left: 20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         action: SnackBarAction(
           label: 'OK',
@@ -73,6 +75,7 @@ class NotificationService {
         backgroundColor: Colors.blue,
         duration: duration,
         behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(top: 60, right: 20, left: 20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
@@ -96,6 +99,7 @@ class NotificationService {
         backgroundColor: Colors.orange,
         duration: duration,
         behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(top: 60, right: 20, left: 20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );

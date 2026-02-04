@@ -1111,4 +1111,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gotItButton => 'Got It!';
+
+  @override
+  String get offlineMapsTitle => 'Offline Maps';
+
+  @override
+  String get downloadOfflineMap => 'Download Offline Map';
+
+  @override
+  String get deleteOfflineMap => 'Delete Offline Map';
+
+  @override
+  String mapDownloadProgress(Object progress) {
+    return 'Downloading: $progress%';
+  }
+
+  @override
+  String get mapDownloadComplete => 'Map downloaded successfully!';
+
+  @override
+  String get mapDownloadError => 'Error downloading map. Please try again.';
+
+  @override
+  String get mapDeleteConfirm => 'Are you sure you want to delete the offline map?';
+
+  @override
+  String get mapDeleteSuccess => 'Offline map deleted successfully!';
+
+  @override
+  String mapStorageInfo(Object size, Object tiles) {
+    return 'Storage: $size MB ($tiles tiles)';
+  }
+
+  @override
+  String get howToUseApp => 'How to Use the App';
+
+  @override
+  String get permissionDenied => 'Permission denied. Please enable location permission in settings.';
+
+  @override
+  String routeDistance(Object distance) {
+    return 'Distance: $distance km';
+  }
+
+  @override
+  String routeDuration(Object duration) {
+    return 'Duration: $duration min';
+  }
+
+  @override
+  String get clearRoute => 'Clear Route';
 }

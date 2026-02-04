@@ -72,8 +72,10 @@ class ReportLocal {
     final db = await LocalDb.getDb();
     final maps = await db.query(
       'reports',
+      where: 'status != ?',
+      whereArgs: ['pending'],
       orderBy: 'createdAt DESC',
-      limit: limit ?? 50, // Default limit to 50 most recent
+      limit: limit ?? 50,
     );
     return maps.map((e) => Report.fromJson({
       'id': e['id'],

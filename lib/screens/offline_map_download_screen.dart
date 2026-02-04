@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kinondoni_openspace_app/service/offline_map_service.dart';
 import 'package:kinondoni_openspace_app/utils/constants.dart';
+import 'package:kinondoni_openspace_app/l10n/app_localizations.dart';
 
 class OfflineMapDownloadScreen extends StatefulWidget {
   const OfflineMapDownloadScreen({super.key});
@@ -14,7 +15,7 @@ class _OfflineMapDownloadScreenState extends State<OfflineMapDownloadScreen> {
   bool _isDownloaded = false;
   double _progress = 0.0;
   int _tilesDownloaded = 0;
-  int _totalTiles = 0;
+  final int _totalTiles = 0;
   double _sizeInMB = 0.0;
   String _statusMessage = 'Ready to download';
 
@@ -86,12 +87,12 @@ class _OfflineMapDownloadScreenState extends State<OfflineMapDownloadScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Offline Map?'),
-        content: const Text('This will free up storage space but you\'ll need to download again for offline use.'),
+        title: Text(AppLocalizations.of(context)!.deleteOfflineMap),
+        content: Text(AppLocalizations.of(context)!.mapDeleteConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancelButton),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
@@ -107,7 +108,7 @@ class _OfflineMapDownloadScreenState extends State<OfflineMapDownloadScreen> {
       _checkDownloadStatus();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Offline map deleted')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.mapDeleteSuccess)),
         );
       }
     }
@@ -115,10 +116,15 @@ class _OfflineMapDownloadScreenState extends State<OfflineMapDownloadScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? Colors.grey[850] : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subtextColor = isDark ? Colors.grey[400] : Colors.grey[700];
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Offline Maps'),
-        backgroundColor: AppConstants.primaryBlue,
+        title: Text(AppLocalizations.of(context)!.offlineMapsTitle),
+        backgroundColor: isDark ? Colors.grey[850] : AppConstants.primaryBlue,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -126,9 +132,9 @@ class _OfflineMapDownloadScreenState extends State<OfflineMapDownloadScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildInfoCard(),
+            _buildInfoCard(cardColor, textColor, subtextColor),
             const SizedBox(height: 24),
-            _buildStatusCard(),
+            _buildStatusCard(cardColor, textColor, subtextColor, isDark),
             const SizedBox(height: 24),
             _buildActionButtons(),
           ],
@@ -137,8 +143,9 @@ class _OfflineMapDownloadScreenState extends State<OfflineMapDownloadScreen> {
     );
   }
 
-  Widget _buildInfoCard() {
+  Widget _buildInfoCard(Color? cardColor, Color textColor, Color? subtextColor) {
     return Card(
+      color: cardColor,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -148,44 +155,48 @@ class _OfflineMapDownloadScreenState extends State<OfflineMapDownloadScreen> {
               children: [
                 Icon(Icons.info_outline, color: AppConstants.primaryBlue),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'About Offline Maps',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Download Dar es Salaam map for offline use. This allows you to view the map and navigate even without internet connection.',
-              style: TextStyle(fontSize: 14, height: 1.5),
+              style: TextStyle(fontSize: 14, height: 1.5, color: textColor),
             ),
             const SizedBox(height: 12),
-            _buildInfoRow(Icons.map, 'Region', 'Dar es Salaam'),
-            _buildInfoRow(Icons.layers, 'Zoom Levels', '8-17'),
-            _buildInfoRow(Icons.storage, 'Estimated Size', '~800-1200 MB'),
+            _buildInfoRow(Icons.map, 'Region', 'Dar es Salaam', subtextColor),
+            _buildInfoRow(Icons.layers, 'Zoom Levels', '8-17', subtextColor),
+            _buildInfoRow(Icons.storage, 'Estimated Size', '~800-1200 MB', subtextColor),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(IconData icon, String label, String value, Color? subtextColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: Colors.grey[600]),
+          Icon(icon, size: 16, color: subtextColor),
           const SizedBox(width: 8),
           Text('$label: ', style: const TextStyle(fontWeight: FontWeight.w500)),
-          Text(value, style: TextStyle(color: Colors.grey[700])),
+          Text(value, style: TextStyle(color: subtextColor)),
         ],
       ),
     );
   }
 
-  Widget _buildStatusCard() {
+  Widget _buildStatusCard(Color? cardColor, Color textColor, Color? subtextColor, bool isDark) {
+    final bgColor = _isDownloaded 
+        ? (isDark ? Colors.green[900] : Colors.green[50])
+        : (isDark ? Colors.grey[800] : Colors.grey[100]);
+    
     return Card(
-      color: _isDownloaded ? Colors.green[50] : Colors.grey[100],
+      color: bgColor,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -201,7 +212,7 @@ class _OfflineMapDownloadScreenState extends State<OfflineMapDownloadScreen> {
                 Expanded(
                   child: Text(
                     _statusMessage,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textColor),
                   ),
                 ),
               ],
@@ -210,20 +221,20 @@ class _OfflineMapDownloadScreenState extends State<OfflineMapDownloadScreen> {
               const SizedBox(height: 16),
               LinearProgressIndicator(
                 value: _progress,
-                backgroundColor: Colors.grey[300],
+                backgroundColor: isDark ? Colors.grey[700] : Colors.grey[300],
                 valueColor: AlwaysStoppedAnimation<Color>(AppConstants.primaryBlue),
               ),
               const SizedBox(height: 8),
               Text(
                 'Progress: ${(_progress * 100).toStringAsFixed(1)}%',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 12, color: subtextColor),
               ),
             ],
             if (_isDownloaded && !_isDownloading) ...[
               const SizedBox(height: 8),
               Text(
                 '📦 ${_sizeInMB.toStringAsFixed(1)} MB cached',
-                style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                style: TextStyle(fontSize: 12, color: subtextColor),
               ),
             ],
           ],
@@ -240,7 +251,7 @@ class _OfflineMapDownloadScreenState extends State<OfflineMapDownloadScreen> {
           ElevatedButton.icon(
             onPressed: _startDownload,
             icon: const Icon(Icons.download),
-            label: const Text('Download Dar es Salaam Map'),
+            label: Text(AppLocalizations.of(context)!.downloadOfflineMap),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppConstants.primaryBlue,
               foregroundColor: Colors.white,
@@ -275,7 +286,7 @@ class _OfflineMapDownloadScreenState extends State<OfflineMapDownloadScreen> {
           OutlinedButton.icon(
             onPressed: _deleteMap,
             icon: const Icon(Icons.delete_outline),
-            label: const Text('Delete Offline Map'),
+            label: Text(AppLocalizations.of(context)!.deleteOfflineMap),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.red,
               padding: const EdgeInsets.all(16),

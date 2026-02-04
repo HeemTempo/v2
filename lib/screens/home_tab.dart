@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/constants.dart';
 import 'side_bar.dart';
@@ -38,7 +39,6 @@ class _CardData {
 class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   int _carouselIndex = 0;
   final PageController _pageController = PageController();
-  int _notificationCount = 0;
   late AnimationController _animationController;
   Timer? _autoScrollTimer;
   bool _isAppInForeground = true;
@@ -298,42 +298,6 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin, 
         ],
       ),
       centerTitle: true,
-      actions: [
-        if (!isAnonymous)
-          Stack(
-            children: [
-              IconButton(
-                icon: Icon(Icons.notifications, color: isDarkMode ? Colors.white : Colors.white),
-                onPressed: () {
-                  Navigator.pushNamed(context, '/user-notification');
-                  if (_notificationCount > 0) {
-                    setState(() => _notificationCount = 0);
-                  }
-                },
-              ),
-              if (_notificationCount > 0)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      '$_notificationCount',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-      ],
     );
   }
 
@@ -676,7 +640,7 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin, 
             onPressed: () => Navigator.pop(context),
             child: Text(
               locale.close,
-              style: TextStyle(color: AppConstants.primaryBlue),
+              style: TextStyle(color: isDarkMode ? Colors.white : AppConstants.primaryBlue),
             ),
           ),
         ],
@@ -701,8 +665,11 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin, 
           color: isDarkMode ? Colors.white70 : AppConstants.grey,
         ),
       ),
-      onTap: () {
-        // TODO: Integrate dialer functionality here
+      onTap: () async {
+        final uri = Uri(scheme: 'tel', path: number);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri);
+        }
       },
     );
   }

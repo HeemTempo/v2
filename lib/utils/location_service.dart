@@ -38,6 +38,10 @@ class LocationService {
     return true;
   }
 
+  Future<bool> checkAndRequestPermission() async {
+    return await _checkAndRequestPermission();
+  }
+
   Future<LatLng?> getUserLocation({bool useCache = true}) async {
     if (useCache &&
         _lastKnownLocation != null &&

@@ -100,6 +100,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final loc = AppLocalizations.of(context)!;
     final user = Provider.of<UserProvider>(context).user;
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final appBarColor = isDark ? Colors.grey[850]! : AppConstants.primaryBlue;
 
     if (user.isAnonymous) {
       // Extract placeholder data for anonymous
@@ -124,7 +126,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               expandedHeight: 280.0,
               floating: false,
               pinned: true,
-              backgroundColor: AppConstants.primaryBlue,
+              backgroundColor: appBarColor,
               flexibleSpace: FlexibleSpaceBar(
                 centerTitle: true,
                 title: Text(
@@ -144,8 +146,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            AppConstants.primaryBlue,
-                            AppConstants.primaryBlue.withValues(alpha: 0.7),
+                            appBarColor,
+                            appBarColor.withValues(alpha: 0.7),
                           ],
                         ),
                       ),
@@ -223,7 +225,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
             expandedHeight: 280.0,
             floating: false,
             pinned: true,
-            backgroundColor: AppConstants.primaryBlue,
+            backgroundColor: appBarColor,
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: true,
               title: Text(
@@ -243,8 +245,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AppConstants.primaryBlue,
-                          AppConstants.primaryBlue.withValues(alpha: 0.7),
+                          appBarColor,
+                          appBarColor.withValues(alpha: 0.7),
                         ],
                       ),
                     ),
@@ -304,16 +306,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 children: [
                   _buildSectionHeader(context, loc.activitySection),
                   const SizedBox(height: 10),
-                  if (!user.isAnonymous)
-                    _buildSettingsItem(
-                      context,
-                      icon: Icons.notifications_outlined,
-                      title: loc.notificationsTitle,
-                      subtitle: loc.notificationSettings,
-                      onTap: () {
-                        Navigator.pushNamed(context, '/user-notification');
-                      },
-                    ),
                   _buildSettingsItem(
                     context,
                     icon: Icons.report_problem_outlined,

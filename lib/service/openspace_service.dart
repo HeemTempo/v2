@@ -34,7 +34,7 @@ class OpenSpaceService {
   Future<List<Report>> getAllReports() async {
     const String getAllReportsQuery = """
       query MyQuery {
-        allReports {
+        userReports {
           id
           description
           createdAt
@@ -43,6 +43,7 @@ class OpenSpaceService {
           reportId
           spaceName
           file
+          status
         }
       }
     """;
@@ -79,12 +80,12 @@ class OpenSpaceService {
         );
       }
 
-      if (result.data == null || result.data!['allReports'] == null) {
+      if (result.data == null || result.data!['userReports'] == null) {
         return [];
       }
 
       final List<dynamic> reportsData =
-          result.data!['allReports'] as List<dynamic>;
+          result.data!['userReports'] as List<dynamic>;
       return reportsData
           .map((data) => Report.fromJson(data as Map<String, dynamic>))
           .toList();

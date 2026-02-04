@@ -4,7 +4,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:kinondoni_openspace_app/data/local/report_local.dart';
 import 'package:kinondoni_openspace_app/model/Report.dart';
 import 'package:kinondoni_openspace_app/service/report_service.dart';
-import 'package:kinondoni_openspace_app/service/openspace_service.dart';
 
 class ReportRepository {
   final ReportLocal localService;
@@ -189,8 +188,6 @@ class ReportRepository {
           longitude: report.longitude,
         ).timeout(const Duration(seconds: 10));
 
-        final serverReport = Report.fromRestJson(response);
-        await localService.saveReport(serverReport.copyWith(status: 'submitted'));
         await localService.removeReport(report.id);
         
         successCount++;
@@ -219,8 +216,8 @@ class ReportRepository {
     
     if (isOnline) {
       try {
-        // Fetch from server
-        final serverReports = await OpenSpaceService().getAllReports();
+        // Fetch from REST API
+        final serverReports = await ReportingService.getUserReports();
         
         // Save to local database
         for (final report in serverReports) {

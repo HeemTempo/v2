@@ -4,10 +4,40 @@ import 'package:http/http.dart' as http;
 import 'auth_service.dart';
 
 import 'package:kinondoni_openspace_app/config/app_config.dart';
+import '../model/Report.dart';
 
 class ReportingService {
   static String get _baseUrl => AppConfig.baseUrl;
   static const String _reportEndpoint = 'api/v1/reports/';
+  static const String _userReportsEndpoint = 'api/v1/user-reports/';
+
+  /// Get all user reports
+  static Future<List<Report>> getUserReports() async {
+    final token = await AuthService.getToken();
+    final uri = Uri.parse('$_baseUrl$_userReportsEndpoint');
+
+    try {
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => Report.fromRestJson(json)).toList();
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        await AuthService.logout();
+        throw Exception('Unauthorized. Please log in again.');
+      } else {
+        throw Exception('Failed to fetch reports: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching reports: $e');
+    }
+  }
 
   /// Create a new report (supports optional file)
   static Future<Map<String, dynamic>> createReport({

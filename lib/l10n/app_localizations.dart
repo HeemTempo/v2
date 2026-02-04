@@ -2266,6 +2266,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Got It!'**
   String get gotItButton;
+
+  /// No description provided for @offlineMapsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline Maps'**
+  String get offlineMapsTitle;
+
+  /// No description provided for @downloadOfflineMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Download Offline Map'**
+  String get downloadOfflineMap;
+
+  /// No description provided for @deleteOfflineMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Offline Map'**
+  String get deleteOfflineMap;
+
+  /// No description provided for @mapDownloadProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading: {progress}%'**
+  String mapDownloadProgress(Object progress);
+
+  /// No description provided for @mapDownloadComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Map downloaded successfully!'**
+  String get mapDownloadComplete;
+
+  /// No description provided for @mapDownloadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error downloading map. Please try again.'**
+  String get mapDownloadError;
+
+  /// No description provided for @mapDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete the offline map?'**
+  String get mapDeleteConfirm;
+
+  /// No description provided for @mapDeleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline map deleted successfully!'**
+  String get mapDeleteSuccess;
+
+  /// No description provided for @mapStorageInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage: {size} MB ({tiles} tiles)'**
+  String mapStorageInfo(Object size, Object tiles);
+
+  /// No description provided for @howToUseApp.
+  ///
+  /// In en, this message translates to:
+  /// **'How to Use the App'**
+  String get howToUseApp;
+
+  /// No description provided for @permissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission denied. Please enable location permission in settings.'**
+  String get permissionDenied;
+
+  /// No description provided for @routeDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance: {distance} km'**
+  String routeDistance(Object distance);
+
+  /// No description provided for @routeDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration: {duration} min'**
+  String routeDuration(Object duration);
+
+  /// No description provided for @clearRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Route'**
+  String get clearRoute;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

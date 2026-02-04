@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 class OfflineMapService {
   static const String storeName = 'darEsSalaamMapCache';
   
-  // Dar es Salaam region bounds (includes Kinondoni, Ilala, Temeke, Kigamboni, Ubungo)
   static const LatLng darNorthWest = LatLng(-6.30, 39.00);
   static const LatLng darSouthEast = LatLng(-7.20, 39.60);
 
@@ -14,9 +13,9 @@ class OfflineMapService {
     try {
       await FMTCObjectBoxBackend().initialise();
       await _ensureStoreExists();
-      debugPrint('✅ Offline map service initialized');
+      debugPrint('✅ Offline map initialized');
     } catch (e) {
-      debugPrint('❌ Error initializing offline map: $e');
+      debugPrint('❌ Init error: $e');
     }
   }
 
@@ -24,7 +23,6 @@ class OfflineMapService {
     final store = FMTCStore(storeName);
     if (!await store.manage.ready) {
       await store.manage.create();
-      debugPrint('✅ Map store created: $storeName');
     }
   }
 
@@ -35,34 +33,25 @@ class OfflineMapService {
   }) async {
     try {
       await _ensureStoreExists();
-      
       final store = FMTCStore(storeName);
-      final region = RectangleRegion(
-        LatLngBounds(darNorthWest, darSouthEast),
-      );
-
-      debugPrint('🗺️ Starting Dar es Salaam map download...');
-      
-      final downloadable = region.toDownloadable(
-        minZoom: 8, // Allow zooming out further
-        maxZoom: 17, // Good street detail
-        options: TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        ),
-      );
+      final region = RectangleRegion(LatLngBounds(darNorthWest, darSouthEast));
 
       final download = store.download.startForeground(
-        region: downloadable,
+        region: region.toDownloadable(
+          minZoom: 8,
+          maxZoom: 17,
+          options: TileLayer(
+            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          ),
+        ),
       );
 
       await for (final progress in download.downloadProgress) {
         onProgress(progress);
       }
       
-      debugPrint('✅ Map download complete!');
       onComplete();
     } catch (e) {
-      debugPrint('❌ Download error: $e');
       onError(e);
     }
   }
@@ -71,7 +60,6 @@ class OfflineMapService {
     try {
       final store = FMTCStore(storeName);
       final stats = await store.stats.all;
-      
       return MapDownloadStatus(
         isDownloaded: stats.length > 1000,
         tilesCount: stats.length,
@@ -87,9 +75,8 @@ class OfflineMapService {
       final store = FMTCStore(storeName);
       await store.manage.delete();
       await _ensureStoreExists();
-      debugPrint('✅ Offline map deleted');
     } catch (e) {
-      debugPrint('❌ Error deleting map: $e');
+      debugPrint('❌ Delete error: $e');
     }
   }
 

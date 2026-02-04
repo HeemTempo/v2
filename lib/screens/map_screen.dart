@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -9,6 +10,7 @@ import 'package:kinondoni_openspace_app/data/local/openspace_local.dart';
 import 'package:kinondoni_openspace_app/data/repository/openspace_repository.dart';
 import 'package:kinondoni_openspace_app/service/openspace_service.dart';
 import 'package:kinondoni_openspace_app/service/offline_map_service.dart';
+import 'package:kinondoni_openspace_app/service/routing_service.dart';
 import 'package:provider/provider.dart';
 import '../model/openspace.dart';
 
@@ -50,6 +52,17 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   bool _isLoading = true;
   String? _errorMessage;
   final int _currentIndex = 1;
+  List<LatLng>? _routePoints;
+  bool _isLoadingRoute = false;
+  bool _isNavigating = false;
+  bool _navigationStarted = false;
+  String _navigationInstruction = '';
+  List<NavigationStep> _navigationSteps = [];
+  StreamSubscription<Position>? _navigationSubscription;
+  double _routeDistance = 0.0;
+  double _routeDuration = 0.0;
+  String _travelMode = 'driving';
+  double _currentSpeed = 0.0;
 
   OpenSpaceMarker _emptyMarker(LatLng point) {
     return OpenSpaceMarker(
@@ -215,6 +228,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     _selectedAreaNameNotifier.dispose();
     _controller.dispose();
     _mapController.dispose();
+    _navigationSubscription?.cancel();
     super.dispose();
   }
 
@@ -286,7 +300,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[850] : Colors.white,
       isScrollControlled: true,
       builder: (context) {
         return ValueListenableBuilder<String?>(
@@ -412,37 +426,117 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _getDirections(LatLng destination) async {
-    final userLocation = await _locationService.getUserLocation(
-      useCache: false,
-    );
-    if (userLocation == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Unable to fetch your current location.")),
-      );
+    final hasPermission = await _locationService.checkAndRequestPermission();
+    if (!hasPermission) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(AppLocalizations.of(context)!.locationError),
+            content: Text(AppLocalizations.of(context)!.directionsError),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(AppLocalizations.of(context)!.okButton),
+              ),
+            ],
+          ),
+        );
+      }
       return;
     }
 
-    final distance = Geolocator.distanceBetween(
-      userLocation.latitude,
-      userLocation.longitude,
-      destination.latitude,
-      destination.longitude,
-    );
+    if (!mounted) return;
+    setState(() => _isLoadingRoute = true);
 
-    final distanceInKm = (distance / 1000).toStringAsFixed(2);
+    final userLocation = await _locationService.getUserLocation(useCache: false);
+    if (userLocation == null) {
+      if (mounted) {
+        setState(() => _isLoadingRoute = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.directionsError)),
+        );
+      }
+      return;
+    }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context)!.distanceInfo(_selectedAreaName ?? 'selected location', distanceInKm),
-        ),
-        duration: const Duration(seconds: 5),
+    final route = await RoutingService.getRoute(userLocation, destination);
+    
+    if (!mounted) return;
+    
+    setState(() {
+      _routePoints = route?.points;
+      _navigationSteps = route?.steps ?? [];
+      _routeDistance = route?.distance ?? 0.0;
+      _routeDuration = route?.duration ?? 0.0;
+      _isLoadingRoute = false;
+      _isNavigating = true;
+      _navigationStarted = false;
+    });
+
+    if (route != null) {
+      _startNavigation();
+    }
+  }
+  
+  void _startNavigation() {
+    if (!mounted) return;
+    setState(() => _navigationStarted = true);
+    
+    _navigationSubscription?.cancel();
+    _navigationSubscription = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 5,
       ),
-    );
+    ).listen((position) {
+      if (!_isNavigating || _navigationSteps.isEmpty) return;
+      
+      final currentLocation = LatLng(position.latitude, position.longitude);
+      
+      if (mounted) {
+        setState(() {
+          _currentSpeed = position.speed;
+          _travelMode = _currentSpeed > 1.5 ? 'driving' : 'walking';
+        });
+      }
+      
+      final instruction = RoutingService.getNavigationInstruction(
+        currentLocation,
+        _navigationSteps,
+        _routePoints ?? [],
+      );
+      
+      if (mounted) {
+        setState(() {
+          _navigationInstruction = instruction.instruction;
+        });
+        
+        _mapController.move(currentLocation, _mapController.camera.zoom);
+      }
+    });
+  }
+  
+  void _stopNavigation() {
+    if (!mounted) return;
+    setState(() {
+      _isNavigating = false;
+      _navigationStarted = false;
+      _routePoints = null;
+      _navigationSteps = [];
+      _navigationInstruction = '';
+      _routeDistance = 0.0;
+      _routeDuration = 0.0;
+    });
+    _navigationSubscription?.cancel();
   }
 
   Widget _buildBottomSheetWithContent(String? areaName) {
     final isOpenSpace = _selectedSpace != null && _selectedSpace!.id.isNotEmpty;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? Colors.grey[850] : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subtextColor = isDark ? Colors.grey[400] : Colors.black54;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -463,7 +557,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           Align(
             alignment: Alignment.topRight,
             child: IconButton(
-              icon: const Icon(Icons.close, size: 20, color: Colors.black54),
+              icon: Icon(Icons.close, size: 20, color: isDark ? Colors.white70 : Colors.black54),
               onPressed: () => Navigator.pop(context),
             ),
           ),
@@ -471,20 +565,20 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           if (isOpenSpace)
             Text(
               _selectedSpace!.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: textColor,
               ),
               textAlign: TextAlign.center,
             )
           else if (areaName != null)
             Text(
               areaName,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: textColor,
               ),
               textAlign: TextAlign.center,
             )
@@ -514,7 +608,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed:
                     _selectedPosition != null
                         ? () {
@@ -522,23 +616,25 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                           _getDirections(_selectedPosition!);
                         }
                         : null,
+                icon: const Icon(Icons.directions, size: 18),
+                label: Text(
+                  AppLocalizations.of(context)!.getDirectionsButton,
+                  style: const TextStyle(fontSize: 13),
+                ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: AppConstants.primaryBlue,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+                    horizontal: 12,
+                    vertical: 10,
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: Text(
-                  AppLocalizations.of(context)!.getDirectionsButton,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                ),
               ),
               if (isOpenSpace) ...[
-                ElevatedButton(
+                ElevatedButton.icon(
                   onPressed:
                       _selectedSpace!.isAvailable
                           ? () {
@@ -546,39 +642,43 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                             _bookSpace();
                           }
                           : null,
+                  icon: const Icon(Icons.event_available, size: 18),
+                  label: Text(
+                    AppLocalizations.of(context)!.bookNowButton,
+                    style: const TextStyle(fontSize: 13),
+                  ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: AppConstants.primaryBlue,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                      horizontal: 12,
+                      vertical: 10,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text(
-                    AppLocalizations.of(context)!.bookNowButton,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                  ),
                 ),
-                ElevatedButton(
+                ElevatedButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
                     _reportSpace();
                   },
+                  icon: const Icon(Icons.report_problem, size: 18),
+                  label: Text(
+                    AppLocalizations.of(context)!.reportButton,
+                    style: const TextStyle(fontSize: 13),
+                  ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                      horizontal: 12,
+                      vertical: 10,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                  ),
-                  child: Text(
-                    AppLocalizations.of(context)!.reportButton,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ),
               ],
@@ -679,6 +779,20 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   maxZoom: 19,
                 ),
 
+              // Route polyline
+              if (_routePoints != null)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: _routePoints!,
+                      strokeWidth: 4.0,
+                      color: Colors.blue,
+                      borderStrokeWidth: 2.0,
+                      borderColor: Colors.white,
+                    ),
+                  ],
+                ),
+
               CurrentLocationLayer(
                 positionStream: _locationService.getLocationStream(),
                 style: LocationMarkerStyle(
@@ -724,6 +838,192 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             ],
           ),
           if (_isLoading) const Center(child: CircularProgressIndicator()),
+          if (_navigationStarted && _navigationInstruction.isNotEmpty)
+            Positioned(
+              top: 20,
+              left: 20,
+              right: 20,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppConstants.primaryBlue,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          _travelMode == 'driving' ? Icons.directions_car : Icons.directions_walk,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _navigationInstruction,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: _stopNavigation,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          _travelMode == 'driving' ? Icons.speed : Icons.directions_walk,
+                          color: Colors.white70,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _travelMode == 'driving' 
+                              ? 'Driving (${(_currentSpeed * 3.6).toStringAsFixed(0)} km/h)'
+                              : 'Walking',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          if (_isNavigating && _routePoints != null)
+            Positioned(
+              bottom: 100,
+              left: 20,
+              right: 20,
+              child: AnimatedSlide(
+                duration: const Duration(milliseconds: 400),
+                offset: _isNavigating ? Offset.zero : const Offset(0, 2),
+                curve: Curves.easeOutBack,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 300),
+                  opacity: _isNavigating ? 1.0 : 0.0,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildInfoItem(
+                              Icons.straighten,
+                              '${_routeDistance.toStringAsFixed(1)} km',
+                              'Distance',
+                            ),
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Colors.grey[300],
+                            ),
+                            _buildInfoItem(
+                              Icons.access_time,
+                              '${_routeDuration.toStringAsFixed(0)} min',
+                              'ETA',
+                            ),
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Colors.grey[300],
+                            ),
+                            _buildInfoItem(
+                              Icons.turn_right,
+                              '${_navigationSteps.length}',
+                              'Turns',
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: _navigationStarted ? _stopNavigation : _startNavigation,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _navigationStarted 
+                                ? Colors.red 
+                                : (Theme.of(context).brightness == Brightness.dark 
+                                    ? Colors.green.shade700 
+                                    : Colors.green),
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 45),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(_navigationStarted ? Icons.stop : Icons.play_arrow),
+                              const SizedBox(width: 8),
+                              Text(_navigationStarted ? 'Stop Navigation' : 'Start Navigation'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          if (_isLoadingRoute)
+            Positioned(
+              top: 100,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(AppLocalizations.of(context)!.routeSearching),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           if (_errorMessage != null)
             Positioned(
               bottom: 80,
@@ -866,6 +1166,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildDetailRow(String label, String value, {Color? valueColor}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -873,15 +1174,41 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         children: [
           Text(
             "$label: ",
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.black54,
+              color: isDark ? Colors.grey[400] : Colors.black54,
             ),
           ),
           Text(
             value,
-            style: TextStyle(fontSize: 14, color: valueColor ?? Colors.black87),
+            style: TextStyle(fontSize: 14, color: valueColor ?? (isDark ? Colors.white : Colors.black87)),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildInfoItem(IconData icon, String value, String label) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, color: AppConstants.primaryBlue, size: 24),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
           ),
         ],
       ),

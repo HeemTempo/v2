@@ -463,5 +463,40 @@
   "offlineTip2": "Submitted reports/bookings while offline will show 'Pending' status",
   "offlineTip3": "Pull down to refresh when online to get latest data",
   "offlineTip4": "Offline indicator appears in the app bar when no connection",
-  "gotItButton": "Got It!"
+  "gotItButton": "Got It!",
+  "offlineMapsTitle": "Offline Maps",
+  "downloadOfflineMap": "Download Offline Map",
+  "deleteOfflineMap": "Delete Offline Map",
+  "mapDownloadProgress": "Downloading: {progress}%",
+  "@mapDownloadProgress": {
+    "placeholders": {
+      "progress": {}
+    }
+  },
+  "mapDownloadComplete": "Map downloaded successfully!",
+  "mapDownloadError": "Error downloading map. Please try again.",
+  "mapDeleteConfirm": "Are you sure you want to delete the offline map?",
+  "mapDeleteSuccess": "Offline map deleted successfully!",
+  "mapStorageInfo": "Storage: {size} MB ({tiles} tiles)",
+  "@mapStorageInfo": {
+    "placeholders": {
+      "size": {},
+      "tiles": {}
+    }
+  },
+  "howToUseApp": "How to Use the App",
+  "permissionDenied": "Permission denied. Please enable location permission in settings.",
+  "routeDistance": "Distance: {distance} km",
+  "@routeDistance": {
+    "placeholders": {
+      "distance": {}
+    }
+  },
+  "routeDuration": "Duration: {duration} min",
+  "@routeDuration": {
+    "placeholders": {
+      "duration": {}
+    }
+  },
+  "clearRoute": "Clear Route"
 }

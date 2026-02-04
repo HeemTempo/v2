@@ -1111,4 +1111,54 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get gotItButton => 'Nimeelewa!';
+
+  @override
+  String get offlineMapsTitle => 'Ramani za Nje ya Mtandao';
+
+  @override
+  String get downloadOfflineMap => 'Pakua Ramani ya Nje ya Mtandao';
+
+  @override
+  String get deleteOfflineMap => 'Futa Ramani ya Nje ya Mtandao';
+
+  @override
+  String mapDownloadProgress(Object progress) {
+    return 'Inapakua: $progress%';
+  }
+
+  @override
+  String get mapDownloadComplete => 'Ramani imepakuwa kwa mafanikio!';
+
+  @override
+  String get mapDownloadError => 'Hitilafu ya kupakua ramani. Tafadhali jaribu tena.';
+
+  @override
+  String get mapDeleteConfirm => 'Una uhakika unataka kufuta ramani ya nje ya mtandao?';
+
+  @override
+  String get mapDeleteSuccess => 'Ramani ya nje ya mtandao imefutwa kwa mafanikio!';
+
+  @override
+  String mapStorageInfo(Object size, Object tiles) {
+    return 'Hifadhi: $size MB ($tiles vigae)';
+  }
+
+  @override
+  String get howToUseApp => 'Jinsi ya Kutumia Programu';
+
+  @override
+  String get permissionDenied => 'Ruhusa imekataliwa. Tafadhali ruhusu ruhusa ya eneo katika mipangilio.';
+
+  @override
+  String routeDistance(Object distance) {
+    return 'Umbali: $distance km';
+  }
+
+  @override
+  String routeDuration(Object duration) {
+    return 'Muda: $duration dakika';
+  }
+
+  @override
+  String get clearRoute => 'Futa Njia';
 }

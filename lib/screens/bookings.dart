@@ -143,10 +143,10 @@ class _MyBookingsPageState extends State<MyBookingsPage> {
                 // Purpose
                 Text(
                   booking.purpose,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1A1A),
+                    color: theme.brightness == Brightness.dark ? Colors.white : const Color(0xFF1A1A1A),
                     height: 1.4,
                   ),
                   maxLines: 2,
@@ -255,11 +255,13 @@ class _MyBookingsPageState extends State<MyBookingsPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('My Bookings', style: TextStyle(fontWeight: FontWeight.w600)),
-        backgroundColor: AppConstants.primaryBlue,
+        backgroundColor: isDark ? Colors.grey[850] : AppConstants.primaryBlue,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,

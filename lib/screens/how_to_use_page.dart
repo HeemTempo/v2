@@ -8,12 +8,14 @@ class HowToUsePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.howToUseTitle),
         centerTitle: true,
-        backgroundColor: AppConstants.primaryBlue,
+        backgroundColor: isDark ? Colors.grey[850] : AppConstants.primaryBlue,
+        foregroundColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),

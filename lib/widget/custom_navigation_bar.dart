@@ -15,24 +15,20 @@ class CustomBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return CurvedNavigationBar(
       index: currentIndex,
       height: 60.0,
-      backgroundColor:
-          theme.scaffoldBackgroundColor, // Match scaffold background
-      color: colorScheme.primary, // Theme-based primary color
-      buttonBackgroundColor: colorScheme.primary.withValues(alpha: 0.9), // Slightly transparent
+      backgroundColor: isDark ? Colors.grey[900]! : Colors.grey[100]!,
+      color: isDark ? Colors.grey[850]! : Colors.white,
+      buttonBackgroundColor: isDark ? Colors.grey[800]! : const Color(0xFF2196F3),
       animationCurve: Curves.easeInOut,
       animationDuration: const Duration(milliseconds: 300),
       items: [
-        Icon(Icons.home, size: 22, color: colorScheme.onPrimary),
-        Icon(Icons.explore, size: 22, color: colorScheme.onPrimary),
-        if (!isAnonymous) Icon(Icons.person, size: 22, color: colorScheme.onPrimary),
+        Icon(Icons.home, size: 22, color: isDark ? Colors.white : Colors.white),
+        Icon(Icons.explore, size: 22, color: isDark ? Colors.white : Colors.white),
+        if (!isAnonymous) Icon(Icons.person, size: 22, color: isDark ? Colors.white : Colors.white),
       ],
       onTap: (index) => onTap(index),
     );

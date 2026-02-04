@@ -107,10 +107,24 @@ Future<void> main() async {
         print("Reports: $reportCount, Bookings: $bookingCount");
         print("Report IDs: $reportIds");
         
-        // Show user-friendly notification
-        if (reportCount > 0 || bookingCount > 0) {
+        if (reportCount == 0 && bookingCount == 0 && successCount == 0) {
+          NotificationService.showInfo(
+            'No offline reports found',
+            duration: const Duration(seconds: 3),
+          );
+        } else if (reportCount > 0 || bookingCount > 0) {
+          String message = 'Synced: ';
+          List<String> parts = [];
+          if (reportCount > 0) parts.add('$reportCount report${reportCount > 1 ? 's' : ''}');
+          if (bookingCount > 0) parts.add('$bookingCount booking${bookingCount > 1 ? 's' : ''}');
+          message += parts.join(' & ');
+          
+          if (reportIds.isNotEmpty) {
+            message += '\nIDs: ${reportIds.join(', ')}';
+          }
+          
           NotificationService.showSuccess(
-            'Sync completed! $reportCount reports and $bookingCount bookings synced.',
+            message,
             duration: const Duration(seconds: 5),
           );
         }

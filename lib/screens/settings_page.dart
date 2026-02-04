@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:kinondoni_openspace_app/screens/how_to_use_page.dart';
 import 'package:kinondoni_openspace_app/screens/language_change.dart';
 import 'package:kinondoni_openspace_app/screens/offline_map_download_screen.dart';
-import 'package:kinondoni_openspace_app/screens/reported_issue.dart';
 import 'package:kinondoni_openspace_app/screens/theme_change.dart';
 import 'package:kinondoni_openspace_app/utils/constants.dart';
 import '../l10n/app_localizations.dart';
@@ -13,6 +12,7 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -24,7 +24,8 @@ class SettingsPage extends StatelessWidget {
             Navigator.pushReplacementNamed(context, '/home');
           },
         ),
-        backgroundColor: AppConstants.primaryBlue,
+        backgroundColor: isDark ? Colors.grey[850] : AppConstants.primaryBlue,
+        foregroundColor: Colors.white,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -43,7 +44,7 @@ class SettingsPage extends StatelessWidget {
           _buildListTile(
             context,
             Icons.map_outlined,
-            'Offline Maps',
+            locale.offlineMapsTitle,
             () {
               Navigator.push(
                 context,
@@ -70,17 +71,6 @@ class SettingsPage extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ThemeChangePage()),
-              );
-            },
-          ),
-          _buildListTile(
-            context,
-            Icons.notifications,
-            locale.notificationSettings,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ReportedIssuesPage()),
               );
             },
           ),

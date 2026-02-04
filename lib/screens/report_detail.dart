@@ -9,11 +9,17 @@ class ReportDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? Colors.grey[900] : Colors.grey.shade100;
+    final cardColor = isDark ? Colors.grey[850] : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subtextColor = isDark ? Colors.grey[400] : Colors.grey.shade600;
+    
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: bgColor,
       appBar: AppBar(
         title: const Text('Report Details'),
-        backgroundColor: AppConstants.primaryBlue,
+        backgroundColor: isDark ? Colors.grey[850] : AppConstants.primaryBlue,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -70,6 +76,7 @@ class ReportDetailPage extends StatelessWidget {
                 children: [
                   // Main Info Card
                   Card(
+                    color: cardColor,
                     elevation: 2,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     child: Padding(
@@ -77,18 +84,18 @@ class ReportDetailPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                           _buildSectionHeader('Description'),
+                           _buildSectionHeader('Description', isDark),
                            const SizedBox(height: 8),
                            Text(
                              report.description,
-                             style: const TextStyle(fontSize: 16, height: 1.4),
+                             style: TextStyle(fontSize: 16, height: 1.4, color: textColor),
                            ),
                            const Divider(height: 24),
                            
                            if (report.spaceName != null)
-                            _buildInfoRow(Icons.place, 'Location', report.spaceName!),
+                            _buildInfoRow(Icons.place, 'Location', report.spaceName!, subtextColor, textColor),
                            
-                           _buildInfoRow(Icons.calendar_today, 'Date Reported', _formatDate(report.createdAt)),
+                           _buildInfoRow(Icons.calendar_today, 'Date Reported', _formatDate(report.createdAt), subtextColor, textColor),
                         ],
                       ),
                     ),
@@ -100,16 +107,17 @@ class ReportDetailPage extends StatelessWidget {
                   if (report.latitude != null && report.longitude != null) ...[
                      const SizedBox(height: 24),
                      Card(
+                       color: cardColor,
                        elevation: 1,
                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                        child: ListTile(
-                         leading: const CircleAvatar(
-                           backgroundColor: Colors.blueAccent, 
-                           child: Icon(Icons.map, color: Colors.white)
+                         leading: CircleAvatar(
+                           backgroundColor: AppConstants.primaryBlue, 
+                           child: const Icon(Icons.map, color: Colors.white)
                          ),
-                         title: const Text('GPS Coordinates'),
-                         subtitle: Text('${report.latitude!.toStringAsFixed(6)}, ${report.longitude!.toStringAsFixed(6)}'),
-                         trailing: const Icon(Icons.copy, size: 20),
+                         title: Text('GPS Coordinates', style: TextStyle(color: textColor)),
+                         subtitle: Text('${report.latitude!.toStringAsFixed(6)}, ${report.longitude!.toStringAsFixed(6)}', style: TextStyle(color: subtextColor)),
+                         trailing: Icon(Icons.copy, size: 20, color: subtextColor),
                        )
                      ),
                   ],
@@ -122,35 +130,35 @@ class ReportDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, bool isDark) {
     return Text(
       title.toUpperCase(),
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.bold,
-        color: Colors.grey,
+        color: isDark ? Colors.grey[400] : Colors.grey,
         letterSpacing: 1.1,
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(IconData icon, String label, String value, Color? subtextColor, Color? textColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.grey.shade600),
+          Icon(icon, size: 20, color: subtextColor),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                style: TextStyle(fontSize: 12, color: subtextColor),
               ),
               Text(
                 value,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: textColor),
               ),
             ],
           ),

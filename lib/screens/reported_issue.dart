@@ -84,10 +84,11 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
     final List<Report> displayedIssues =
         _allFetchedIssues.take(currentMax).toList();
     final connectivityService = context.watch<ConnectivityService>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppConstants.primaryBlue,
+        backgroundColor: isDark ? Colors.grey[850] : AppConstants.primaryBlue,
         elevation: 3,
         toolbarHeight: 70,
         shape: const RoundedRectangleBorder(
@@ -194,8 +195,14 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
 
     final bool hasCoordinates =
         issue.latitude != null && issue.longitude != null;
+    
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? Colors.grey[850] : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subtextColor = isDark ? Colors.grey[400] : Colors.black54;
 
     return Card(
+      color: cardColor,
       margin: const EdgeInsets.only(bottom: 14),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -244,10 +251,10 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
                         Expanded(
                           child: Text(
                             issue.spaceName ?? 'Unnamed Space',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                              color: textColor,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -260,8 +267,8 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
                     const SizedBox(height: 6),
                     Text(
                       issue.description,
-                      style: const TextStyle(
-                          fontSize: 14, color: Colors.black54, height: 1.3),
+                      style: TextStyle(
+                          fontSize: 14, color: subtextColor, height: 1.3),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -280,14 +287,14 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.location_on,
-                                    color: Colors.blue, size: 18),
+                                Icon(Icons.location_on,
+                                    color: AppConstants.primaryBlue, size: 18),
                                 const SizedBox(width: 4),
                                 Text(
                                   "View Map",
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: Colors.blue.shade600,
+                                    color: AppConstants.primaryBlue,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -297,13 +304,13 @@ class _ReportedIssuesPageState extends State<ReportedIssuesPage> {
                         const Spacer(),
                         Row(
                           children: [
-                            const Icon(Icons.calendar_today,
-                                size: 15, color: Colors.grey),
+                            Icon(Icons.calendar_today,
+                                size: 15, color: isDark ? Colors.grey[400] : Colors.grey),
                             const SizedBox(width: 4),
                             Text(
                               formattedDate,
-                              style: const TextStyle(
-                                  fontSize: 13, color: Colors.grey),
+                              style: TextStyle(
+                                  fontSize: 13, color: isDark ? Colors.grey[400] : Colors.grey),
                             ),
                           ],
                         ),
