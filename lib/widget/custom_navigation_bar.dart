@@ -15,20 +15,38 @@ class CustomBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final appBarTheme = theme.appBarTheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final navBarColor = appBarTheme.backgroundColor ?? colorScheme.primary;
+    final navForegroundColor =
+        appBarTheme.foregroundColor ?? colorScheme.onPrimary;
+    final selectedButtonColor =
+        isDark
+            ? Color.alphaBlend(
+              Colors.white.withValues(alpha: 0.10),
+              navBarColor,
+            )
+            : Color.alphaBlend(
+              Colors.white.withValues(alpha: 0.20),
+              navBarColor,
+            );
 
     return CurvedNavigationBar(
       index: currentIndex,
       height: 60.0,
-      backgroundColor: isDark ? Colors.grey[900]! : Colors.grey[100]!,
-      color: isDark ? Colors.grey[850]! : Colors.white,
-      buttonBackgroundColor: isDark ? Colors.grey[800]! : const Color(0xFF2196F3),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      color: navBarColor,
+      buttonBackgroundColor: selectedButtonColor,
       animationCurve: Curves.easeInOut,
       animationDuration: const Duration(milliseconds: 300),
       items: [
-        Icon(Icons.home, size: 22, color: isDark ? Colors.white : Colors.white),
-        Icon(Icons.explore, size: 22, color: isDark ? Colors.white : Colors.white),
-        if (!isAnonymous) Icon(Icons.person, size: 22, color: isDark ? Colors.white : Colors.white),
+        Icon(Icons.home, size: 22, color: navForegroundColor),
+        Icon(Icons.explore, size: 22, color: navForegroundColor),
+        if (!isAnonymous)
+          Icon(Icons.person, size: 22, color: navForegroundColor),
       ],
       onTap: (index) => onTap(index),
     );

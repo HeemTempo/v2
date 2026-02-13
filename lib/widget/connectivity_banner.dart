@@ -9,6 +9,9 @@ class ConnectivityBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ConnectivityService>(
       builder: (context, connectivity, child) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+
         // Don't show anything if online
         if (connectivity.isOnline && !connectivity.isReconnecting) {
           return const SizedBox.shrink();
@@ -24,9 +27,11 @@ class ConnectivityBanner extends StatelessWidget {
           icon = Icons.wifi_find;
           message = 'Reconnecting...';
         } else {
-          backgroundColor = Colors.red;
-          icon = Icons.wifi_off;
-          message = 'No internet';
+          backgroundColor =
+              isDark ? Colors.grey[900]! : theme.colorScheme.primary;
+          icon = Icons.cloud_off;
+          message =
+              "Sorry, you can't get any data right now because you're offline.";
         }
 
         return Container(
@@ -40,23 +45,30 @@ class ConnectivityBanner extends StatelessWidget {
               children: [
                 Icon(icon, color: Colors.white, size: 18),
                 const SizedBox(width: 10),
-                Text(
-                  message,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(
+                    message,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 if (!connectivity.isReconnecting) ...[
-                  const Spacer(),
+                  const SizedBox(width: 10),
                   TextButton(
                     onPressed: () {
                       connectivity.checkConnectivity();
                     },
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       minimumSize: const Size(60, 32),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       backgroundColor: Colors.white.withValues(alpha: 0.2),

@@ -88,7 +88,12 @@ Future<void> main() async {
     } catch (e, stackTrace) {
       print("CRITICAL ERROR: Failed to load AppConfig: $e");
       print("Stack trace: $stackTrace");
-      runApp(ErrorApp(message: "Failed to load configuration file. Please ensure .env files are included in the build."));
+      runApp(
+        ErrorApp(
+          message:
+              "Failed to load configuration file. Please ensure .env files are included in the build.",
+        ),
+      );
       return;
     }
 
@@ -102,11 +107,17 @@ Future<void> main() async {
 
     try {
       final syncService = SyncService();
-      syncService.onSyncComplete = (successCount, failCount, reportCount, bookingCount, reportIds) {
+      syncService.onSyncComplete = (
+        successCount,
+        failCount,
+        reportCount,
+        bookingCount,
+        reportIds,
+      ) {
         print("SYNC SUCCESS: $successCount items synced successfully!");
         print("Reports: $reportCount, Bookings: $bookingCount");
         print("Report IDs: $reportIds");
-        
+
         if (reportCount == 0 && bookingCount == 0 && successCount == 0) {
           NotificationService.showInfo(
             'No offline reports found',
@@ -115,14 +126,16 @@ Future<void> main() async {
         } else if (reportCount > 0 || bookingCount > 0) {
           String message = 'Synced: ';
           List<String> parts = [];
-          if (reportCount > 0) parts.add('$reportCount report${reportCount > 1 ? 's' : ''}');
-          if (bookingCount > 0) parts.add('$bookingCount booking${bookingCount > 1 ? 's' : ''}');
+          if (reportCount > 0)
+            parts.add('$reportCount report${reportCount > 1 ? 's' : ''}');
+          if (bookingCount > 0)
+            parts.add('$bookingCount booking${bookingCount > 1 ? 's' : ''}');
           message += parts.join(' & ');
-          
+
           if (reportIds.isNotEmpty) {
             message += '\nIDs: ${reportIds.join(', ')}';
           }
-          
+
           NotificationService.showSuccess(
             message,
             duration: const Duration(seconds: 5),
@@ -163,7 +176,11 @@ class ErrorApp extends StatelessWidget {
                 const SizedBox(height: 20),
                 const Text(
                   "Startup Error",
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.red),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Text(
@@ -190,50 +207,57 @@ class MyApp extends StatelessWidget {
     print('🏗️ MyApp.build() called - starting app build');
     return _buildApp();
   }
-  
+
   Widget _buildApp() {
     print('🔧 _buildApp() called - initializing services');
     final client = GraphQLService().client;
     print('✅ GraphQL client initialized');
-    final connectivityService = ConnectivityService();
-    print('✅ ConnectivityService initialized');
     final reportLocal = ReportLocal();
     final reportRepository = ReportRepository(localService: reportLocal);
     print('✅ ReportRepository initialized');
 
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) {
-          print('✅ Creating ConnectivityService provider');
-          return ConnectivityService();
-        }),
-        ChangeNotifierProvider.value(value: themeProvider),
-        ChangeNotifierProvider(create: (_) {
-          print('✅ Creating UserProvider');
-          return UserProvider();
-        }),
-        ChangeNotifierProvider(create: (_) {
-          print('✅ Creating LocaleProvider');
-          return LocaleProvider();
-        }),
-       
         ChangeNotifierProvider(
-          create: (_) => ReportProvider(
-            repository: reportRepository,
-            connectivity: connectivityService,
-          ),
+          create: (_) {
+            print('✅ Creating ConnectivityService provider');
+            return ConnectivityService();
+          },
+        ),
+        ChangeNotifierProvider.value(value: themeProvider),
+        ChangeNotifierProvider(
+          create: (_) {
+            print('✅ Creating UserProvider');
+            return UserProvider();
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (_) {
+            print('✅ Creating LocaleProvider');
+            return LocaleProvider();
+          },
+        ),
+
+        ChangeNotifierProvider(
+          create:
+              (context) => ReportProvider(
+                repository: reportRepository,
+                connectivity: context.read<ConnectivityService>(),
+              ),
         ),
         ChangeNotifierProxyProvider<ConnectivityService, BookingProvider>(
-          create: (context) => BookingProvider(
-            repository: BookingRepository(),
-            connectivity: context.read<ConnectivityService>(),
-          ),
-          update: (context, connectivity, previous) =>
-              previous ??
-              BookingProvider(
+          create:
+              (context) => BookingProvider(
                 repository: BookingRepository(),
-                connectivity: connectivity,
+                connectivity: context.read<ConnectivityService>(),
               ),
+          update:
+              (context, connectivity, previous) =>
+                  previous ??
+                  BookingProvider(
+                    repository: BookingRepository(),
+                    connectivity: connectivity,
+                  ),
         ),
         Provider<ValueNotifier<GraphQLClient>>(
           create: (_) => ValueNotifier(client),
@@ -245,15 +269,16 @@ class MyApp extends StatelessWidget {
               connectivityService: context.read<ConnectivityService>(),
             );
           },
-          update: (context, connectivity, previous) =>
-              previous ??
-              NotificationProvider(
-                connectivityService: connectivity,
-              ),
+          update:
+              (context, connectivity, previous) =>
+                  previous ??
+                  NotificationProvider(connectivityService: connectivity),
         ),
         Provider<Future<SharedPreferences>>(
           create: (_) {
-            print('⏳ Starting SharedPreferences.getInstance() - this might hang...');
+            print(
+              '⏳ Starting SharedPreferences.getInstance() - this might hang...',
+            );
             return SharedPreferences.getInstance().then((prefs) {
               print('✅ SharedPreferences initialized successfully');
               return prefs;
@@ -278,14 +303,31 @@ class MyApp extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                            const Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: Colors.red,
+                            ),
                             const SizedBox(height: 16),
-                            const Text('Something went wrong', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            const Text(
+                              'Something went wrong',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             const SizedBox(height: 8),
-                            if (kDebugMode) Text(details.exception.toString(), textAlign: TextAlign.center),
+                            if (kDebugMode)
+                              Text(
+                                details.exception.toString(),
+                                textAlign: TextAlign.center,
+                              ),
                             const SizedBox(height: 16),
                             ElevatedButton(
-                              onPressed: () => Navigator.of(context).pushReplacementNamed('/'),
+                              onPressed:
+                                  () => Navigator.of(
+                                    context,
+                                  ).pushReplacementNamed('/'),
                               child: const Text('Restart App'),
                             ),
                           ],
@@ -294,7 +336,7 @@ class MyApp extends StatelessWidget {
                     ),
                   );
                 };
-                
+
                 return Stack(
                   children: [
                     Column(
@@ -341,9 +383,11 @@ class MyApp extends StatelessWidget {
                 if (protectedRoutes.contains(settings.name) &&
                     userProvider.user.isAnonymous) {
                   return MaterialPageRoute(
-                    builder: (context) => AccessDeniedScreen(
-                      featureName: settings.name?.split('/').last ?? 'Feature',
-                    ),
+                    builder:
+                        (context) => AccessDeniedScreen(
+                          featureName:
+                              settings.name?.split('/').last ?? 'Feature',
+                        ),
                   );
                 }
 
@@ -500,7 +544,8 @@ class MyApp extends StatelessWidget {
                   '/user-profile': (context) => const UserProfilePage(),
                   '/edit-profile': (context) => const EditProfilePage(),
                   '/map': (context) => const MapScreen(),
-                  '/offline-maps': (context) => const OfflineMapDownloadScreen(),
+                  '/offline-maps':
+                      (context) => const OfflineMapDownloadScreen(),
                   '/reported-issue': (context) => const ReportedIssuesPage(),
                   '/setting': (context) => const SettingsPage(),
                   '/change-theme': (context) => const ThemeChangePage(),
@@ -530,7 +575,8 @@ class MyApp extends StatelessWidget {
                   "Route ${settings.name} not found, showing default PageNotFound.",
                 );
                 return MaterialPageRoute(
-                  builder: (context) => NotFoundScreen(routeName: settings.name),
+                  builder:
+                      (context) => NotFoundScreen(routeName: settings.name),
                 );
               },
             ),
