@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/constants.dart';
 
 class ReportIssuePage extends StatefulWidget {
   final String? spaceName;
@@ -38,7 +39,7 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-// For image/document upload
+  // For image/document upload
 
   bool _isSubmitting = false;
   bool _guidelinesExpanded = false;
@@ -49,7 +50,6 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
     // Sync is handled automatically by ReportProvider when connectivity changes
     // No need to sync on every screen load - this prevents UI freezing
   }
-
 
   void _showAlert(
     QuickAlertType type,
@@ -124,279 +124,316 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
   Widget build(BuildContext context) {
     try {
       final loc = AppLocalizations.of(context)!;
-      final primaryBlue = Theme.of(context).colorScheme.primary;
+      final primaryColor = Theme.of(context).colorScheme.primary;
+      final isDark = Theme.of(context).brightness == Brightness.dark;
 
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-        title: Text(loc.reportPageTitle),
-        backgroundColor: primaryBlue,
-        centerTitle: true,
-        actions: [
-          // Show pending reports count
-          Consumer<ReportProvider>(
-            builder: (context, provider, _) {
-              final count = provider.pendingReportsCount;
-              if (count == 0) return const SizedBox.shrink();
+          title: Text(loc.reportPageTitle),
+          backgroundColor:
+              isDark ? AppConstants.darkBackground : AppConstants.primaryGreen,
+          centerTitle: true,
+          actions: [
+            // Show pending reports count
+            Consumer<ReportProvider>(
+              builder: (context, provider, _) {
+                final count = provider.pendingReportsCount;
+                if (count == 0) return const SizedBox.shrink();
 
-              return GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(context, '/pending-reports');
-                },
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.orange,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '$count pending',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(context, '/pending-reports');
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
                         ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              physics: const BouncingScrollPhysics(),
-              children: [
-                // Header
-                Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        loc.reportHeader,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.black87,
+                        decoration: BoxDecoration(
+                          color: AppConstants.warning,
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
-
-                // Location Card
-                _InfoCard(
-                  icon: Icons.location_on_outlined,
-                  title: loc.locationDetailsTitle,
-                  children: [
-                    _InfoRow(
-                      label: loc.spaceNameLabel,
-                      value: widget.spaceName ?? loc.notAvailable,
-                    ),
-                    _InfoRow(
-                      label: loc.districtLabel,
-                      value: widget.district ?? loc.notAvailable,
-                    ),
-                    _InfoRow(
-                      label: loc.streetLabel,
-                      value: widget.street ?? loc.notAvailable,
-                    ),
-                    _InfoRow(
-                      label: loc.coordinatesLabel,
-                      value:
-                          (widget.latitude != null && widget.longitude != null)
-                              ? '${widget.latitude!.toStringAsFixed(5)}°, ${widget.longitude!.toStringAsFixed(5)}°'
-                              : loc.notAvailable,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                // Contact Information
-                _InfoCard(
-                  icon: Icons.person_outline,
-                  title: loc.yourInfoTitle,
-                  children: [
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      decoration: _inputDecoration(
-                        label: loc.emailLabel,
-                        hint: 'your.email@example.com',
-                        icon: Icons.email_outlined,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) return null;
-                        final emailRegex = RegExp(
-                          r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
-                        );
-                        if (!emailRegex.hasMatch(value)) {
-                          return '${loc.emailLabel} is invalid';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                // Issue Description
-                _InfoCard(
-                  icon: Icons.edit_outlined,
-                  title: loc.issueDescriptionTitle,
-                  children: [
-                    TextFormField(
-                      controller: _descriptionController,
-                      maxLines: 5,
-                      decoration: _inputDecoration(
-                        label: loc.issueDescriptionTitle,
-                        hint: loc.issueDescriptionHint,
-                        icon: Icons.edit,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return '${loc.issueDescriptionTitle} is required';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                // Attachments
-                FileAttachmentSection(
-                  selectedFileNames: _attachedFiles,
-                  pickImages: _pickImages,
-                  pickGeneralFiles: _pickGeneralFiles,
-                  removeFile: _removeFile,
-                ),
-
-                const SizedBox(height: 30),
-
-                // Reporting Guidelines
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  elevation: 3,
-                  child: ExpansionTile(
-                    initiallyExpanded: _guidelinesExpanded,
-                    onExpansionChanged: (expanded) {
-                      setState(() {
-                        _guidelinesExpanded = expanded;
-                      });
-                    },
-                    leading: CircleAvatar(
-                      backgroundColor: primaryBlue,
-                      child: const Icon(
-                        Icons.info_outline,
-                        color: Colors.white,
-                      ),
-                    ),
-                    title: Text(
-                      loc.reportGuidelinesTitle,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: primaryBlue,
-                        fontSize: 16,
-                      ),
-                    ),
-                    childrenPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    children: [
-                      _GuidelineText(loc.guideline1),
-                      _GuidelineText(loc.guideline2),
-                      _GuidelineText(loc.guideline3),
-                      _GuidelineText(loc.guideline4),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 30),
-
-                // Action Buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed:
-                            context.watch<ReportProvider>().isSubmitting
-                                ? null
-                                : _submitReport,
-
-                        icon:
-                            _isSubmitting
-                                ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                                : const Icon(Icons.send),
-                        label: Text(
-                          _isSubmitting
-                              ? loc.submittingLabel
-                              : loc.submitReportButton,
+                        child: Text(
+                          '$count pending',
                           style: const TextStyle(
-                            fontSize: 16,
+                            color: Colors.white,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryBlue,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color:
+                          isDark
+                              ? AppConstants.darkCardAlt
+                              : AppConstants.primaryGreenSoft,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color:
+                            isDark
+                                ? AppConstants.darkBorder
+                                : AppConstants.border,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color:
+                                isDark ? AppConstants.darkCard : Colors.white,
+                            borderRadius: BorderRadius.circular(13),
+                          ),
+                          child: const Icon(
+                            Icons.report_problem_outlined,
+                            color: AppConstants.primaryGreen,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            loc.reportHeader,
+                            style: TextStyle(
+                              fontSize: 14,
+                              height: 1.45,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Location Card
+                  _InfoCard(
+                    icon: Icons.location_on_outlined,
+                    title: loc.locationDetailsTitle,
+                    children: [
+                      _InfoRow(
+                        label: loc.spaceNameLabel,
+                        value: widget.spaceName ?? loc.notAvailable,
+                      ),
+                      _InfoRow(
+                        label: loc.districtLabel,
+                        value: widget.district ?? loc.notAvailable,
+                      ),
+                      _InfoRow(
+                        label: loc.streetLabel,
+                        value: widget.street ?? loc.notAvailable,
+                      ),
+                      _InfoRow(
+                        label: loc.coordinatesLabel,
+                        value:
+                            (widget.latitude != null &&
+                                    widget.longitude != null)
+                                ? '${widget.latitude!.toStringAsFixed(5)}°, ${widget.longitude!.toStringAsFixed(5)}°'
+                                : loc.notAvailable,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Contact Information
+                  _InfoCard(
+                    icon: Icons.person_outline,
+                    title: loc.yourInfoTitle,
+                    children: [
+                      TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        decoration: _inputDecoration(
+                          label: loc.emailLabel,
+                          hint: 'your.email@example.com',
+                          icon: Icons.email_outlined,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) return null;
+                          final emailRegex = RegExp(
+                            r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+                          );
+                          if (!emailRegex.hasMatch(value)) {
+                            return '${loc.emailLabel} is invalid';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Issue Description
+                  _InfoCard(
+                    icon: Icons.edit_outlined,
+                    title: loc.issueDescriptionTitle,
+                    children: [
+                      TextFormField(
+                        controller: _descriptionController,
+                        maxLines: 5,
+                        decoration: _inputDecoration(
+                          label: loc.issueDescriptionTitle,
+                          hint: loc.issueDescriptionHint,
+                          icon: Icons.edit,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return '${loc.issueDescriptionTitle} is required';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Attachments
+                  FileAttachmentSection(
+                    selectedFileNames: _attachedFiles,
+                    pickImages: _pickImages,
+                    pickGeneralFiles: _pickGeneralFiles,
+                    removeFile: _removeFile,
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Reporting Guidelines
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      side: BorderSide(
+                        color:
+                            isDark
+                                ? AppConstants.darkBorder
+                                : AppConstants.border,
+                      ),
+                    ),
+                    elevation: 0,
+                    child: ExpansionTile(
+                      initiallyExpanded: _guidelinesExpanded,
+                      onExpansionChanged: (expanded) {
+                        setState(() {
+                          _guidelinesExpanded = expanded;
+                        });
+                      },
+                      leading: CircleAvatar(
+                        backgroundColor: primaryColor,
+                        child: const Icon(
+                          Icons.info_outline,
+                          color: Colors.white,
+                        ),
+                      ),
+                      title: Text(
+                        loc.reportGuidelinesTitle,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                          fontSize: 16,
+                        ),
+                      ),
+                      childrenPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      children: [
+                        _GuidelineText(loc.guideline1),
+                        _GuidelineText(loc.guideline2),
+                        _GuidelineText(loc.guideline3),
+                        _GuidelineText(loc.guideline4),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed:
+                              context.watch<ReportProvider>().isSubmitting
+                                  ? null
+                                  : _submitReport,
+
+                          icon:
+                              _isSubmitting
+                                  ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                  : const Icon(Icons.send),
+                          label: Text(
+                            _isSubmitting
+                                ? loc.submittingLabel
+                                : loc.submitReportButton,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _isSubmitting ? null : _cancelReport,
-                        icon: const Icon(Icons.cancel_outlined),
-                        label: Text(
-                          loc.cancelButton,
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _isSubmitting ? null : _cancelReport,
+                          icon: const Icon(Icons.cancel_outlined),
+                          label: Text(
+                            loc.cancelButton,
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
         ),
-      ),
       );
     } catch (e, stackTrace) {
       debugPrint('Error building report screen: $e');
@@ -407,7 +444,11 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const Icon(
+                Icons.error_outline,
+                size: 48,
+                color: AppConstants.danger,
+              ),
               const SizedBox(height: 16),
               const Text('Failed to load report screen'),
               const SizedBox(height: 8),
@@ -436,15 +477,19 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
       hintText: hint,
       prefixIcon: icon != null ? Icon(icon, color: primaryColor) : null,
       filled: true,
-      fillColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+      fillColor: isDark ? AppConstants.darkCardAlt : Colors.white,
       contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+        borderSide: BorderSide(
+          color: isDark ? AppConstants.darkBorder : AppConstants.border,
+        ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+        borderSide: BorderSide(
+          color: isDark ? AppConstants.darkBorder : AppConstants.border,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -456,7 +501,10 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
+        borderSide: BorderSide(
+          color: Theme.of(context).colorScheme.error,
+          width: 2,
+        ),
       ),
       labelStyle: TextStyle(
         color: isDark ? Colors.grey[400] : Colors.grey[700],
@@ -574,10 +622,15 @@ class _InfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Theme.of(context).colorScheme.primary;
-    
+
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(
+          color: isDark ? AppConstants.darkBorder : AppConstants.border,
+        ),
+      ),
+      elevation: 0,
       color: Theme.of(context).cardColor,
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -587,7 +640,10 @@ class _InfoCard extends StatelessWidget {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: isDark ? primaryColor.withValues(alpha: 0.2) : primaryColor.withValues(alpha: 0.1),
+                  backgroundColor:
+                      isDark
+                          ? primaryColor.withValues(alpha: 0.2)
+                          : primaryColor.withValues(alpha: 0.1),
                   child: Icon(icon, color: primaryColor),
                 ),
                 const SizedBox(width: 12),
@@ -619,7 +675,7 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textColor = Theme.of(context).colorScheme.onSurface;
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -629,15 +685,10 @@ class _InfoRow extends StatelessWidget {
             width: 110,
             child: Text(
               '$label:',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: textColor,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
             ),
           ),
-          Expanded(
-            child: Text(value, style: TextStyle(color: textColor)),
-          ),
+          Expanded(child: Text(value, style: TextStyle(color: textColor))),
         ],
       ),
     );
@@ -653,7 +704,7 @@ class _GuidelineText extends StatelessWidget {
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
     final textColor = Theme.of(context).colorScheme.onSurface;
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(

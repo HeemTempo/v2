@@ -37,7 +37,7 @@ class NotFoundScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.red.shade900.withOpacity(0.3) : Colors.red.shade50,
+                    color: isDark ? Colors.red.shade900.withValues(alpha: 0.3) : Colors.red.shade50,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(

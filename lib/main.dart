@@ -1,9 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:kinondoni_openspace_app/config/app_config.dart';
 import 'package:kinondoni_openspace_app/service/offline_map_service.dart';
-import 'package:kinondoni_openspace_app/widget/connectivity_banner.dart';
-import 'package:kinondoni_openspace_app/widget/environment_badge.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:kinondoni_openspace_app/api/graphql/graphql_service.dart';
 import 'package:kinondoni_openspace_app/core/network/connectivity_service.dart';
@@ -27,6 +26,7 @@ import 'package:kinondoni_openspace_app/screens/book_openspace.dart';
 import 'package:kinondoni_openspace_app/screens/bookings.dart';
 import 'package:kinondoni_openspace_app/screens/edit_profile.dart';
 import 'package:kinondoni_openspace_app/screens/home_page.dart';
+import 'package:kinondoni_openspace_app/screens/guest_profile.dart';
 import 'package:kinondoni_openspace_app/screens/intro_slider_screen.dart';
 import 'package:kinondoni_openspace_app/screens/language_change.dart';
 import 'package:kinondoni_openspace_app/screens/map_screen.dart';
@@ -58,6 +58,15 @@ import 'l10n/app_localizations.dart';
 Future<void> main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarDividerColor: Colors.transparent,
+        systemNavigationBarContrastEnforced: false,
+      ),
+    );
     await initHiveForFlutter();
     print("DEBUG: WidgetsFlutterBinding & Hive initialized (Standard)");
 
@@ -118,18 +127,16 @@ Future<void> main() async {
         print("Reports: $reportCount, Bookings: $bookingCount");
         print("Report IDs: $reportIds");
 
-        if (reportCount == 0 && bookingCount == 0 && successCount == 0) {
-          NotificationService.showInfo(
-            'No offline reports found',
-            duration: const Duration(seconds: 3),
-          );
-        } else if (reportCount > 0 || bookingCount > 0) {
+        // Keep startup quiet when there is nothing waiting to synchronize.
+        if (reportCount > 0 || bookingCount > 0) {
           String message = 'Synced: ';
           List<String> parts = [];
-          if (reportCount > 0)
+          if (reportCount > 0) {
             parts.add('$reportCount report${reportCount > 1 ? 's' : ''}');
-          if (bookingCount > 0)
+          }
+          if (bookingCount > 0) {
             parts.add('$bookingCount booking${bookingCount > 1 ? 's' : ''}');
+          }
           message += parts.join(' & ');
 
           if (reportIds.isNotEmpty) {
@@ -337,16 +344,20 @@ class MyApp extends StatelessWidget {
                   );
                 };
 
-                return Stack(
-                  children: [
-                    Column(
-                      children: [
-                        const ConnectivityBanner(),
-                        Expanded(child: child!),
-                      ],
-                    ),
-                    const EnvironmentBadge(),
-                  ],
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                final baseStyle =
+                    isDark
+                        ? SystemUiOverlayStyle.light
+                        : SystemUiOverlayStyle.dark;
+
+                return AnnotatedRegion<SystemUiOverlayStyle>(
+                  value: baseStyle.copyWith(
+                    statusBarColor: Colors.transparent,
+                    systemNavigationBarColor: Colors.transparent,
+                    systemNavigationBarDividerColor: Colors.transparent,
+                    systemNavigationBarContrastEnforced: false,
+                  ),
+                  child: child ?? const SizedBox.shrink(),
                 );
               },
               title: 'Smart GIS App',
@@ -476,9 +487,13 @@ class MyApp extends StatelessWidget {
                   }
                 }
 
-                // Handle /book route
-                if (settings.name != null &&
-                    settings.name!.startsWith('/book')) {
+                // Handle only booking-form routes. Do not capture
+                // /bookings-list, which is the user's booking history page.
+                final isBookingFormRoute =
+                    settings.name == '/booking' ||
+                    settings.name == '/book' ||
+                    (settings.name?.startsWith('/book/') ?? false);
+                if (isBookingFormRoute) {
                   final uri = Uri.parse(settings.name!);
                   int? spaceId;
                   String? spaceName;
@@ -542,6 +557,7 @@ class MyApp extends StatelessWidget {
                   '/register': (context) => const SignUpScreen(),
                   '/track-progress': (context) => const TrackProgressScreen(),
                   '/user-profile': (context) => const UserProfilePage(),
+                  '/guest-profile': (context) => const GuestProfilePage(),
                   '/edit-profile': (context) => const EditProfilePage(),
                   '/map': (context) => const MapScreen(),
                   '/offline-maps':

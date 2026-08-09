@@ -227,6 +227,12 @@ abstract class AppLocalizations {
   /// **'Successfully Logged In!'**
   String get loginSuccess;
 
+  /// No description provided for @logoutSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'You have signed out successfully.'**
+  String get logoutSuccess;
+
   /// No description provided for @loginFailed.
   ///
   /// In en, this message translates to:
@@ -340,6 +346,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dashboard'**
   String get dashboard;
+
+  /// No description provided for @homeNavLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get homeNavLabel;
+
+  /// No description provided for @profileNavLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileNavLabel;
 
   /// No description provided for @notificationsTitle.
   ///
@@ -1498,6 +1516,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Offline'**
   String get offlineMode;
+
+  /// No description provided for @continueOfflineButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue offline'**
+  String get continueOfflineButton;
 
   /// No description provided for @usernameRequired.
   ///

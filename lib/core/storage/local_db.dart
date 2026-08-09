@@ -12,7 +12,7 @@ class LocalDb {
 
     _db = await openDatabase(
       path,
-      version: 5, // Bump version to handle reports table updates
+      version: 6,
       onCreate: (db, version) async {
         // CREATE bookings table safely
         await db.execute('''
@@ -64,6 +64,9 @@ class LocalDb {
             longitude REAL,
             isActive INTEGER,
             status TEXT,
+            shapeType TEXT,
+            boundary TEXT,
+            area REAL,
             amenities TEXT,
             images TEXT
           )
@@ -96,11 +99,21 @@ class LocalDb {
         await ProfileLocalDataSource.createTable(db);
 
         // Add indexes for better query performance
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_bookings_createdAt ON bookings(createdAt)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_reports_createdAt ON reports(createdAt)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_notifications_isRead ON notifications(isRead)');
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_bookings_createdAt ON bookings(createdAt)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_reports_createdAt ON reports(createdAt)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_notifications_isRead ON notifications(isRead)',
+        );
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 4) {
@@ -127,12 +140,13 @@ class LocalDb {
             )
           ''');
         }
-        
+
         if (oldVersion < 5) {
           // Add missing columns to reports table
           final reportColumns = await db.rawQuery("PRAGMA table_info(reports)");
-          final reportColumnNames = reportColumns.map((c) => c['name'] as String).toList();
-          
+          final reportColumnNames =
+              reportColumns.map((c) => c['name'] as String).toList();
+
           if (!reportColumnNames.contains('phone')) {
             await db.execute('ALTER TABLE reports ADD COLUMN phone TEXT');
           }
@@ -144,6 +158,32 @@ class LocalDb {
           }
           if (!reportColumnNames.contains('userId')) {
             await db.execute('ALTER TABLE reports ADD COLUMN userId TEXT');
+          }
+        }
+
+        if (oldVersion < 6) {
+          final openSpaceColumns = await db.rawQuery(
+            "PRAGMA table_info(open_spaces)",
+          );
+          final openSpaceColumnNames =
+              openSpaceColumns
+                  .map((column) => column['name'] as String)
+                  .toList();
+
+          if (!openSpaceColumnNames.contains('shapeType')) {
+            await db.execute(
+              'ALTER TABLE open_spaces ADD COLUMN shapeType TEXT DEFAULT "polygon"',
+            );
+          }
+          if (!openSpaceColumnNames.contains('boundary')) {
+            await db.execute(
+              'ALTER TABLE open_spaces ADD COLUMN boundary TEXT',
+            );
+          }
+          if (!openSpaceColumnNames.contains('area')) {
+            await db.execute(
+              'ALTER TABLE open_spaces ADD COLUMN area REAL DEFAULT 0',
+            );
           }
         }
 
@@ -160,11 +200,21 @@ class LocalDb {
         await ProfileLocalDataSource.createTable(db);
 
         // Add indexes if upgrading
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_bookings_createdAt ON bookings(createdAt)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_reports_createdAt ON reports(createdAt)');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_notifications_isRead ON notifications(isRead)');
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_bookings_createdAt ON bookings(createdAt)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_reports_createdAt ON reports(createdAt)',
+        );
+        await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_notifications_isRead ON notifications(isRead)',
+        );
       },
     );
 

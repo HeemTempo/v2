@@ -75,6 +75,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginSuccess => 'Successfully Logged In!';
 
   @override
+  String get logoutSuccess => 'You have signed out successfully.';
+
+  @override
   String get loginFailed => 'Login failed. Please check your credentials.';
 
   @override
@@ -130,6 +133,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboard => 'Dashboard';
+
+  @override
+  String get homeNavLabel => 'Home';
+
+  @override
+  String get profileNavLabel => 'Profile';
 
   @override
   String get notificationsTitle => 'Notifications';
@@ -715,6 +724,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get offlineMode => 'Offline';
+
+  @override
+  String get continueOfflineButton => 'Continue offline';
 
   @override
   String get usernameRequired => 'Username is required';

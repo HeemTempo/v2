@@ -3,14 +3,16 @@ import 'package:provider/provider.dart';
 import '../widget/custom_navigation_bar.dart';
 import '../providers/user_provider.dart';
 import 'home_tab.dart';
+import 'guest_profile.dart';
 import 'map_screen.dart';
 import 'profile.dart';
+import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  _HomePageState createState() => _HomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
@@ -31,18 +33,18 @@ class _HomePageState extends State<HomePage> {
     final List<Widget> pages = [
       HomeTab(onTabChange: _onTabTapped),
       const MapScreen(showBottomNav: false),
-      if (!isAnonymous) const UserProfilePage(showBottomNav: false),
+      isAnonymous
+          ? const GuestProfilePage()
+          : const UserProfilePage(showBottomNav: false),
+      const SettingsPage(showBackButton: false),
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: pages,
-      ),
+      extendBody: true,
+      body: IndexedStack(index: _currentIndex, children: pages),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
-        isAnonymous: isAnonymous,
       ),
     );
   }

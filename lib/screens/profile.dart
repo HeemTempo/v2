@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:kinondoni_openspace_app/data/repository/profile_repository.dart';
-import 'package:kinondoni_openspace_app/screens/userreports.dart';
-import 'package:kinondoni_openspace_app/utils/constants.dart';
-import 'package:kinondoni_openspace_app/screens/misc/access_denied_screen.dart';
 import 'package:provider/provider.dart';
+
+import '../config/app_config.dart';
+import '../data/repository/profile_repository.dart';
+import '../l10n/app_localizations.dart';
+import '../providers/user_provider.dart';
+import '../services/notification_service.dart';
+import '../utils/constants.dart';
 import '../widget/custom_navigation_bar.dart';
 import 'bookings.dart';
-import '../providers/user_provider.dart';
-import '../l10n/app_localizations.dart';
+import 'misc/access_denied_screen.dart';
+import 'userreports.dart';
 
 class UserProfilePage extends StatefulWidget {
-  final bool showBottomNav;
   const UserProfilePage({super.key, this.showBottomNav = true});
 
+  final bool showBottomNav;
+
   @override
-  _UserProfilePageState createState() => _UserProfilePageState();
+  State<UserProfilePage> createState() => _UserProfilePageState();
 }
 
 class _UserProfilePageState extends State<UserProfilePage> {
@@ -25,19 +29,18 @@ class _UserProfilePageState extends State<UserProfilePage> {
   @override
   void initState() {
     super.initState();
-    final user = Provider.of<UserProvider>(context, listen: false).user;
-    if (!user.isAnonymous) {
-      _fetchProfile();
+    final user = context.read<UserProvider>().user;
+    if (user.isAnonymous) {
+      _isLoading = false;
     } else {
-      setState(() {
-        _isLoading = false;
-      });
+      _fetchProfile();
     }
   }
 
   Future<void> _fetchProfile() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
+
     try {
       final profileData = await ProfileRepository.fetchProfile();
       if (!mounted) return;
@@ -45,35 +48,27 @@ class _UserProfilePageState extends State<UserProfilePage> {
         _profile = profileData;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (error) {
       if (!mounted) return;
-      String errorMessage = e.toString();
-      if (errorMessage.startsWith("Exception: ")) {
-        errorMessage = errorMessage.substring("Exception: ".length);
-      }
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
 
-      if (errorMessage.toLowerCase().contains('authentication') ||
-          errorMessage.toLowerCase().contains('token') ||
-          errorMessage.toLowerCase().contains('unauthorized')) {
+      final message = error.toString().replaceFirst('Exception: ', '');
+      final isAuthenticationError =
+          message.toLowerCase().contains('authentication') ||
+          message.toLowerCase().contains('token') ||
+          message.toLowerCase().contains('unauthorized');
+
+      if (isAuthenticationError) {
+        NotificationService.showError(
+          AppLocalizations.of(context)!.sessionExpired,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 900));
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(AppLocalizations.of(context)!.sessionExpired),
-              duration: const Duration(seconds: 2),
-            ),
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/login',
+            (route) => false,
           );
-          Future.delayed(const Duration(milliseconds: 2100), () {
-            if (mounted) {
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/login',
-                (route) => false,
-              );
-            }
-          });
         }
       }
     }
@@ -84,322 +79,594 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
     switch (index) {
       case 0:
-        Navigator.pop(context, 0);
-        break;
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       case 1:
         Navigator.pushNamed(context, '/map');
-        break;
       case 2:
-        // Already on Profile
         break;
+      case 3:
+        Navigator.pushNamed(context, '/setting');
     }
+  }
+
+  String _profileValue(List<String> keys, {required String fallback}) {
+    for (final key in keys) {
+      final value = _profile?[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        return value.toString().trim();
+      }
+    }
+    return fallback;
+  }
+
+  String? _profilePhotoUrl() {
+    final nestedUser = _profile?['user'];
+    final candidates = <dynamic>[
+      _profile?['photoUrl'],
+      _profile?['profile_picture'],
+      _profile?['profilePicture'],
+      if (nestedUser is Map) nestedUser['profile_picture'],
+    ];
+
+    for (final candidate in candidates) {
+      final value = candidate?.toString().trim() ?? '';
+      if (value.isEmpty) continue;
+
+      final uri = Uri.tryParse(value);
+      if (uri != null && uri.hasScheme) return value;
+      return Uri.parse(AppConfig.baseUrl).resolve(value).toString();
+    }
+    return null;
+  }
+
+  Future<void> _openEditProfile() async {
+    await Navigator.pushNamed(context, '/edit-profile');
+    if (mounted) await _fetchProfile();
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final user = Provider.of<UserProvider>(context).user;
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final appBarColor = isDark ? Colors.grey[850]! : AppConstants.primaryBlue;
+    final user = context.watch<UserProvider>().user;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (user.isAnonymous) {
-      // Extract placeholder data for anonymous
-      String name = "Guest User";
-      String email = "Sign in to see your profile";
-      
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Navigate to access denied screen instead of showing dialog
-        // so user has the 'X' and 'Go Home' buttons
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => AccessDeniedScreen(featureName: "profile"),
-          ),
-        );
-      });
-
-      return Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        body: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              expandedHeight: 280.0,
-              floating: false,
-              pinned: true,
-              backgroundColor: appBarColor,
-              flexibleSpace: FlexibleSpaceBar(
-                centerTitle: true,
-                title: Text(
-                  name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                background: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            appBarColor,
-                            appBarColor.withValues(alpha: 0.7),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 40),
-                        Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 3),
-                          ),
-                          child: const CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Colors.white24,
-                            child: Icon(Icons.person, size: 50, color: Colors.white),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          email,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionHeader(context, loc.activitySection),
-                    const SizedBox(height: 10),
-                    _buildSettingsItem(
-                      context,
-                      icon: Icons.login_rounded,
-                      title: "Sign In Required",
-                      subtitle: "Please sign in to view your activity",
-                      onTap: () => Navigator.pushNamed(context, '/login'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-        bottomNavigationBar: widget.showBottomNav
-            ? CustomBottomNavBar(
-                currentIndex: _currentIndex,
-                onTap: _onNavTap,
-              )
-            : null,
-      );
+      return const AccessDeniedScreen(featureName: 'profile');
     }
 
-    // Extract profile data safely
-    String name = _profile?['name'] ?? _profile?['username'] ?? loc.notAvailable;
-    String email = _profile?['email'] ?? loc.notAvailable;
-    String? photoUrl =
-        _profile?['photoUrl'] ?? _profile?['profile_picture'] ?? _profile?['user']?['profile_picture'];
-
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 280.0,
-            floating: false,
-            pinned: true,
-            backgroundColor: appBarColor,
-            flexibleSpace: FlexibleSpaceBar(
-              centerTitle: true,
-              title: Text(
-                name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          appBarColor,
-                          appBarColor.withValues(alpha: 0.7),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 40),
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppConstants.primaryBlue.withValues(alpha: 0.3),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: CircleAvatar(
-                          radius: 50,
-                          backgroundColor: Colors.grey[200],
-                          backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
-                              ? NetworkImage(photoUrl)
-                              : null,
-                          child: (photoUrl == null || photoUrl.isEmpty)
-                              ? Icon(Icons.person, size: 50, color: Colors.grey[500])
-                              : null,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        email,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.white),
-                onPressed: _isLoading ? null : _fetchProfile,
-              ),
-            ],
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionHeader(context, loc.activitySection),
-                  const SizedBox(height: 10),
-                  _buildSettingsItem(
-                    context,
-                    icon: Icons.report_problem_outlined,
-                    title: loc.myReports,
-                    subtitle: loc.myReportsSubtitle,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const UserReportsPage(),
-                      ),
-                    ),
-                  ),
-                  _buildSettingsItem(
-                    context,
-                    icon: Icons.event_available_outlined,
-                    title: loc.myBookings,
-                    subtitle: loc.myBookingsSubtitle,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const MyBookingsPage(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 40), // Bottom padding
-                ],
-              ),
+      backgroundColor:
+          isDark ? AppConstants.darkBackground : AppConstants.pageBackground,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor:
+            isDark ? AppConstants.darkBackground : AppConstants.pageBackground,
+        foregroundColor: isDark ? Colors.white : AppConstants.navy,
+        elevation: 0,
+        title: Text(
+          loc.profileNavLabel,
+          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: IconButton.filledTonal(
+              tooltip: loc.fetchProfile,
+              onPressed: _isLoading ? null : _fetchProfile,
+              icon:
+                  _isLoading
+                      ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Icon(Icons.refresh_rounded, size: 21),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: widget.showBottomNav
-          ? CustomBottomNavBar(
-              currentIndex: _currentIndex,
-              onTap: _onNavTap,
-            )
-          : null,
+      body:
+          _isLoading && _profile == null
+              ? const _ProfileLoadingView()
+              : RefreshIndicator(
+                onRefresh: _fetchProfile,
+                color: AppConstants.primaryGreen,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
+                  children: [
+                    _ProfileHero(
+                      name: _profileValue([
+                        'name',
+                        'username',
+                      ], fallback: user.username),
+                      email: _profileValue([
+                        'email',
+                      ], fallback: loc.profileNoData),
+                      photoUrl: _profilePhotoUrl(),
+                      onEdit: _openEditProfile,
+                    ),
+                    const SizedBox(height: 24),
+                    _SectionTitle(
+                      icon: Icons.manage_accounts_outlined,
+                      title: loc.generalSection,
+                    ),
+                    const SizedBox(height: 11),
+                    _ProfileActionCard(
+                      icon: Icons.manage_accounts_rounded,
+                      color: AppConstants.primaryGreen,
+                      title: loc.profileSettings,
+                      subtitle: loc.profileSettingsSubtitle,
+                      onTap: _openEditProfile,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 22),
+                    _SectionTitle(
+                      icon: Icons.auto_graph_rounded,
+                      title: loc.activitySection,
+                    ),
+                    const SizedBox(height: 11),
+                    _ProfileActionCard(
+                      icon: Icons.campaign_rounded,
+                      color: AppConstants.warning,
+                      title: loc.myReports,
+                      subtitle: loc.myReportsSubtitle,
+                      onTap:
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => const UserReportsPage(),
+                            ),
+                          ),
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 11),
+                    _ProfileActionCard(
+                      icon: Icons.event_available_rounded,
+                      color: AppConstants.info,
+                      title: loc.myBookings,
+                      subtitle: loc.myBookingsSubtitle,
+                      onTap:
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => const MyBookingsPage(),
+                            ),
+                          ),
+                      isDark: isDark,
+                    ),
+                  ],
+                ),
+              ),
+      bottomNavigationBar:
+          widget.showBottomNav
+              ? CustomBottomNavBar(
+                currentIndex: _currentIndex,
+                onTap: _onNavTap,
+              )
+              : null,
     );
   }
+}
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: AppConstants.primaryBlue,
-          letterSpacing: 1.1,
+class _ProfileHero extends StatelessWidget {
+  const _ProfileHero({
+    required this.name,
+    required this.email,
+    required this.photoUrl,
+    required this.onEdit,
+  });
+
+  final String name;
+  final String email;
+  final String? photoUrl;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppConstants.primaryGreen,
+            AppConstants.primaryGreenDark,
+            AppConstants.navy,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: AppConstants.primaryGreen.withValues(alpha: 0.24),
+            blurRadius: 26,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          const Positioned(
+            top: -62,
+            right: -55,
+            child: _DecorativeCircle(size: 180),
+          ),
+          const Positioned(
+            bottom: -72,
+            left: -54,
+            child: _DecorativeCircle(size: 150),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 25, 22, 24),
+            child: Column(
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 112,
+                      height: 112,
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.75),
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.22),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child:
+                            photoUrl == null
+                                ? Image.asset(
+                                  'assets/images/profile-avatar-v2.jpg',
+                                  fit: BoxFit.cover,
+                                )
+                                : Image.network(
+                                  photoUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder:
+                                      (
+                                        context,
+                                        error,
+                                        stackTrace,
+                                      ) => Image.asset(
+                                        'assets/images/profile-avatar-v2.jpg',
+                                        fit: BoxFit.cover,
+                                      ),
+                                ),
+                      ),
+                    ),
+                    Positioned(
+                      right: -3,
+                      bottom: 3,
+                      child: Material(
+                        color: Colors.white,
+                        shape: const CircleBorder(),
+                        elevation: 5,
+                        child: InkWell(
+                          onTap: onEdit,
+                          customBorder: const CircleBorder(),
+                          child: const SizedBox(
+                            width: 38,
+                            height: 38,
+                            child: Icon(
+                              Icons.edit_rounded,
+                              size: 18,
+                              color: AppConstants.primaryGreen,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 17),
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Container(
+                  constraints: const BoxConstraints(maxWidth: 290),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.mail_outline_rounded,
+                        size: 16,
+                        color: AppConstants.accentMint,
+                      ),
+                      const SizedBox(width: 7),
+                      Flexible(
+                        child: Text(
+                          email,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.88),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DecorativeCircle extends StatelessWidget {
+  const _DecorativeCircle({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.08),
+            width: 25,
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildSettingsItem(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: CircleAvatar(
-          radius: 22,
-          backgroundColor: AppConstants.primaryBlue.withValues(alpha: 0.15),
-          child: Icon(icon, color: AppConstants.primaryBlue, size: 24),
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.icon, required this.title});
+
+  final IconData icon;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Row(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color:
+                isDark
+                    ? AppConstants.darkCardAlt
+                    : AppConstants.primaryGreenSoft,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 18, color: AppConstants.primaryGreen),
         ),
-        title: Text(
+        const SizedBox(width: 10),
+        Text(
           title,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: 17,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: Colors.grey[600],
+          style: TextStyle(
+            color: isDark ? Colors.white : AppConstants.navy,
             fontSize: 14,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
           ),
         ),
-        trailing: Icon(
-          Icons.chevron_right,
-          color: AppConstants.grey.withValues(alpha: 0.7),
-          size: 28,
-        ),
+      ],
+    );
+  }
+}
+
+class _ProfileActionCard extends StatelessWidget {
+  const _ProfileActionCard({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: isDark ? AppConstants.darkCard : Colors.white,
+      borderRadius: BorderRadius.circular(19),
+      child: InkWell(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
+        borderRadius: BorderRadius.circular(19),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(19),
+            border: Border.all(
+              color: isDark ? AppConstants.darkBorder : AppConstants.border,
+            ),
+            boxShadow:
+                isDark
+                    ? null
+                    : [
+                      BoxShadow(
+                        color: AppConstants.navy.withValues(alpha: 0.055),
+                        blurRadius: 18,
+                        offset: const Offset(0, 7),
+                      ),
+                    ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: isDark ? 0.20 : 0.11),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : AppConstants.navy,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color:
+                            isDark
+                                ? AppConstants.darkTextSecondary
+                                : AppConstants.muted,
+                        fontSize: 12,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color:
+                      isDark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : AppConstants.pageBackground,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: isDark ? Colors.white54 : AppConstants.muted,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
+    );
+  }
+}
+
+class _ProfileLoadingView extends StatelessWidget {
+  const _ProfileLoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? AppConstants.darkCard : Colors.white;
+    final shimmer = isDark ? AppConstants.darkCardAlt : AppConstants.border;
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
+      children: [
+        Container(
+          height: 254,
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 104,
+                  height: 104,
+                  decoration: BoxDecoration(
+                    color: shimmer,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  width: 128,
+                  height: 15,
+                  decoration: BoxDecoration(
+                    color: shimmer,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  width: 180,
+                  height: 11,
+                  decoration: BoxDecoration(
+                    color: shimmer.withValues(alpha: 0.65),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 28),
+        for (var index = 0; index < 3; index++) ...[
+          Container(
+            height: 78,
+            decoration: BoxDecoration(
+              color: surface,
+              borderRadius: BorderRadius.circular(19),
+              border: Border.all(
+                color: isDark ? AppConstants.darkBorder : AppConstants.border,
+              ),
+            ),
+          ),
+          const SizedBox(height: 11),
+        ],
+      ],
     );
   }
 }

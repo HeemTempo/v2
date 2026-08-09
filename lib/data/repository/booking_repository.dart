@@ -8,7 +8,7 @@ import 'package:kinondoni_openspace_app/service/bookingservice.dart';
 class BookingRepository {
   final BookingService _service = BookingService();
   final BookingLocal _local = BookingLocal();
-  
+
   List<Booking>? _cachedBookings;
   DateTime? _lastFetch;
 
@@ -16,11 +16,14 @@ class BookingRepository {
   Future<bool> _isConnected() async {
     try {
       // First check basic connectivity
-      final connectivityResult = await Connectivity().checkConnectivity();
-      if (connectivityResult == ConnectivityResult.none) {
+      final connectivityResults = await Connectivity().checkConnectivity();
+      if (connectivityResults.isEmpty ||
+          connectivityResults.every(
+            (result) => result == ConnectivityResult.none,
+          )) {
         return false;
       }
-      
+
       // We rely on the actual request to fail if there's no real internet.
       return true;
     } catch (e) {
@@ -82,6 +85,10 @@ class BookingRepository {
       }
 
       return success;
+    } on BookingApiException {
+      // Validation and availability conflicts are authoritative server
+      // responses. Do not queue them as offline bookings.
+      rethrow;
     } on SocketException catch (e) {
       print('Network error creating booking: $e. Saving offline.');
       // Fallback to offline if network fails
@@ -107,8 +114,8 @@ class BookingRepository {
         district: district,
         file: file,
       );
-    } catch (e) {
-      print('Error creating booking: $e. Saving offline.');
+    } on BookingNetworkException catch (e) {
+      print('Network error creating booking: $e. Saving offline.');
       return await _saveOfflineBooking(
         spaceId: spaceId,
         username: username,
@@ -119,6 +126,9 @@ class BookingRepository {
         district: district,
         file: file,
       );
+    } catch (e) {
+      print('Unexpected booking error: $e');
+      rethrow;
     }
   }
 
@@ -218,10 +228,10 @@ class BookingRepository {
   Future<List<Booking>> getLocalBookings() async {
     final localData = await _local.getBookings();
     _cachedBookings = localData;
-    _lastFetch = DateTime.now(); // Mark as fresh to prevent immediate network re-fetch
+    _lastFetch =
+        DateTime.now(); // Mark as fresh to prevent immediate network re-fetch
     return localData;
   }
-
 
   /// Sync all pending bookings to backend
   Future<void> syncPendingBookings() async {
@@ -246,16 +256,18 @@ class BookingRepository {
 
     for (var booking in pending) {
       try {
-        final success = await _service.createBooking(
-          spaceId: booking.spaceId,
-          username: booking.username,
-          contact: booking.contact,
-          startDate: booking.startDate.toIso8601String().split('T')[0],
-          endDate: booking.endDate?.toIso8601String().split('T')[0],
-          purpose: booking.purpose,
-          district: booking.district,
-          file: booking.fileUrl != null ? File(booking.fileUrl!) : null,
-        ).timeout(const Duration(seconds: 10));
+        final success = await _service
+            .createBooking(
+              spaceId: booking.spaceId,
+              username: booking.username,
+              contact: booking.contact,
+              startDate: booking.startDate.toIso8601String().split('T')[0],
+              endDate: booking.endDate?.toIso8601String().split('T')[0],
+              purpose: booking.purpose,
+              district: booking.district,
+              file: booking.fileUrl != null ? File(booking.fileUrl!) : null,
+            )
+            .timeout(const Duration(seconds: 10));
 
         if (success) {
           await _local.removeBooking(booking.id);

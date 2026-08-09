@@ -16,6 +16,7 @@ import '../model/openspace.dart';
 
 import '../utils/location_service.dart';
 import '../utils/constants.dart';
+import '../utils/map_style_config.dart';
 import '../utils/alert/access_denied_dialog.dart';
 import '../providers/user_provider.dart';
 import '../widget/custom_navigation_bar.dart';
@@ -32,14 +33,14 @@ class MapScreen extends StatefulWidget {
 class MapLayerOption {
   final String name;
   final String url;
-  MapLayerOption({required this.name, required this.url});
+  final IconData icon;
+  MapLayerOption({required this.name, required this.url, required this.icon});
 }
 
 class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   late final MapController _mapController;
   final LocationService _locationService = LocationService();
   late final OpenSpaceRepository _openSpaceRepository;
-  bool isSatelliteView = false;
   bool _isTracking = false;
   late AnimationController _controller;
   late Animation<double> _opacityAnimation;
@@ -47,7 +48,6 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   List<OpenSpaceMarker> kinondoniSpaces = [];
   OpenSpaceMarker? _selectedSpace;
   LatLng? _selectedPosition;
-  String? _selectedAreaName;
   // final int _selectedIndex = 1;
   bool _isLoading = true;
   String? _errorMessage;
@@ -77,20 +77,26 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     );
   }
 
-  // --- Add these inside MapScreenState ---
   final List<MapLayerOption> tileLayers = [
     MapLayerOption(
       name: "Street",
-      url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      url: MapStyleConfig.streets,
+      icon: Icons.map_outlined,
     ),
     MapLayerOption(
       name: "Satellite",
-      url:
-          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      url: MapStyleConfig.satellite,
+      icon: Icons.satellite_alt_outlined,
     ),
     MapLayerOption(
-      name: "Terrain",
-      url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+      name: "Topographic",
+      url: MapStyleConfig.topographic,
+      icon: Icons.terrain_outlined,
+    ),
+    MapLayerOption(
+      name: "Basic",
+      url: MapStyleConfig.basic,
+      icon: Icons.layers_outlined,
     ),
   ];
 
@@ -149,25 +155,22 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final isAnonymous = userProvider.user.isAnonymous;
 
-    if (isAnonymous) {
-      // Anonymous users: 0 (Home), 1 (Map/Explore)
-      if (index == 0) {
-        Navigator.pop(context, 0);
-      }
-      // Index 1 is current screen
-    } else {
-      // Registered users: 0 (Home), 1 (Map), 2 (Profile)
-      switch (index) {
-        case 0:
-          Navigator.pop(context, 0);
-          break;
-        case 1:
-          // Already on Map
-          break;
-        case 2:
-          Navigator.pushNamed(context, '/user-profile');
-          break;
-      }
+    switch (index) {
+      case 0:
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        break;
+      case 1:
+        // Already on Open Spaces.
+        break;
+      case 2:
+        Navigator.pushNamed(
+          context,
+          isAnonymous ? '/guest-profile' : '/user-profile',
+        );
+        break;
+      case 3:
+        Navigator.pushNamed(context, '/setting');
+        break;
     }
   }
 
@@ -247,7 +250,9 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           _mapController.move(userLocation, 15.0);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context)!.unableFetchLocation)),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.unableFetchLocation),
+            ),
           );
         }
       }
@@ -256,9 +261,9 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         print('Error getting user location');
       }
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.locationError)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.locationError)),
+        );
       }
     }
   }
@@ -277,7 +282,8 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   // Use a ValueNotifier to update the bottom sheet reactively without blocking the main UI
-  final ValueNotifier<String?> _selectedAreaNameNotifier = ValueNotifier<String?>(null);
+  final ValueNotifier<String?> _selectedAreaNameNotifier =
+      ValueNotifier<String?>(null);
 
   Future<void> _showLocationPopup(
     LatLng position, {
@@ -289,7 +295,6 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     setState(() {
       _selectedSpace = openSpace ?? _emptyMarker(position);
       _selectedPosition = position;
-      _selectedAreaName = null; // Still keep for compatibility or other checks
     });
     _selectedAreaNameNotifier.value = null; // Reset notifier for the new tap
 
@@ -300,7 +305,10 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      backgroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.grey[850] : Colors.white,
+      backgroundColor:
+          Theme.of(context).brightness == Brightness.dark
+              ? Colors.grey[850]
+              : Colors.white,
       isScrollControlled: true,
       builder: (context) {
         return ValueListenableBuilder<String?>(
@@ -316,22 +324,19 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
     // 3. Start geocoding in the background
     try {
-      final areaName = await _locationService.getAreaName(position) ?? "Unknown Area";
-      
+      final areaName =
+          await _locationService.getAreaName(position) ?? "Unknown Area";
+
       // 4. Update the sheet reactively
       if (mounted) {
         _selectedAreaNameNotifier.value = areaName;
-        setState(() {
-          _selectedAreaName = areaName;
-        });
       }
     } catch (e) {
       if (mounted) {
         _selectedAreaNameNotifier.value = "Unknown Area";
-        setState(() => _selectedAreaName = "Unknown Area");
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.errorGeneric)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.errorGeneric)),
+        );
       }
       if (kDebugMode) print('Error background geocoding: $e');
     }
@@ -342,7 +347,6 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       setState(() {
         _selectedPosition = null;
         _selectedSpace = null;
-        _selectedAreaName = null;
       });
       _selectedAreaNameNotifier.value = null;
     }
@@ -397,14 +401,12 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     String? street;
     String? district;
 
-
     if (_selectedSpace != null) {
       lat = _selectedSpace!.point.latitude;
       lon = _selectedSpace!.point.longitude;
       spaceName = _selectedSpace!.name;
       street = _selectedSpace!.street;
       district = _selectedSpace!.district;
-
     } else if (_selectedPosition != null) {
       lat = _selectedPosition!.latitude;
       lon = _selectedPosition!.longitude;
@@ -414,7 +416,13 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       Navigator.pushNamed(
         context,
         '/report-issue',
-        arguments: {'latitude': lat, 'longitude': lon, 'spaceName': spaceName, 'street': street, 'district': district},
+        arguments: {
+          'latitude': lat,
+          'longitude': lon,
+          'spaceName': spaceName,
+          'street': street,
+          'district': district,
+        },
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -431,16 +439,17 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       if (mounted) {
         showDialog(
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text(AppLocalizations.of(context)!.locationError),
-            content: Text(AppLocalizations.of(context)!.directionsError),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(AppLocalizations.of(context)!.okButton),
+          builder:
+              (context) => AlertDialog(
+                title: Text(AppLocalizations.of(context)!.locationError),
+                content: Text(AppLocalizations.of(context)!.directionsError),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(AppLocalizations.of(context)!.okButton),
+                  ),
+                ],
               ),
-            ],
-          ),
         );
       }
       return;
@@ -449,21 +458,25 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     if (!mounted) return;
     setState(() => _isLoadingRoute = true);
 
-    final userLocation = await _locationService.getUserLocation(useCache: false);
+    final userLocation = await _locationService.getUserLocation(
+      useCache: false,
+    );
     if (userLocation == null) {
       if (mounted) {
         setState(() => _isLoadingRoute = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.directionsError)),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.directionsError),
+          ),
         );
       }
       return;
     }
 
     final route = await RoutingService.getRoute(userLocation, destination);
-    
+
     if (!mounted) return;
-    
+
     setState(() {
       _routePoints = route?.points;
       _navigationSteps = route?.steps ?? [];
@@ -478,11 +491,11 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       _startNavigation();
     }
   }
-  
+
   void _startNavigation() {
     if (!mounted) return;
     setState(() => _navigationStarted = true);
-    
+
     _navigationSubscription?.cancel();
     _navigationSubscription = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
@@ -491,32 +504,32 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       ),
     ).listen((position) {
       if (!_isNavigating || _navigationSteps.isEmpty) return;
-      
+
       final currentLocation = LatLng(position.latitude, position.longitude);
-      
+
       if (mounted) {
         setState(() {
           _currentSpeed = position.speed;
           _travelMode = _currentSpeed > 1.5 ? 'driving' : 'walking';
         });
       }
-      
+
       final instruction = RoutingService.getNavigationInstruction(
         currentLocation,
         _navigationSteps,
         _routePoints ?? [],
       );
-      
+
       if (mounted) {
         setState(() {
           _navigationInstruction = instruction.instruction;
         });
-        
+
         _mapController.move(currentLocation, _mapController.camera.zoom);
       }
     });
   }
-  
+
   void _stopNavigation() {
     if (!mounted) return;
     setState(() {
@@ -534,9 +547,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   Widget _buildBottomSheetWithContent(String? areaName) {
     final isOpenSpace = _selectedSpace != null && _selectedSpace!.id.isNotEmpty;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? Colors.grey[850] : Colors.white;
     final textColor = isDark ? Colors.white : Colors.black87;
-    final subtextColor = isDark ? Colors.grey[400] : Colors.black54;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -557,7 +568,11 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           Align(
             alignment: Alignment.topRight,
             child: IconButton(
-              icon: Icon(Icons.close, size: 20, color: isDark ? Colors.white70 : Colors.black54),
+              icon: Icon(
+                Icons.close,
+                size: 20,
+                color: isDark ? Colors.white70 : Colors.black54,
+              ),
               onPressed: () => Navigator.pop(context),
             ),
           ),
@@ -593,14 +608,22 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           const SizedBox(height: 12),
 
           // Details for OpenSpace or normal point
-          _buildDetailRow(AppLocalizations.of(context)!.districtLabel, _selectedSpace?.district ?? "N/A"),
-          _buildDetailRow(AppLocalizations.of(context)!.streetLabel, _selectedSpace?.street ?? "N/A"),
+          _buildDetailRow(
+            AppLocalizations.of(context)!.districtLabel,
+            _selectedSpace?.district ?? "N/A",
+          ),
+          _buildDetailRow(
+            AppLocalizations.of(context)!.streetLabel,
+            _selectedSpace?.street ?? "N/A",
+          ),
           if (isOpenSpace)
             _buildDetailRow(
               AppLocalizations.of(context)!.status,
               _selectedSpace!.status,
               valueColor:
-                  _selectedSpace!.isAvailable ? Colors.green : Colors.red,
+                  _selectedSpace!.isAvailable
+                      ? AppConstants.primaryGreen
+                      : AppConstants.danger,
             ),
 
           const SizedBox(height: 16),
@@ -622,7 +645,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   style: const TextStyle(fontSize: 13),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppConstants.primaryBlue,
+                  backgroundColor: AppConstants.primaryGreen,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -648,7 +671,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     style: const TextStyle(fontSize: 13),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.primaryBlue,
+                    backgroundColor: AppConstants.primaryGreen,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -670,7 +693,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     style: const TextStyle(fontSize: 13),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: AppConstants.danger,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -690,7 +713,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             child: Text(
               AppLocalizations.of(context)!.cancelButton,
               style: const TextStyle(
-                color: Colors.red,
+                color: AppConstants.danger,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -702,32 +725,55 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     );
   }
 
+  OpenSpaceMarker? _findOpenSpaceAt(LatLng point) {
+    for (final space in kinondoniSpaces.reversed) {
+      if (space.boundary.length >= 3 &&
+          _isPointInsideBoundary(point, space.boundary)) {
+        return space;
+      }
+
+      if ((space.latitude - point.latitude).abs() < 0.00015 &&
+          (space.longitude - point.longitude).abs() < 0.00015) {
+        return space;
+      }
+    }
+    return null;
+  }
+
+  bool _isPointInsideBoundary(LatLng point, List<LatLng> boundary) {
+    var isInside = false;
+    var previousIndex = boundary.length - 1;
+
+    for (var index = 0; index < boundary.length; index++) {
+      final current = boundary[index];
+      final previous = boundary[previousIndex];
+      final crossesLatitude =
+          (current.latitude > point.latitude) !=
+          (previous.latitude > point.latitude);
+
+      if (crossesLatitude) {
+        final longitudeAtLatitude =
+            (previous.longitude - current.longitude) *
+                (point.latitude - current.latitude) /
+                (previous.latitude - current.latitude) +
+            current.longitude;
+        if (point.longitude < longitudeAtLatitude) isInside = !isInside;
+      }
+      previousIndex = index;
+    }
+
+    return isInside;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final selectedLayer = tileLayers[selectedLayerIndex];
+
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.mapScreenAppBar),
-        centerTitle: true,
-        actions: [
-          PopupMenuButton<int>(
-            icon: const Icon(Icons.layers),
-            onSelected: (index) {
-              setState(() => selectedLayerIndex = index);
-            },
-            itemBuilder:
-                (context) =>
-                    tileLayers
-                        .asMap()
-                        .entries
-                        .map(
-                          (entry) => PopupMenuItem<int>(
-                            value: entry.key,
-                            child: Text(entry.value.name),
-                          ),
-                        )
-                        .toList(),
-          ),
-        ],
+        centerTitle: false,
       ),
       body: Stack(
         children: [
@@ -744,27 +790,9 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               onTap: (tapPosition, point) async {
                 if (!mounted) return;
 
-                final clickedSpace = kinondoniSpaces.firstWhere(
-                  (space) =>
-                      (space.point.latitude - point.latitude).abs() < 0.0001 &&
-                      (space.point.longitude - point.longitude).abs() < 0.0001,
-                  orElse:
-                      () => OpenSpaceMarker(
-                        id: '',
-                        name: '',
-                        district: '',
-                        street: '',
-                        latitude: point.latitude,
-                        longitude: point.longitude,
-                        isActive: false,
-                        status: '',
-                      ),
-                );
+                final clickedSpace = _findOpenSpaceAt(point);
 
-                await _showLocationPopup(
-                  point,
-                  openSpace: clickedSpace.name.isNotEmpty ? clickedSpace : null,
-                );
+                await _showLocationPopup(point, openSpace: clickedSpace);
               },
             ),
             children: [
@@ -779,6 +807,31 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   maxZoom: 19,
                 ),
 
+              PolygonLayer(
+                polygons:
+                    kinondoniSpaces
+                        .where((space) => space.boundary.length >= 3)
+                        .map(
+                          (space) => Polygon(
+                            points: space.boundary,
+                            color: (space.isAvailable
+                                    ? AppConstants.primaryGreen
+                                    : AppConstants.danger)
+                                .withValues(
+                                  alpha: selectedLayerIndex == 1 ? 0.48 : 0.30,
+                                ),
+                            borderColor:
+                                selectedLayerIndex == 1
+                                    ? Colors.white
+                                    : space.isAvailable
+                                    ? AppConstants.primaryGreenDark
+                                    : AppConstants.dangerDark,
+                            borderStrokeWidth: selectedLayerIndex == 1 ? 3 : 2,
+                          ),
+                        )
+                        .toList(),
+              ),
+
               // Route polyline
               if (_routePoints != null)
                 PolylineLayer(
@@ -786,7 +839,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     Polyline(
                       points: _routePoints!,
                       strokeWidth: 4.0,
-                      color: Colors.blue,
+                      color: AppConstants.info,
                       borderStrokeWidth: 2.0,
                       borderColor: Colors.white,
                     ),
@@ -797,7 +850,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                 positionStream: _locationService.getLocationStream(),
                 style: LocationMarkerStyle(
                   marker: DefaultLocationMarker(
-                    color: AppConstants.primaryBlue,
+                    color: AppConstants.info,
                     child: Icon(
                       Icons.navigation,
                       color: Colors.white,
@@ -806,7 +859,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   ),
                   markerSize: Size(35, 35),
                   showAccuracyCircle: true,
-                  accuracyCircleColor: Color(0x332196F3),
+                  accuracyCircleColor: Color(0x332B7C9F),
                 ),
               ),
               MarkerLayer(
@@ -815,25 +868,28 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                         .map(
                           (space) => Marker(
                             point: space.point,
-                            width: 30,
-                            height: 30,
+                            width: 42,
+                            height: 48,
                             child: GestureDetector(
                               onTap:
                                   () => _showLocationPopup(
                                     space.point,
                                     openSpace: space,
                                   ),
-                              child: Icon(
-                                Icons.place,
-                                color:
-                                    space.isAvailable
-                                        ? Colors.green
-                                        : Colors.red,
+                              child: _OpenSpaceMapMarker(
+                                isAvailable: space.isAvailable,
+                                isSatellite: selectedLayerIndex == 1,
                               ),
                             ),
                           ),
                         )
                         .toList(),
+              ),
+              const RichAttributionWidget(
+                attributions: [
+                  TextSourceAttribution('© MapTiler'),
+                  TextSourceAttribution('© OpenStreetMap contributors'),
+                ],
               ),
             ],
           ),
@@ -848,7 +904,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                 curve: Curves.easeInOut,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppConstants.primaryBlue,
+                  color: AppConstants.primaryGreen,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
@@ -863,7 +919,9 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     Row(
                       children: [
                         Icon(
-                          _travelMode == 'driving' ? Icons.directions_car : Icons.directions_walk,
+                          _travelMode == 'driving'
+                              ? Icons.directions_car
+                              : Icons.directions_walk,
                           color: Colors.white,
                           size: 32,
                         ),
@@ -888,13 +946,15 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     Row(
                       children: [
                         Icon(
-                          _travelMode == 'driving' ? Icons.speed : Icons.directions_walk,
+                          _travelMode == 'driving'
+                              ? Icons.speed
+                              : Icons.directions_walk,
                           color: Colors.white70,
                           size: 16,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          _travelMode == 'driving' 
+                          _travelMode == 'driving'
                               ? 'Driving (${(_currentSpeed * 3.6).toStringAsFixed(0)} km/h)'
                               : 'Walking',
                           style: const TextStyle(
@@ -968,13 +1028,18 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                         ),
                         const SizedBox(height: 12),
                         ElevatedButton(
-                          onPressed: _navigationStarted ? _stopNavigation : _startNavigation,
+                          onPressed:
+                              _navigationStarted
+                                  ? _stopNavigation
+                                  : _startNavigation,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _navigationStarted 
-                                ? Colors.red 
-                                : (Theme.of(context).brightness == Brightness.dark 
-                                    ? Colors.green.shade700 
-                                    : Colors.green),
+                            backgroundColor:
+                                _navigationStarted
+                                    ? AppConstants.danger
+                                    : (Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? AppConstants.primaryGreenDark
+                                        : AppConstants.primaryGreen),
                             foregroundColor: Colors.white,
                             minimumSize: const Size(double.infinity, 45),
                             shape: RoundedRectangleBorder(
@@ -984,9 +1049,17 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(_navigationStarted ? Icons.stop : Icons.play_arrow),
+                              Icon(
+                                _navigationStarted
+                                    ? Icons.stop
+                                    : Icons.play_arrow,
+                              ),
                               const SizedBox(width: 8),
-                              Text(_navigationStarted ? 'Stop Navigation' : 'Start Navigation'),
+                              Text(
+                                _navigationStarted
+                                    ? 'Stop Navigation'
+                                    : 'Start Navigation',
+                              ),
                             ],
                           ),
                         ),
@@ -1007,7 +1080,9 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(8),
-                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                    boxShadow: [
+                      BoxShadow(color: Colors.black26, blurRadius: 4),
+                    ],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1031,7 +1106,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               right: 20,
               child: Container(
                 padding: const EdgeInsets.all(8),
-                color: Colors.red.withValues(alpha: 0.8),
+                color: AppConstants.danger.withValues(alpha: 0.8),
                 child: Text(
                   _errorMessage!,
                   style: const TextStyle(color: Colors.white),
@@ -1039,129 +1114,327 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
-          Positioned(
-            top: 40,
-            left: 20,
-            right: 10,
-            child: TypeAheadField<LocationSuggestion>(
-              debounceDuration: const Duration(milliseconds: 500),
-              builder: (context, controller, focusNode) {
-                return TextField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context)!.searchHint,
-                    prefixIcon: const Icon(Icons.search),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
+          if (!_navigationStarted)
+            Positioned(
+              top: 12,
+              left: 12,
+              right: 12,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppConstants.navy.withValues(alpha: 0.16),
+                      blurRadius: 24,
+                      offset: const Offset(0, 10),
                     ),
-                  ),
-                );
-              },
-              suggestionsCallback: (pattern) async {
-                if (pattern.length < 3) return [];
-                final backendSuggestions =
-                    kinondoniSpaces
-                        .where(
-                          (space) => space.name.toLowerCase().contains(
-                            pattern.toLowerCase(),
+                  ],
+                ),
+                child: TypeAheadField<LocationSuggestion>(
+                  debounceDuration: const Duration(milliseconds: 500),
+                  builder: (context, controller, focusNode) {
+                    return TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      decoration: InputDecoration(
+                        hintText: AppLocalizations.of(context)!.searchHint,
+                        prefixIcon: const Icon(
+                          Icons.search_rounded,
+                          color: AppConstants.primaryGreen,
+                        ),
+                        filled: true,
+                        fillColor:
+                            isDark ? AppConstants.darkCardAlt : Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 15,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color:
+                                isDark
+                                    ? AppConstants.darkBorder
+                                    : AppConstants.border,
                           ),
-                        )
-                        .map(
-                          (space) => LocationSuggestion(
-                            name: space.name,
-                            position: space.point,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: AppConstants.primaryGreen,
+                            width: 1.5,
                           ),
-                        )
-                        .toList();
-                final locationSuggestions = await _locationService
-                    .searchLocation(pattern);
-                return [...backendSuggestions, ...locationSuggestions];
-              },
-              itemBuilder:
-                  (context, suggestion) => ListTile(
-                    leading: const Icon(Icons.location_on),
-                    title: Text(suggestion.name),
-                  ),
-              onSelected: (suggestion) {
-                setState(() => _initialPosition = suggestion.position);
-                _mapController.move(suggestion.position, 15.0);
-              },
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    );
+                  },
+                  suggestionsCallback: (pattern) async {
+                    if (pattern.length < 3) return [];
+                    final backendSuggestions =
+                        kinondoniSpaces
+                            .where(
+                              (space) => space.name.toLowerCase().contains(
+                                pattern.toLowerCase(),
+                              ),
+                            )
+                            .map(
+                              (space) => LocationSuggestion(
+                                name: space.name,
+                                position: space.point,
+                              ),
+                            )
+                            .toList();
+                    final locationSuggestions = await _locationService
+                        .searchLocation(pattern);
+                    return [...backendSuggestions, ...locationSuggestions];
+                  },
+                  itemBuilder:
+                      (context, suggestion) => ListTile(
+                        leading: const Icon(Icons.location_on),
+                        title: Text(suggestion.name),
+                      ),
+                  onSelected: (suggestion) {
+                    setState(() => _initialPosition = suggestion.position);
+                    _mapController.move(suggestion.position, 15.0);
+                  },
+                ),
+              ),
             ),
-          ),
+          if (!_navigationStarted)
+            Positioned(top: 78, left: 12, child: _buildMapGuide(isDark)),
+          if (!_navigationStarted)
+            Positioned(
+              top: 78,
+              right: 12,
+              child: _buildMapStyleMenu(selectedLayer, isDark),
+            ),
           Positioned(
-            bottom: 20,
-            right: 20,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildFloatingButton(
-                  icon: Icons.add,
-                  onPressed: () => zoomIn(_mapController),
-                  heroTag: "zoomIn",
+            bottom: widget.showBottomNav ? 20 : 104,
+            right: 12,
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppConstants.darkCardAlt : Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isDark ? AppConstants.darkBorder : AppConstants.border,
                 ),
-                const SizedBox(height: 10),
-                _buildFloatingButton(
-                  icon: Icons.remove,
-                  onPressed: () => zoomOut(_mapController),
-                  heroTag: "zoomOut",
-                ),
-                const SizedBox(height: 10),
-                _buildFloatingButton(
-                  icon: Icons.my_location,
-                  onPressed: _toggleLocationTracking,
-                  heroTag: "locateMe",
-                  animated: true,
-                ),
-                const SizedBox(height: 10),
-                _buildFloatingButton(
-                  icon: Icons.refresh,
-                  onPressed: _fetchOpenSpaces,
-                  heroTag: "refresh",
-                ),
-              ],
+                boxShadow: [
+                  BoxShadow(
+                    color: AppConstants.navy.withValues(alpha: 0.16),
+                    blurRadius: 22,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildFloatingButton(
+                    icon: Icons.add_rounded,
+                    onPressed: () => zoomIn(_mapController),
+                  ),
+                  _mapControlDivider(isDark),
+                  _buildFloatingButton(
+                    icon: Icons.remove_rounded,
+                    onPressed: () => zoomOut(_mapController),
+                  ),
+                  _mapControlDivider(isDark),
+                  _buildFloatingButton(
+                    icon: Icons.my_location_rounded,
+                    onPressed: _toggleLocationTracking,
+                    animated: true,
+                  ),
+                  _mapControlDivider(isDark),
+                  _buildFloatingButton(
+                    icon: Icons.refresh_rounded,
+                    onPressed: _fetchOpenSpaces,
+                  ),
+                ],
+              ),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: widget.showBottomNav
-          ? CustomBottomNavBar(
-              currentIndex: _currentIndex,
-              onTap: _onNavTap,
-              isAnonymous: Provider.of<UserProvider>(context, listen: false).user.isAnonymous,
-            )
-          : null,
+      bottomNavigationBar:
+          widget.showBottomNav
+              ? CustomBottomNavBar(
+                currentIndex: _currentIndex,
+                onTap: _onNavTap,
+              )
+              : null,
     );
   }
 
   Widget _buildFloatingButton({
     required IconData icon,
     required VoidCallback onPressed,
-    required String heroTag,
     bool animated = false,
   }) {
-    return FloatingActionButton(
-      onPressed: onPressed,
-      heroTag: heroTag,
-      mini: true,
-      backgroundColor: Colors.white,
-      elevation: 2,
-      shape: const CircleBorder(),
-      child:
-          animated
-              ? AnimatedBuilder(
-                animation: _opacityAnimation,
-                builder: (context, child) {
-                  return Opacity(
-                    opacity: _isTracking ? _opacityAnimation.value : 1.0,
-                    child: Icon(icon, size: 20, color: Colors.black87),
-                  );
-                },
-              )
-              : Icon(icon, size: 20, color: Colors.black87),
+    final foreground =
+        _isTracking && animated
+            ? AppConstants.primaryGreen
+            : Theme.of(context).brightness == Brightness.dark
+            ? Colors.white
+            : AppConstants.navy;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(16),
+        child: SizedBox(
+          width: 46,
+          height: 46,
+          child: Center(
+            child:
+                animated
+                    ? AnimatedBuilder(
+                      animation: _opacityAnimation,
+                      builder: (context, child) {
+                        return Opacity(
+                          opacity: _isTracking ? _opacityAnimation.value : 1.0,
+                          child: Icon(icon, size: 21, color: foreground),
+                        );
+                      },
+                    )
+                    : Icon(icon, size: 21, color: foreground),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _mapControlDivider(bool isDark) => Container(
+    width: 24,
+    height: 1,
+    color: isDark ? AppConstants.darkBorder : AppConstants.border,
+  );
+
+  Widget _buildMapGuide(bool isDark) {
+    return Container(
+      height: 43,
+      padding: const EdgeInsets.symmetric(horizontal: 11),
+      decoration: BoxDecoration(
+        color: isDark ? AppConstants.darkCardAlt : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? AppConstants.darkBorder : AppConstants.border,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppConstants.navy.withValues(alpha: 0.12),
+            blurRadius: 18,
+            offset: const Offset(0, 7),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: AppConstants.primaryGreenSoft,
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: const Icon(
+              Icons.park_rounded,
+              size: 17,
+              color: AppConstants.primaryGreen,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '${kinondoniSpaces.length} ${AppLocalizations.of(context)!.openSpaces}',
+            style: TextStyle(
+              color: isDark ? Colors.white : AppConstants.navy,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMapStyleMenu(MapLayerOption selectedLayer, bool isDark) {
+    return Material(
+      color: isDark ? AppConstants.darkCardAlt : Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      elevation: 0,
+      child: PopupMenuButton<int>(
+        initialValue: selectedLayerIndex,
+        tooltip: 'Map view',
+        onSelected: (index) => setState(() => selectedLayerIndex = index),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        itemBuilder:
+            (context) =>
+                tileLayers
+                    .asMap()
+                    .entries
+                    .map(
+                      (entry) => PopupMenuItem<int>(
+                        value: entry.key,
+                        child: Row(
+                          children: [
+                            Icon(
+                              entry.value.icon,
+                              size: 19,
+                              color:
+                                  entry.key == selectedLayerIndex
+                                      ? AppConstants.primaryGreen
+                                      : AppConstants.muted,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(entry.value.name),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+        child: Container(
+          height: 43,
+          padding: const EdgeInsets.symmetric(horizontal: 11),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isDark ? AppConstants.darkBorder : AppConstants.border,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppConstants.navy.withValues(alpha: 0.12),
+                blurRadius: 18,
+                offset: const Offset(0, 7),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                selectedLayer.icon,
+                size: 18,
+                color: AppConstants.primaryGreen,
+              ),
+              const SizedBox(width: 7),
+              Text(
+                selectedLayer.name,
+                style: TextStyle(
+                  color: isDark ? Colors.white : AppConstants.navy,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.expand_more_rounded, size: 17),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1182,18 +1455,21 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           ),
           Text(
             value,
-            style: TextStyle(fontSize: 14, color: valueColor ?? (isDark ? Colors.white : Colors.black87)),
+            style: TextStyle(
+              fontSize: 14,
+              color: valueColor ?? (isDark ? Colors.white : Colors.black87),
+            ),
           ),
         ],
       ),
     );
   }
-  
+
   Widget _buildInfoItem(IconData icon, String value, String label) {
     return Expanded(
       child: Column(
         children: [
-          Icon(icon, color: AppConstants.primaryBlue, size: 24),
+          Icon(icon, color: AppConstants.primaryGreen, size: 24),
           const SizedBox(height: 4),
           Text(
             value,
@@ -1203,15 +1479,55 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               color: Colors.black87,
             ),
           ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
         ],
       ),
+    );
+  }
+}
+
+class _OpenSpaceMapMarker extends StatelessWidget {
+  const _OpenSpaceMapMarker({
+    required this.isAvailable,
+    required this.isSatellite,
+  });
+
+  final bool isAvailable;
+  final bool isSatellite;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isAvailable ? AppConstants.primaryGreen : AppConstants.danger;
+
+    return Stack(
+      alignment: Alignment.topCenter,
+      children: [
+        Icon(
+          Icons.location_on_rounded,
+          size: 46,
+          color: color,
+          shadows: [
+            Shadow(
+              color: Colors.black.withValues(alpha: isSatellite ? 0.46 : 0.26),
+              blurRadius: 7,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        Positioned(
+          top: 7,
+          child: Container(
+            width: 23,
+            height: 23,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            child: Icon(Icons.park_rounded, size: 14, color: color),
+          ),
+        ),
+      ],
     );
   }
 }

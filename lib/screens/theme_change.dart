@@ -61,7 +61,7 @@ class _ThemeChangePageState extends State<ThemeChangePage> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppConstants.primaryBlue.withOpacity(0.1),
+                      AppConstants.primaryBlue.withValues(alpha: 0.1),
                       Colors.transparent,
                     ],
                     begin: Alignment.topLeft,
@@ -74,7 +74,7 @@ class _ThemeChangePageState extends State<ThemeChangePage> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppConstants.primaryBlue.withOpacity(0.1),
+                        color: AppConstants.primaryBlue.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -101,7 +101,7 @@ class _ThemeChangePageState extends State<ThemeChangePage> {
                             "Choose your preferred theme",
                             style: TextStyle(
                               fontSize: 14,
-                              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                              color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -157,8 +157,8 @@ class _ThemeChangePageState extends State<ThemeChangePage> {
           boxShadow: [
             BoxShadow(
               color: isSelected 
-                  ? accentColor.withOpacity(0.1)
-                  : Colors.black.withOpacity(0.05),
+                  ? accentColor.withValues(alpha: 0.1)
+                  : Colors.black.withValues(alpha: 0.05),
               blurRadius: isSelected ? 8 : 4,
               offset: const Offset(0, 2),
             ),
@@ -169,7 +169,7 @@ class _ThemeChangePageState extends State<ThemeChangePage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: (isSelected ? accentColor : Colors.grey).withOpacity(0.1),
+                color: (isSelected ? accentColor : Colors.grey).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -196,7 +196,7 @@ class _ThemeChangePageState extends State<ThemeChangePage> {
                     description,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                      color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
                     ),
                   ),
                 ],

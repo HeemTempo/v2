@@ -1,146 +1,80 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../data/local/report_local.dart';
+import '../data/repository/booking_repository.dart';
+import '../data/repository/report_repository.dart';
 import '../l10n/app_localizations.dart';
+import '../providers/user_provider.dart';
+import '../service/openspace_service.dart';
 import '../utils/constants.dart';
 import 'side_bar.dart';
-import '../data/repository/report_repository.dart';
-import '../data/repository/booking_repository.dart';
-import '../data/local/report_local.dart';
-import '../service/openspace_service.dart';
-import '../providers/user_provider.dart';
 
 class HomeTab extends StatefulWidget {
-  final Function(int) onTabChange;
-  
   const HomeTab({super.key, required this.onTabChange});
 
+  final ValueChanged<int> onTabChange;
+
   @override
-  _HomeTabState createState() => _HomeTabState();
+  State<HomeTab> createState() => _HomeTabState();
 }
 
-class _CardData {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String route;
-  final int? tabIndex; // Optional: if this card should switch tab instead of route
-  
-  const _CardData({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.route,
-    this.tabIndex,
-  });
-}
-
-class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-  int _carouselIndex = 0;
-  final PageController _pageController = PageController();
-  late AnimationController _animationController;
-  Timer? _autoScrollTimer;
-  bool _isAppInForeground = true;
-  
-  // Quick Stats counts
+class _HomeTabState extends State<HomeTab> {
   int _openSpacesCount = 0;
   int _activeReportsCount = 0;
   int _bookingsCount = 0;
   bool _isLoadingStats = true;
 
-  final List<String> _horizontalImages = [
-    'assets/images/green_space.jpg',
-    'assets/images/green_space2.jpg',
-    'assets/images/green_space.jpg',
-    'assets/images/green_space2.jpg',
-  ];
-
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _animationController.forward();
-    _startAutoScroll();
-    
-    // Defer data loading to prevent blocking UI
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _fetchQuickStats();
-      }
-    });
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    switch (state) {
-      case AppLifecycleState.resumed:
-        _isAppInForeground = true;
-        _startAutoScroll();
-        break;
-      case AppLifecycleState.paused:
-      case AppLifecycleState.inactive:
-        _isAppInForeground = false;
-        _autoScrollTimer?.cancel();
-        break;
-      case AppLifecycleState.detached:
-      case AppLifecycleState.hidden:
-        break;
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchQuickStats());
   }
 
   Future<void> _fetchQuickStats() async {
     if (!mounted) return;
     setState(() => _isLoadingStats = true);
 
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final isAnonymous = userProvider.user.isAnonymous;
-
-    int openSpaces = 0;
-    int reports = 0;
-    int bookings = 0;
+    final user = context.read<UserProvider>().user;
+    var openSpaces = 0;
+    var reports = 0;
+    var bookings = 0;
 
     try {
-      // 1. Fetch Open Spaces (For Everyone)
       try {
-        final openSpaceService = OpenSpaceService();
-        openSpaces = await openSpaceService.getOpenSpaceCount().timeout(const Duration(seconds: 10));
-      } catch (e) {
-        debugPrint('Error fetching open spaces: $e');
+        openSpaces = await OpenSpaceService().getOpenSpaceCount().timeout(
+          const Duration(seconds: 10),
+        );
+      } catch (error) {
+        debugPrint('Unable to load open-space count: $error');
       }
 
-      // 2. Fetch Personal Stats (Authenticated Only)
-      if (!isAnonymous) {
-        // Fetch Reports
+      if (!user.isAnonymous) {
         try {
-          final reportRepo = ReportRepository(localService: ReportLocal());
-          // Repo handles caching/offline logic
-          final allReports = await reportRepo.getAllReports(); 
-          
-          final activeReports = allReports.where((r) => 
-            r.status?.toLowerCase() == 'pending' || 
-            r.status?.toLowerCase() == 'in_progress'
-          ).toList();
-          reports = activeReports.length;
-        } catch (e) {
-          debugPrint('Error fetching reports stats: $e');
+          final allReports =
+              await ReportRepository(
+                localService: ReportLocal(),
+              ).getAllReports();
+          reports =
+              allReports
+                  .where(
+                    (report) =>
+                        report.status?.toLowerCase() == 'pending' ||
+                        report.status?.toLowerCase() == 'in_progress',
+                  )
+                  .length;
+        } catch (error) {
+          debugPrint('Unable to load report count: $error');
         }
 
-        // Fetch Bookings
         try {
-          final bookingRepo = BookingRepository();
-          final allBookings = await bookingRepo.getMyBookings();
-          bookings = allBookings.length;
-        } catch (e) {
-          debugPrint('Error fetching bookings stats: $e');
+          bookings = (await BookingRepository().getMyBookings()).length;
+        } catch (error) {
+          debugPrint('Unable to load booking count: $error');
         }
       }
-
+    } finally {
       if (mounted) {
         setState(() {
           _openSpacesCount = openSpaces;
@@ -149,215 +83,160 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin, 
           _isLoadingStats = false;
         });
       }
-    } catch (e) {
-       debugPrint('Unexpected error in _fetchQuickStats: $e');
-       if (mounted) setState(() => _isLoadingStats = false);
     }
-  }
-
-  void _startAutoScroll() {
-    _autoScrollTimer?.cancel();
-    if (!_isAppInForeground) return;
-    _autoScrollTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (_pageController.hasClients && mounted && _isAppInForeground) {
-        int next = (_pageController.page?.round() ?? 0) + 1;
-        if (next >= _horizontalImages.length) next = 0;
-        _pageController.animateToPage(
-          next,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-        );
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _autoScrollTimer?.cancel();
-    _pageController.dispose();
-    _animationController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final locale = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    final isAnonymous = Provider.of<UserProvider>(context, listen: false).user.isAnonymous;
-
-    final heroTitles = [
-      locale.heroTitle1,
-      locale.heroTitle2,
-      locale.heroTitle3,
-      locale.heroTitle4,
-    ];
-
-    final heroSubtitles = [
-      locale.heroSubtitle1,
-      locale.heroSubtitle2,
-      locale.heroSubtitle3,
-      locale.heroSubtitle4,
-    ];
-
-    final List<_CardData> cards = [
-      _CardData(
-        icon: Icons.report_problem_outlined,
-        title: locale.reportIssue,
-        subtitle: locale.reportIssueSubtitle,
-        route: '/map', // This might need to be handled differently if it's a tab
-        tabIndex: 1, // Map tab
-      ),
-      _CardData(
-        icon: Icons.assignment_outlined,
-        title: locale.viewReports,
-        subtitle: locale.viewReportsSubtitle,
-        route: '/reported-issue',
-      ),
-      _CardData(
-        icon: Icons.calendar_today_outlined,
-        title: locale.bookSpace,
-        subtitle: locale.bookSpaceSubtitle,
-        route: '/map',
-        tabIndex: 1, // Map tab
-      ),
-      _CardData(
-        icon: Icons.analytics_outlined,
-        title: locale.trackProgress,
-        subtitle: locale.trackProgressSubtitle,
-        route: '/track-progress',
-      ),
-    ];
+    final isDark = theme.brightness == Brightness.dark;
+    final user = context.watch<UserProvider>().user;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? AppConstants.darkBackground : AppConstants.white,
+      backgroundColor:
+          isDark ? AppConstants.darkBackground : AppConstants.pageBackground,
       drawer: const Sidebar(),
-      appBar: _buildAppBar(locale, theme, isDarkMode, isAnonymous),
-      body: RefreshIndicator(
-        onRefresh: _fetchQuickStats,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeroSection(heroTitles, heroSubtitles, theme, isDarkMode),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildInfoCard(locale, theme, isDarkMode),
-                    const SizedBox(height: 24),
-                    _buildSectionTitle(locale.quickStats, theme, isDarkMode),
-                    const SizedBox(height: 12),
-                    _buildQuickStats(locale, theme, isDarkMode),
-                    const SizedBox(height: 24),
-                    _buildSectionTitle(locale.quickActions, theme, isDarkMode),
-                    const SizedBox(height: 12),
-                    _buildActionCards(cards, theme, isDarkMode),
-                    const SizedBox(height: 100),
-                  ],
+      appBar: AppBar(
+        backgroundColor:
+            isDark ? AppConstants.darkBackground : AppConstants.pageBackground,
+        foregroundColor: isDark ? Colors.white : AppConstants.navy,
+        elevation: 0,
+        leading: Builder(
+          builder:
+              (context) => IconButton(
+                tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
+                onPressed: () => Scaffold.of(context).openDrawer(),
+                icon: const Icon(Icons.menu_rounded),
+              ),
+        ),
+        titleSpacing: 4,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              loc.appName,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+            ),
+            if (!user.isAnonymous)
+              Text(
+                user.username,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white60 : AppConstants.muted,
                 ),
               ),
-            ],
+          ],
+        ),
+        actions: [
+          IconButton(
+            tooltip: loc.emergencyContacts,
+            onPressed: () => _showEmergencyDialog(loc, isDark),
+            icon: const Icon(Icons.phone_in_talk_outlined),
           ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppConstants.primaryBlue,
-        child: const Icon(Icons.emergency_outlined, color: Colors.white),
-        onPressed: () => _showEmergencyDialog(locale, theme, isDarkMode),
-      ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(AppLocalizations locale, ThemeData theme, bool isDarkMode, bool isAnonymous) {
-    return AppBar(
-      backgroundColor: isDarkMode ? AppConstants.darkBackground : AppConstants.primaryBlue,
-      elevation: 0,
-      leading: Builder(
-        builder: (context) => IconButton(
-          icon: Icon(Icons.menu, color: isDarkMode ? Colors.white : Colors.white),
-          onPressed: () => Scaffold.of(context).openDrawer(),
-        ),
-      ),
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.account_balance, color: isDarkMode ? Colors.white : Colors.white, size: 20),
           const SizedBox(width: 8),
-          Text(
-            locale.appName,
-            style: TextStyle(
-              color: isDarkMode ? Colors.white : Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
         ],
       ),
-      centerTitle: true,
+      body: RefreshIndicator(
+        onRefresh: _fetchQuickStats,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
+          children: [
+            _buildHero(loc),
+            const SizedBox(height: 24),
+            _SectionHeading(title: loc.quickActions),
+            const SizedBox(height: 12),
+            _ActionTile(
+              icon: Icons.report_outlined,
+              title: loc.reportIssue,
+              subtitle: loc.reportIssueSubtitle,
+              color: AppConstants.danger,
+              onTap: () => widget.onTabChange(1),
+            ),
+            const SizedBox(height: 12),
+            _ActionTile(
+              icon: Icons.calendar_month_outlined,
+              title: loc.bookSpace,
+              subtitle: loc.bookSpaceSubtitle,
+              color: AppConstants.primaryGreen,
+              onTap: () => widget.onTabChange(1),
+            ),
+            const SizedBox(height: 24),
+            _SectionHeading(title: loc.quickStats),
+            const SizedBox(height: 12),
+            _buildStats(loc, isDark, user.isAnonymous),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildHeroSection(List<String> titles, List<String> subtitles, ThemeData theme, bool isDarkMode) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      height: 180,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: isDarkMode ? Colors.black.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.2),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+  Widget _buildHero(AppLocalizations loc) {
+    return SizedBox(
+      height: 188,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(24),
         child: Stack(
+          fit: StackFit.expand,
           children: [
-            PageView.builder(
-              controller: _pageController,
-              itemCount: _horizontalImages.length,
-              onPageChanged: (index) => setState(() => _carouselIndex = index),
-              itemBuilder: (context, index) {
-                return Image.asset(
-                  _horizontalImages[index],
-                  fit: BoxFit.cover,
-                  filterQuality: FilterQuality.high,
-                  color: isDarkMode ? Colors.black.withValues(alpha: 0.3) : null,
-                  colorBlendMode: isDarkMode ? BlendMode.darken : null,
-                );
-              },
+            Image.asset(
+              'assets/images/kinondoni-home-hero-v2.jpg',
+              fit: BoxFit.cover,
+            ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x16071F27), Color(0xE607543F)],
+                ),
+              ),
             ),
             Positioned(
-              bottom: 16,
-              left: 16,
-              right: 16,
+              left: 20,
+              right: 20,
+              bottom: 20,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    titles[_carouselIndex],
-                    style: TextStyle(
-                      color: isDarkMode ? Colors.white : Colors.black,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Text(
+                      loc.openSpaces,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 10),
                   Text(
-                    subtitles[_carouselIndex],
-                    style: TextStyle(
-                      color: isDarkMode ? Colors.white70 : Colors.black54,
-                      fontSize: 14,
+                    loc.heroTitle1,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 23,
+                      height: 1.1,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  _buildDots(theme, isDarkMode),
+                  const SizedBox(height: 5),
+                  Text(
+                    loc.heroSubtitle1,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.82),
+                      fontSize: 13,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -367,69 +246,314 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin, 
     );
   }
 
-  Widget _buildDots(ThemeData theme, bool isDarkMode) {
+  Widget _buildStats(AppLocalizations loc, bool isDark, bool isAnonymous) {
+    if (_isLoadingStats) {
+      return Row(
+        children: [
+          Expanded(
+            child: _StatItem(
+              value: '',
+              label: loc.openSpaces,
+              icon: Icons.park_rounded,
+              accent: AppConstants.primaryGreen,
+              isDark: isDark,
+              isLoading: true,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _StatItem(
+              value: '',
+              label: loc.activeReports,
+              icon: Icons.campaign_rounded,
+              accent: AppConstants.warning,
+              isDark: isDark,
+              isLoading: true,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _StatItem(
+              value: '',
+              label: loc.bookings,
+              icon: Icons.event_available_rounded,
+              accent: AppConstants.info,
+              isDark: isDark,
+              isLoading: true,
+            ),
+          ),
+        ],
+      );
+    }
+
     return Row(
-      children: List.generate(
-        _horizontalImages.length,
-        (index) => Container(
-          margin: const EdgeInsets.only(right: 6),
-          width: 8,
-          height: 8,
+      children: [
+        Expanded(
+          child: _StatItem(
+            value: '$_openSpacesCount',
+            label: loc.openSpaces,
+            icon: Icons.park_rounded,
+            accent: AppConstants.primaryGreen,
+            isDark: isDark,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _StatItem(
+            value: isAnonymous ? '—' : '$_activeReportsCount',
+            label: loc.activeReports,
+            icon: Icons.campaign_rounded,
+            accent: AppConstants.warning,
+            isDark: isDark,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _StatItem(
+            value: isAnonymous ? '—' : '$_bookingsCount',
+            label: loc.bookings,
+            icon: Icons.event_available_rounded,
+            accent: AppConstants.info,
+            isDark: isDark,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showEmergencyDialog(AppLocalizations loc, bool isDark) {
+    showDialog<void>(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            backgroundColor: isDark ? AppConstants.darkCard : Colors.white,
+            title: Text(loc.emergencyContacts),
+            contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _EmergencyContact(title: loc.police, number: '112'),
+                _EmergencyContact(title: loc.fire, number: '114'),
+                _EmergencyContact(title: loc.ambulance, number: '115'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(loc.close),
+              ),
+            ],
+          ),
+    );
+  }
+}
+
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+    );
+  }
+}
+
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Material(
+      color: isDark ? AppConstants.darkCard : Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: index == _carouselIndex
-                ? (isDarkMode ? Colors.white : AppConstants.primaryBlue)
-                : (isDarkMode ? Colors.white38 : Colors.grey),
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isDark ? AppConstants.darkBorder : AppConstants.border,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: isDark ? 0.18 : 0.10),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Icon(icon, color: color, size: 25),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        height: 1.35,
+                        fontSize: 12,
+                        color: isDark ? Colors.white60 : AppConstants.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: isDark ? Colors.white38 : AppConstants.muted,
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildInfoCard(AppLocalizations locale, ThemeData theme, bool isDarkMode) {
+class _StatItem extends StatelessWidget {
+  const _StatItem({
+    required this.value,
+    required this.label,
+    required this.icon,
+    required this.accent,
+    required this.isDark,
+    this.isLoading = false,
+  });
+
+  final String value;
+  final String label;
+  final IconData icon;
+  final Color accent;
+  final bool isDark;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      height: 126,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: isDarkMode ? AppConstants.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            isDark ? AppConstants.darkCardAlt : Colors.white,
+            accent.withValues(alpha: isDark ? 0.12 : 0.07),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color:
+              isDark ? AppConstants.darkBorder : accent.withValues(alpha: 0.18),
+        ),
         boxShadow: [
           BoxShadow(
-            color: isDarkMode ? Colors.black.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: accent.withValues(alpha: isDark ? 0.08 : 0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: isDarkMode ? AppConstants.primaryBlue.withValues(alpha: 0.1) : AppConstants.primaryBlue.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+          Positioned(
+            top: -24,
+            right: -22,
+            child: IgnorePointer(
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: isDark ? 0.08 : 0.06),
+                  shape: BoxShape.circle,
+                ),
+              ),
             ),
-            child: Icon(Icons.account_balance, color: AppConstants.primaryBlue, size: 24),
           ),
-          const SizedBox(width: 12),
-          Expanded(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 10, 11),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  locale.heroTitle1,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                    color: isDarkMode ? Colors.white : AppConstants.black,
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: isDark ? 0.20 : 0.12),
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  child: Icon(icon, size: 20, color: accent),
                 ),
-                const SizedBox(height: 4),
+                const Spacer(),
+                if (isLoading)
+                  SizedBox(
+                    width: 34,
+                    child: LinearProgressIndicator(
+                      minHeight: 4,
+                      borderRadius: BorderRadius.circular(99),
+                      color: accent,
+                      backgroundColor: accent.withValues(alpha: 0.12),
+                    ),
+                  )
+                else
+                  Text(
+                    value,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : AppConstants.navy,
+                      fontSize: 24,
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                const SizedBox(height: 6),
                 Text(
-                  locale.splashTagline,
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 14,
-                    color: isDarkMode ? Colors.white70 : AppConstants.grey,
+                    height: 1.15,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white60 : AppConstants.muted,
                   ),
                 ),
               ],
@@ -439,237 +563,40 @@ class _HomeTabState extends State<HomeTab> with SingleTickerProviderStateMixin, 
       ),
     );
   }
+}
 
-  Widget _buildSectionTitle(String title, ThemeData theme, bool isDarkMode) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontWeight: FontWeight.w600,
-        fontSize: 18,
-        color: isDarkMode ? Colors.white : AppConstants.black,
-      ),
-    );
-  }
+class _EmergencyContact extends StatelessWidget {
+  const _EmergencyContact({required this.title, required this.number});
 
-  Widget _buildQuickStats(AppLocalizations locale, ThemeData theme, bool isDarkMode) {
-    if (_isLoadingStats) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
+  final String title;
+  final String number;
 
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            locale.openSpaces,
-            '$_openSpacesCount',
-            Icons.park_outlined,
-            theme,
-            isDarkMode,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            locale.activeReports,
-            '$_activeReportsCount',
-            Icons.report_outlined,
-            theme,
-            isDarkMode,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            locale.bookings,
-            '$_bookingsCount',
-            Icons.event_outlined,
-            theme,
-            isDarkMode,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, IconData icon, ThemeData theme, bool isDarkMode) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDarkMode ? AppConstants.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: isDarkMode ? Colors.black.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: isDarkMode ? AppConstants.primaryBlue.withValues(alpha: 0.1) : AppConstants.primaryBlue.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: AppConstants.primaryBlue, size: 28),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              color: isDarkMode ? Colors.white : AppConstants.black,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: isDarkMode ? Colors.white70 : AppConstants.grey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionCards(List<_CardData> cards, ThemeData theme, bool isDarkMode) {
-    return SizedBox(
-      height: 160,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: cards.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final card = cards[index];
-          return GestureDetector(
-            onTap: () {
-              if (card.tabIndex != null) {
-                widget.onTabChange(card.tabIndex!);
-              } else {
-                Navigator.pushNamed(context, card.route);
-              }
-            },
-            child: Container(
-              width: 180,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDarkMode ? AppConstants.darkCard : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: isDarkMode ? Colors.black.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: isDarkMode ? AppConstants.primaryBlue.withValues(alpha: 0.1) : AppConstants.primaryBlue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(card.icon, color: AppConstants.primaryBlue, size: 28),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    card.title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: isDarkMode ? Colors.white : AppConstants.black,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    card.subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDarkMode ? Colors.white70 : AppConstants.grey,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    maxLines: 2,
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showEmergencyDialog(AppLocalizations locale, ThemeData theme, bool isDarkMode) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDarkMode ? AppConstants.darkCard : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Text(
-          locale.emergencyContacts,
-          style: TextStyle(
-            color: Colors.redAccent,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildEmergencyContact(locale.police, '112', theme, isDarkMode),
-            _buildEmergencyContact(locale.fire, '114', theme, isDarkMode),
-            _buildEmergencyContact(locale.ambulance, '115', theme, isDarkMode),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              locale.close,
-              style: TextStyle(color: isDarkMode ? Colors.white : AppConstants.primaryBlue),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmergencyContact(String title, String number, ThemeData theme, bool isDarkMode) {
+  @override
+  Widget build(BuildContext context) {
     return ListTile(
-      leading: const Icon(Icons.phone, color: Colors.redAccent),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          color: isDarkMode ? Colors.white : AppConstants.black,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      leading: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: AppConstants.danger.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(13),
+        ),
+        child: const Icon(
+          Icons.phone_outlined,
+          color: AppConstants.danger,
+          size: 21,
         ),
       ),
-      subtitle: Text(
-        number,
-        style: TextStyle(
-          fontSize: 14,
-          color: isDarkMode ? Colors.white70 : AppConstants.grey,
-        ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: Text(number),
+      trailing: const Icon(
+        Icons.call_rounded,
+        color: AppConstants.primaryGreen,
       ),
       onTap: () async {
         final uri = Uri(scheme: 'tel', path: number);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri);
-        }
+        if (await canLaunchUrl(uri)) await launchUrl(uri);
       },
     );
   }

@@ -46,7 +46,7 @@ class NotificationDetailScreen extends StatelessWidget {
                       radius: 24,
                       backgroundColor: notification.isRead
                           ? Colors.grey.shade300
-                          : AppConstants.primaryBlue.withOpacity(0.2),
+                          : AppConstants.primaryBlue.withValues(alpha: 0.2),
                       child: Icon(
                         Icons.notifications,
                         color: notification.isRead

@@ -9,6 +9,9 @@ const String getAllOpenSpacesQuery = """
       district
       status
       street
+      shapeType
+      boundary
+      area
     }
   }
 """;

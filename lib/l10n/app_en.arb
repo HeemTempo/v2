@@ -25,6 +25,7 @@
   "signInButton": "Sign in",
   "dontHaveAccount": "Don't have an account? Create account",
   "loginSuccess": "Successfully Logged In!",
+  "logoutSuccess": "You have signed out successfully.",
   "loginFailed": "Login failed. Please check your credentials.",
 
   "createAccountTitle": "Create Account",
@@ -46,6 +47,8 @@
   "passwordsDoNotMatch": "Passwords do not match",
 
   "dashboard": "Dashboard",
+  "homeNavLabel": "Home",
+  "profileNavLabel": "Profile",
   "notificationsTitle": "Notifications",
   "myProfile": "My Profile",
   "helpFaqs": "Help & FAQs",
@@ -295,7 +298,8 @@
   "okButton": "OK",
 
   "onlineMode": "Online",
-   "offlineMode": "Offline",
+  "offlineMode": "Offline",
+  "continueOfflineButton": "Continue offline",
   "usernameRequired": "Username is required",
   "passwordRequired": "Password is required",
   "connectionTimeout": "Connection timed out. Please check your internet and try again.",

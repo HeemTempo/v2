@@ -5,6 +5,7 @@ import 'package:kinondoni_openspace_app/service/auth_service.dart';
 import 'package:kinondoni_openspace_app/utils/constants.dart';
 
 import 'sign_in.dart';
+import '../widget/modern_auth_button.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -21,7 +22,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   bool _isChecked = false;
   bool _obscurePassword = true;
@@ -51,17 +53,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
     try {
       final user = await _authService.register(
         username: _usernameController.text.trim(),
-        email: _emailController.text.trim().isEmpty
-            ? null
-            : _emailController.text.trim(),
+        email:
+            _emailController.text.trim().isEmpty
+                ? null
+                : _emailController.text.trim(),
         password: _passwordController.text,
         confirmPassword: _confirmPasswordController.text,
       );
 
       if (user.isStaff == true || user.role?.toLowerCase() == "admin") {
-        throw Exception(
-          'Administrators are not allowed to register here.',
-        );
+        throw Exception('Administrators are not allowed to register here.');
       }
 
       QuickAlert.show(
@@ -106,210 +107,220 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Card(
-                    elevation: 10.0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16.0),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset('assets/images/bibi.png', height: 75),
-                            const SizedBox(height: 16),
-                            Text(
-                              loc.createAccountTitle,
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              loc.signUpSubtitle,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.black54,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            if (_errorMessage != null)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 16.0),
-                                child: Text(
-                                  _errorMessage!,
-                                  style: const TextStyle(color: Colors.red),
-                                ),
-                              ),
-                            TextFormField(
-                              controller: _usernameController,
-                              decoration: InputDecoration(
-                                labelText: loc.usernameLabel,
-                                hintText: loc.usernameHint,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                              ),
-                              validator: (value) =>
-                                  value == null || value.isEmpty
-                                      ? loc.usernameRequired
-                                      : null,
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration: InputDecoration(
-                                labelText: loc.emailLabel,
-                                hintText: loc.emailHint,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return loc.emailRequired;
-                                }
-                                if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                                  return loc.emailInvalid;
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: _obscurePassword,
-                              decoration: InputDecoration(
-                                labelText: loc.passwordLabel,
-                                hintText: loc.passwordHint,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscurePassword
-                                        ? Icons.visibility_off
-                                        : Icons.visibility,
-                                  ),
-                                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return loc.passwordRequired;
-                                }
-                                if (value.length < 8) {
-                                  return loc.passwordMinLength;
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _confirmPasswordController,
-                              obscureText: _obscurePassword,
-                              decoration: InputDecoration(
-                                labelText: loc.passwordConfirmLabel,
-                                hintText: loc.passwordHint,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscurePassword
-                                        ? Icons.visibility_off
-                                        : Icons.visibility,
-                                  ),
-                                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return loc.passwordConfirmRequired;
-                                }
-                                if (value != _passwordController.text) {
-                                  return loc.passwordsDoNotMatch;
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Checkbox(
-                                  value: _isChecked,
-                                  onChanged: (value) =>
-                                      setState(() => _isChecked = value!),
-                                ),
-                                Flexible(child: Text(loc.agreeTerms)),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _submitForm,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppConstants.primaryBlue,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                ),
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
-                                      )
-                                    : Text(
-                                        loc.signUpButton,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextButton(
-                              onPressed: _isLoading
-                                  ? null
-                                  : () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => const SignInScreen(),
-                                        ),
-                                      ),
-                              child: Text(
-                                loc.alreadyHaveAccount,
-                                style: const TextStyle(color: Colors.grey),
-                              ),
-                            ),
-                          ],
+      backgroundColor:
+          isDark ? AppConstants.darkBackground : AppConstants.pageBackground,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(22, 10, 22, 28),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                IconButton.outlined(
+                  onPressed: () => Navigator.maybePop(context),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  height: 126,
+                  width: double.infinity,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(22),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.asset(
+                          'assets/images/kinondoni-booking-v2.jpg',
+                          fit: BoxFit.cover,
+                          alignment: const Alignment(0.15, 0.25),
                         ),
-                      ),
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xC907543F), Color(0x1807543F)],
+                            ),
+                          ),
+                        ),
+                        const Positioned(
+                          left: 16,
+                          bottom: 15,
+                          child: Icon(
+                            Icons.person_add_alt_1_rounded,
+                            color: Colors.white,
+                            size: 30,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 22),
+                Text(
+                  loc.createAccountTitle,
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.6,
+                    color: isDark ? Colors.white : AppConstants.navy,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  loc.signUpSubtitle,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: isDark ? Colors.white70 : AppConstants.muted,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                if (_errorMessage != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppConstants.danger.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      _errorMessage!,
+                      style: const TextStyle(color: AppConstants.danger),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+                TextFormField(
+                  controller: _usernameController,
+                  textInputAction: TextInputAction.next,
+                  decoration: InputDecoration(
+                    labelText: loc.usernameLabel,
+                    hintText: loc.usernameHint,
+                    prefixIcon: const Icon(Icons.person_outline_rounded),
+                  ),
+                  validator:
+                      (value) =>
+                          value == null || value.trim().isEmpty
+                              ? loc.usernameRequired
+                              : null,
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  decoration: InputDecoration(
+                    labelText: loc.emailLabel,
+                    hintText: loc.emailHint,
+                    prefixIcon: const Icon(Icons.email_outlined),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return loc.emailRequired;
+                    }
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                      return loc.emailInvalid;
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.next,
+                  decoration: InputDecoration(
+                    labelText: loc.passwordLabel,
+                    hintText: loc.passwordHint,
+                    prefixIcon: const Icon(Icons.lock_outline_rounded),
+                    suffixIcon: IconButton(
+                      onPressed:
+                          () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                      ),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return loc.passwordRequired;
+                    }
+                    if (value.length < 8) return loc.passwordMinLength;
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: loc.passwordConfirmLabel,
+                    hintText: loc.passwordHint,
+                    prefixIcon: const Icon(Icons.lock_reset_outlined),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return loc.passwordConfirmRequired;
+                    }
+                    if (value != _passwordController.text) {
+                      return loc.passwordsDoNotMatch;
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => setState(() => _isChecked = !_isChecked),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: Checkbox(
+                            value: _isChecked,
+                            onChanged:
+                                (value) =>
+                                    setState(() => _isChecked = value ?? false),
+                          ),
+                        ),
+                        Expanded(child: Text(loc.agreeTerms)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ModernAuthButton(
+                  label: loc.signUpButton,
+                  icon: Icons.person_add_alt_1_rounded,
+                  isLoading: _isLoading,
+                  onPressed: _isLoading ? null : _submitForm,
+                ),
+                const SizedBox(height: 12),
+                ModernAuthSecondaryButton(
+                  label: loc.alreadyHaveAccount,
+                  icon: Icons.login_rounded,
+                  onPressed:
+                      _isLoading
+                          ? null
+                          : () => Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SignInScreen(),
+                            ),
+                          ),
+                ),
+              ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }

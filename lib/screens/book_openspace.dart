@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:kinondoni_openspace_app/providers/booking_provider.dart';
+import 'package:kinondoni_openspace_app/providers/user_provider.dart';
 import 'package:kinondoni_openspace_app/service/auth_service.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
@@ -23,12 +24,17 @@ class _BookingPageState extends State<BookingPage> {
   // User input fields
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _emailController = TextEditingController();
   final _locationController = TextEditingController();
   final _activitiesController = TextEditingController();
 
   DateTime? _startDate;
   DateTime? _endDate;
+  bool _userInitialized = false;
+
+  DateTime get _minimumStartDate {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day).add(const Duration(days: 4));
+  }
 
   @override
   void initState() {
@@ -38,11 +44,33 @@ class _BookingPageState extends State<BookingPage> {
     }
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_userInitialized) return;
+
+    final user = context.read<UserProvider>().user;
+    if (!user.isAnonymous) {
+      _nameController.text = user.username;
+    }
+    _userInitialized = true;
+  }
+
   Future<void> _selectDate(BuildContext context, bool isStart) async {
+    final firstAllowedDate =
+        isStart
+            ? _minimumStartDate
+            : (_startDate ?? _minimumStartDate).add(const Duration(days: 1));
+    final selectedDate = isStart ? _startDate : _endDate;
+    final initialDate =
+        selectedDate != null && !selectedDate.isBefore(firstAllowedDate)
+            ? selectedDate
+            : firstAllowedDate;
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: (isStart ? _startDate : _endDate) ?? DateTime.now(),
-      firstDate: DateTime.now(),
+      initialDate: initialDate,
+      firstDate: firstAllowedDate,
       lastDate: DateTime(DateTime.now().year + 5),
     );
 
@@ -50,7 +78,7 @@ class _BookingPageState extends State<BookingPage> {
       setState(() {
         if (isStart) {
           _startDate = picked;
-          if (_endDate != null && _endDate!.isBefore(_startDate!)) {
+          if (_endDate != null && !_endDate!.isAfter(_startDate!)) {
             _endDate = null;
           }
         } else {
@@ -63,17 +91,20 @@ class _BookingPageState extends State<BookingPage> {
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_startDate == null) {
+    final bookingProvider = context.read<BookingProvider>();
+
+    if (_startDate == null || _endDate == null) {
       QuickAlert.show(
         context: context,
         type: QuickAlertType.error,
         title: 'Validation Error',
-        text: 'Please select a start date.',
+        text: 'Select both dates. The end date must be after the start date.',
       );
       return;
     }
 
     final token = await AuthService.getToken();
+    if (!mounted) return;
     if (token == null) {
       QuickAlert.show(
         context: context,
@@ -83,8 +114,6 @@ class _BookingPageState extends State<BookingPage> {
       );
       return;
     }
-
-    final bookingProvider = context.read<BookingProvider>();
 
     try {
       final formattedStart = DateFormat('yyyy-MM-dd').format(_startDate!);
@@ -112,7 +141,8 @@ class _BookingPageState extends State<BookingPage> {
           context: context,
           type: QuickAlertType.success,
           title: 'Booking Submitted!',
-          text: 'Your booking has been successfully submitted! Our team will review your request shortly.',
+          text:
+              'Your booking has been successfully submitted! Our team will review your request shortly.',
           confirmBtnText: 'Great!',
           onConfirmBtnTap: () {
             Navigator.of(context).pop(); // Close alert
@@ -134,24 +164,31 @@ class _BookingPageState extends State<BookingPage> {
   InputDecoration _buildInputDecoration(String label, IconData icon) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Theme.of(context).colorScheme.primary;
-    
+
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(color: isDark ? Colors.white70 : Colors.grey[700], fontWeight: FontWeight.w500),
+      labelStyle: TextStyle(
+        color: isDark ? Colors.white70 : Colors.grey[700],
+        fontWeight: FontWeight.w500,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey.shade300),
+        borderSide: BorderSide(
+          color: isDark ? Colors.white10 : Colors.grey.shade300,
+        ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: isDark ? Colors.white10 : Colors.grey.shade300),
+        borderSide: BorderSide(
+          color: isDark ? Colors.white10 : Colors.grey.shade300,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: primaryColor, width: 2),
       ),
       filled: true,
-      fillColor: isDark ? const Color(0xFF2C2C2C) : Colors.grey[50],
+      fillColor: isDark ? AppConstants.darkCardAlt : AppConstants.white,
       prefixIcon: Icon(icon, color: primaryColor),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
@@ -160,7 +197,7 @@ class _BookingPageState extends State<BookingPage> {
   @override
   Widget build(BuildContext context) {
     final isSubmitting = context.watch<BookingProvider>().isSubmitting;
-    final primaryColor = AppConstants.primaryBlue;
+    final primaryColor = AppConstants.primaryGreen;
     final loc = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -180,10 +217,17 @@ class _BookingPageState extends State<BookingPage> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
               decoration: BoxDecoration(
-                color: primaryColor,
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppConstants.primaryGreen,
+                    AppConstants.primaryGreenDark,
+                  ],
+                ),
                 borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
+                  bottomLeft: Radius.circular(26),
+                  bottomRight: Radius.circular(26),
                 ),
               ),
               child: Column(
@@ -205,7 +249,7 @@ class _BookingPageState extends State<BookingPage> {
                 ],
               ),
             ),
-            
+
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: Form(
@@ -214,12 +258,18 @@ class _BookingPageState extends State<BookingPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Personal Information Category
-                    _buildSectionHeader(Icons.person_outline, loc.yourInfoTitle),
+                    _buildSectionHeader(
+                      Icons.person_outline,
+                      loc.yourInfoTitle,
+                    ),
                     _buildTextFormField(
                       controller: _nameController,
                       label: loc.fullNameLabel,
                       icon: Icons.person_outline,
-                      validator: (v) => v == null || v.isEmpty ? loc.fullNameLabel : null,
+                      readOnly: true,
+                      validator:
+                          (v) =>
+                              v == null || v.isEmpty ? loc.fullNameLabel : null,
                     ),
                     const SizedBox(height: 12),
                     _buildTextFormField(
@@ -227,20 +277,19 @@ class _BookingPageState extends State<BookingPage> {
                       label: loc.phoneBookingLabel,
                       icon: Icons.phone_android,
                       keyboardType: TextInputType.phone,
-                      validator: (v) => v == null || v.isEmpty ? loc.phoneBookingLabel : null,
+                      validator:
+                          (v) =>
+                              v == null || v.isEmpty
+                                  ? loc.phoneBookingLabel
+                                  : null,
                     ),
-                    const SizedBox(height: 12),
-                    _buildTextFormField(
-                      controller: _emailController,
-                      label: loc.emailBookingLabel,
-                      icon: Icons.mail_outline,
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    
-                    const SizedBox(height: 30),
-                    
+                    const SizedBox(height: 24),
+
                     // Space & Schedule Category
-                    _buildSectionHeader(Icons.map_outlined, loc.locationDetailsTitle),
+                    _buildSectionHeader(
+                      Icons.map_outlined,
+                      loc.locationDetailsTitle,
+                    ),
                     _buildTextFormField(
                       controller: _locationController,
                       label: loc.spaceDistrictLabel,
@@ -267,21 +316,28 @@ class _BookingPageState extends State<BookingPage> {
                         ),
                       ],
                     ),
-                    
-                    const SizedBox(height: 30),
-                    
+
+                    const SizedBox(height: 24),
+
                     // Details Category
-                    _buildSectionHeader(Icons.info_outline, loc.activitiesLabel),
+                    _buildSectionHeader(
+                      Icons.info_outline,
+                      loc.activitiesLabel,
+                    ),
                     _buildTextFormField(
                       controller: _activitiesController,
                       label: loc.activitiesLabel,
                       icon: Icons.notes_outlined,
                       maxLines: 4,
-                      validator: (v) => v == null || v.isEmpty ? loc.activitiesLabel : null,
+                      validator:
+                          (v) =>
+                              v == null || v.isEmpty
+                                  ? loc.activitiesLabel
+                                  : null,
                     ),
-                    
-                    const SizedBox(height: 40),
-                    
+
+                    const SizedBox(height: 30),
+
                     // Submit Button
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -289,21 +345,28 @@ class _BookingPageState extends State<BookingPage> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        elevation: 2,
+                        elevation: 0,
                       ),
                       onPressed: isSubmitting ? null : _submitForm,
-                      child: isSubmitting
-                          ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                            )
-                          : Text(
-                              loc.submitBookingButton,
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
+                      child:
+                          isSubmitting
+                              ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : Text(
+                                loc.submitBookingButton,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                     ),
                     const SizedBox(height: 40),
                   ],
@@ -321,14 +384,14 @@ class _BookingPageState extends State<BookingPage> {
       padding: const EdgeInsets.only(bottom: 16, left: 4),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppConstants.primaryBlue),
+          Icon(icon, size: 20, color: AppConstants.primaryGreen),
           const SizedBox(width: 8),
           Text(
             title,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppConstants.primaryBlue,
+              color: AppConstants.primaryGreen,
             ),
           ),
         ],
@@ -362,16 +425,18 @@ class _BookingPageState extends State<BookingPage> {
     required VoidCallback onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF2C2C2C) : Colors.grey[50],
+          color: isDark ? AppConstants.darkCardAlt : AppConstants.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isDark ? Colors.white10 : Colors.grey.shade300),
+          border: Border.all(
+            color: isDark ? AppConstants.darkBorder : AppConstants.border,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,7 +445,7 @@ class _BookingPageState extends State<BookingPage> {
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: AppConstants.primaryBlue,
+                color: AppConstants.primaryGreen,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -390,10 +455,15 @@ class _BookingPageState extends State<BookingPage> {
                 const Icon(Icons.calendar_month, size: 16, color: Colors.grey),
                 const SizedBox(width: 8),
                 Text(
-                  date != null ? DateFormat('MMM dd, yyyy').format(date) : 'Select date',
+                  date != null
+                      ? DateFormat('MMM dd, yyyy').format(date)
+                      : 'Select date',
                   style: TextStyle(
                     fontSize: 14,
-                    color: date != null ? Theme.of(context).colorScheme.onSurface : Colors.grey,
+                    color:
+                        date != null
+                            ? Theme.of(context).colorScheme.onSurface
+                            : Colors.grey,
                   ),
                 ),
               ],
@@ -408,7 +478,6 @@ class _BookingPageState extends State<BookingPage> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _emailController.dispose();
     _locationController.dispose();
     _activitiesController.dispose();
     super.dispose();

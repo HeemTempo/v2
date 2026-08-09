@@ -77,7 +77,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           return ListView.separated(
             padding: const EdgeInsets.all(12),
             itemCount: provider.notifications.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final notification = provider.notifications[index];
               return NotificationTile(notification: notification);
@@ -105,7 +105,7 @@ class NotificationTile extends StatelessWidget {
           radius: 24,
           backgroundColor: notification.isRead
               ? Colors.grey.shade300
-              : AppConstants.primaryBlue.withOpacity(0.2),
+              : AppConstants.primaryBlue.withValues(alpha: 0.2),
           child: Icon(
             Icons.notifications,
             color: notification.isRead ? Colors.grey : AppConstants.primaryBlue,

@@ -25,9 +25,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
       setState(() {
         _image = File(pickedFile.path);
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Photo updated!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Photo updated!')));
     }
   }
 
@@ -35,9 +35,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
     setState(() {
       _image = null;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Photo removed!')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Photo removed!')));
   }
 
   void _saveChanges() {
@@ -63,7 +63,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppConstants.primaryBlue,
@@ -95,12 +95,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   Center(
                     child: Card(
                       elevation: 8,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       margin: const EdgeInsets.only(bottom: 24),
                       child: Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [AppConstants.primaryBlue, AppConstants.primaryBlue.withOpacity(0.7)],
+                            colors: [
+                              AppConstants.primaryBlue,
+                              AppConstants.primaryBlue.withValues(alpha: 0.7),
+                            ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -116,13 +121,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   GestureDetector(
                                     onTap: _pickImage,
                                     child: CircleAvatar(
-                                      radius: 70,
-                                      backgroundImage: _image != null
-                                          ? FileImage(_image!)
-                                          : const AssetImage('assets/images/avatar.jpg') as ImageProvider,
-                                    )
+                                          radius: 70,
+                                          backgroundImage:
+                                              _image != null
+                                                  ? FileImage(_image!)
+                                                  : const AssetImage(
+                                                        'assets/images/profile-avatar-v2.jpg',
+                                                      )
+                                                      as ImageProvider,
+                                        )
                                         .animate()
-                                        .scale(duration: 300.ms, curve: Curves.easeOut)
+                                        .scale(
+                                          duration: 300.ms,
+                                          curve: Curves.easeOut,
+                                        )
                                         .then()
                                         .fadeIn(duration: 300.ms),
                                   ),
@@ -137,7 +149,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                             color: Colors.redAccent,
                                             shape: BoxShape.circle,
                                           ),
-                                          child: const Icon(Icons.delete, color: Colors.white, size: 20),
+                                          child: const Icon(
+                                            Icons.delete,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -149,12 +165,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         gradient: LinearGradient(
-                                          colors: [Colors.black54, Colors.black26],
+                                          colors: [
+                                            Colors.black54,
+                                            Colors.black26,
+                                          ],
                                           begin: Alignment.topLeft,
                                           end: Alignment.bottomRight,
                                         ),
                                       ),
-                                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 24),
+                                      child: const Icon(
+                                        Icons.camera_alt,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -164,7 +187,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 'Tap to change profile photo',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: Colors.white.withOpacity(0.9),
+                                  color: Colors.white.withValues(alpha: 0.9),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -189,7 +212,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     label: 'Name',
                     hint: 'Enter your name',
                     icon: Icons.person_outline,
-                    validator: (value) => value == null || value.isEmpty ? 'Name is required' : null,
+                    validator:
+                        (value) =>
+                            value == null || value.isEmpty
+                                ? 'Name is required'
+                                : null,
                   ),
                   _buildTextField(
                     context: context,
@@ -197,8 +224,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     hint: 'Enter your email',
                     icon: Icons.email_outlined,
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'Email is required';
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                      if (value == null || value.isEmpty) {
+                        return 'Email is required';
+                      }
+                      if (!RegExp(
+                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                      ).hasMatch(value)) {
                         return 'Enter a valid email';
                       }
                       return null;
@@ -210,7 +241,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     hint: 'Enter your phone number',
                     icon: Icons.phone_outlined,
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'Phone number is required';
+                      if (value == null || value.isEmpty) {
+                        return 'Phone number is required';
+                      }
                       if (!RegExp(r'^\+?[\d\s-]{10,}$').hasMatch(value)) {
                         return 'Enter a valid phone number';
                       }
@@ -223,7 +256,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     hint: 'Enter new password',
                     icon: Icons.lock_outline,
                     obscureText: true,
-                    validator: (value) => value == null || value.length < 6 ? 'Password must be at least 6 characters' : null,
+                    validator:
+                        (value) =>
+                            value == null || value.length < 6
+                                ? 'Password must be at least 6 characters'
+                                : null,
                   ),
                   const SizedBox(height: 32),
                   Row(
@@ -266,7 +303,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     bool obscureText = false,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Card(
@@ -291,7 +328,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ),
             filled: true,
             fillColor: isDark ? AppConstants.darkCard : Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
           ),
           validator: validator,
           style: TextStyle(color: isDark ? Colors.white : Colors.black87),
@@ -308,28 +348,37 @@ class _EditProfilePageState extends State<EditProfilePage> {
     bool isLoading = false,
   }) {
     return ElevatedButton(
-      onPressed: isLoading ? null : onPressed,
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor: color,
-        elevation: 6,
-        shadowColor: color.withOpacity(0.3),
-      ),
-      child: isLoading
-          ? const SizedBox(
-        width: 20,
-        height: 20,
-        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-      )
-          : Text(
-        text,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-    ).animate().scale(duration: 200.ms, curve: Curves.easeInOut).fadeIn(duration: 200.ms);
+          onPressed: isLoading ? null : onPressed,
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: color,
+            elevation: 6,
+            shadowColor: color.withValues(alpha: 0.3),
+          ),
+          child:
+              isLoading
+                  ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                  : Text(
+                    text,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+        )
+        .animate()
+        .scale(duration: 200.ms, curve: Curves.easeInOut)
+        .fadeIn(duration: 200.ms);
   }
 }

@@ -129,23 +129,8 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
      - assets/lottie/
-     - assets/images/facebook.png
-     - assets/images/search.png
-     - assets/images/bibi.png
-     - assets/images/openspace.jpg
-     - assets/images/openspace_detail.jpg
-     - assets/images/report1.jpg
-     - assets/images/track_progress.jpg
-     - assets/images/location.jpg
-     - assets/images/calendar1.jpg
-     - assets/images/calendar2.jpg
-     - assets/images/avatar.jpg
-     - assets/images/success_removed.png
-     - assets/images/warning_removed.png
-     - assets/images/error_removed.png
+     - assets/images/
      - assets/icon/icon.png
-     - assets/images/green_space.jpg
-     - assets/images/green_space2.jpg
      - .env.development
      - .env.production
 

@@ -94,7 +94,7 @@ class HowToUsePage extends StatelessWidget {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: AppConstants.primaryBlue.withOpacity(isDark ? 0.2 : 0.1),
+      color: AppConstants.primaryBlue.withValues(alpha: isDark ? 0.2 : 0.1),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -140,7 +140,7 @@ class HowToUsePage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(icon, color: color, size: 28),
@@ -175,7 +175,7 @@ class HowToUsePage extends StatelessWidget {
 
   Widget _buildTipsSection(BuildContext context, AppLocalizations loc) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? Colors.amber.shade900.withOpacity(0.2) : Colors.amber.shade50;
+    final bgColor = isDark ? Colors.amber.shade900.withValues(alpha: 0.2) : Colors.amber.shade50;
     final iconColor = isDark ? Colors.amber.shade400 : Colors.amber.shade700;
     final titleColor = isDark ? Colors.amber.shade300 : Colors.amber.shade900;
     

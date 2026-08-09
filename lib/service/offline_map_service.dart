@@ -3,9 +3,16 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter/material.dart';
 
+import '../utils/map_style_config.dart';
+
 class OfflineMapService {
-  static const String storeName = 'darEsSalaamMapCache';
-  
+  // Versioned because the base layer now matches the MapTiler web map.
+  // This prevents legacy OpenStreetMap tiles being reported as the new map.
+  static const String storeName = 'darEsSalaamMapTilerCacheV2';
+  static final FMTCTileProvider _tileProvider = FMTCTileProvider(
+    stores: {storeName: BrowseStoreStrategy.readUpdateCreate},
+  );
+
   static const LatLng darNorthWest = LatLng(-6.30, 39.00);
   static const LatLng darSouthEast = LatLng(-7.20, 39.60);
 
@@ -41,7 +48,8 @@ class OfflineMapService {
           minZoom: 8,
           maxZoom: 17,
           options: TileLayer(
-            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            urlTemplate: MapStyleConfig.streets,
+            userAgentPackageName: 'com.kinondoni.openspace',
           ),
         ),
       );
@@ -49,7 +57,7 @@ class OfflineMapService {
       await for (final progress in download.downloadProgress) {
         onProgress(progress);
       }
-      
+
       onComplete();
     } catch (e) {
       onError(e);
@@ -82,8 +90,8 @@ class OfflineMapService {
 
   static TileLayer getTileLayer() {
     return TileLayer(
-      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      tileProvider: FMTCStore(storeName).getTileProvider(),
+      urlTemplate: MapStyleConfig.streets,
+      tileProvider: _tileProvider,
       userAgentPackageName: 'com.kinondoni.openspace',
       maxZoom: 19,
     );

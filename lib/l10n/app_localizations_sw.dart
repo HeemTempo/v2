@@ -75,6 +75,9 @@ class AppLocalizationsSw extends AppLocalizations {
   String get loginSuccess => 'Umeingia kwa mafanikio!';
 
   @override
+  String get logoutSuccess => 'Umetoka kwenye akaunti kwa mafanikio.';
+
+  @override
   String get loginFailed => 'Kuingia kumeshindikana. Tafadhali hakikisha taarifa zako.';
 
   @override
@@ -130,6 +133,12 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get dashboard => 'Dashibodi';
+
+  @override
+  String get homeNavLabel => 'Mwanzo';
+
+  @override
+  String get profileNavLabel => 'Wasifu';
 
   @override
   String get notificationsTitle => 'Arifa';
@@ -715,6 +724,9 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get offlineMode => 'Nje ya mtandao';
+
+  @override
+  String get continueOfflineButton => 'Endelea bila mtandao';
 
   @override
   String get usernameRequired => 'Jina la mtumiaji linahitajika';

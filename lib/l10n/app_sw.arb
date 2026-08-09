@@ -25,6 +25,7 @@
   "signInButton": "Ingia",
   "dontHaveAccount": "Huna akaunti? Unda akaunti",
   "loginSuccess": "Umeingia kwa mafanikio!",
+  "logoutSuccess": "Umetoka kwenye akaunti kwa mafanikio.",
   "loginFailed": "Kuingia kumeshindikana. Tafadhali hakikisha taarifa zako.",
 
   "createAccountTitle": "Unda Akaunti",
@@ -46,6 +47,8 @@
   "passwordsDoNotMatch": "Manenosiri hayalingani",
 
   "dashboard": "Dashibodi",
+  "homeNavLabel": "Mwanzo",
+  "profileNavLabel": "Wasifu",
   "notificationsTitle": "Arifa",
   "myProfile": "Profaili Yangu",
   "helpFaqs": "Msaada & Maswali Yanayoulizwa Mara kwa Mara",
@@ -289,6 +292,7 @@
   "okButton": "Sawa",
   "onlineMode": "Mtandaoni",
   "offlineMode": "Nje ya mtandao",
+  "continueOfflineButton": "Endelea bila mtandao",
   "usernameRequired": "Jina la mtumiaji linahitajika",
   "passwordRequired": "Nenosiri linahitajika",
   "connectionTimeout": "Muunganisho umekwisha muda. Tafadhali angalia intaneti yako na ujaribu tena.",

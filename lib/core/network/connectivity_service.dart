@@ -1,9 +1,9 @@
-
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
+import '../../config/app_config.dart';
 
 class ConnectivityService extends ChangeNotifier {
   final Connectivity _connectivity = Connectivity();
@@ -17,7 +17,7 @@ class ConnectivityService extends ChangeNotifier {
   bool get isReconnecting => _isReconnecting;
 
   ConnectivityService({String? serverCheckUrl})
-      : _serverCheckUrl = serverCheckUrl ?? 'https://www.google.com' {
+    : _serverCheckUrl = serverCheckUrl ?? AppConfig.healthCheckUrl {
     _initConnectivity();
     _startMonitoring();
   }
@@ -38,7 +38,8 @@ class ConnectivityService extends ChangeNotifier {
   void _startMonitoring() {
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
       (List<ConnectivityResult> results) async {
-        final result = results.isNotEmpty ? results.first : ConnectivityResult.none;
+        final result =
+            results.isNotEmpty ? results.first : ConnectivityResult.none;
         await _updateConnectionStatus([result]);
       },
       onError: (error) {
@@ -53,7 +54,7 @@ class ConnectivityService extends ChangeNotifier {
   /// Update connection status with actual reachability check
   Future<void> _updateConnectionStatus(List<ConnectivityResult> results) async {
     final result = results.isNotEmpty ? results.first : ConnectivityResult.none;
-    
+
     if (result == ConnectivityResult.none) {
       _isOnline = false;
       _isReconnecting = false;
@@ -69,9 +70,9 @@ class ConnectivityService extends ChangeNotifier {
 
     // Connected to WiFi/Mobile, check if we can reach the server
     final canReachServer = await _checkServerReachability();
-    
+
     _isReconnecting = false;
-    
+
     if (_isOnline != canReachServer) {
       _isOnline = canReachServer;
       notifyListeners();
@@ -88,13 +89,13 @@ class ConnectivityService extends ChangeNotifier {
   Future<bool> _checkServerReachability() async {
     try {
       // Try to reach your actual server first
-      final response = await http.get(
-        Uri.parse(_serverCheckUrl),
-      ).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () => http.Response('Timeout', 408),
-      );
-      
+      final response = await http
+          .get(Uri.parse(_serverCheckUrl))
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => http.Response('Timeout', 408),
+          );
+
       if (response.statusCode >= 200 && response.statusCode < 500) {
         print('Server reachable: ${response.statusCode}');
         return true;
@@ -105,10 +106,10 @@ class ConnectivityService extends ChangeNotifier {
 
     // Fallback: check if internet is available at all
     try {
-      final result = await InternetAddress.lookup('google.com').timeout(
-        const Duration(seconds: 5),
-      );
-      
+      final result = await InternetAddress.lookup(
+        'google.com',
+      ).timeout(const Duration(seconds: 5));
+
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
         print('Internet available but server unreachable');
         return false; // Internet works but server is down
@@ -133,7 +134,7 @@ class ConnectivityService extends ChangeNotifier {
   Future<bool> checkConnectivity() async {
     _isReconnecting = true;
     notifyListeners();
-    
+
     final result = await _connectivity.checkConnectivity();
     await _updateConnectionStatus(result);
     return _isOnline;

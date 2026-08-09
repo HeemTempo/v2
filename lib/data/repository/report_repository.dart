@@ -16,11 +16,14 @@ class ReportRepository {
   Future<bool> _isConnected() async {
     try {
       // First check basic connectivity
-      final connectivityResult = await Connectivity().checkConnectivity();
-      if (connectivityResult == ConnectivityResult.none) {
+      final connectivityResults = await Connectivity().checkConnectivity();
+      if (connectivityResults.isEmpty ||
+          connectivityResults.every(
+            (result) => result == ConnectivityResult.none,
+          )) {
         return false;
       }
-      
+
       // We rely on the actual request to fail if there's no real internet.
       // The google.com check was causing false negatives.
       return true;
@@ -77,13 +80,13 @@ class ReportRepository {
       );
 
       final report = Report.fromRestJson(response);
-      
+
       // Save synced report locally
       await localService.saveReport(report.copyWith(status: 'submitted'));
       return report;
     } catch (e) {
       print('Online submission failed: $e. Saving offline.');
-      
+
       // Fallback to offline if network request fails
       return await _saveOfflineReport(
         description: description,
@@ -130,11 +133,10 @@ class ReportRepository {
       user: null,
       status: 'pending',
     );
-    
+
     await localService.saveReport(offlineReport);
     return offlineReport;
   }
-
 
   // Static lock to prevent concurrent syncs across multiple repository instances
   static bool _isSyncing = false;
@@ -142,35 +144,39 @@ class ReportRepository {
   /// Sync all pending reports to backend
   Future<void> syncPendingReports() async {
     if (_isSyncing) {
-      print('ReportRepository: Sync already in progress (static lock). Skipping.');
+      print(
+        'ReportRepository: Sync already in progress (static lock). Skipping.',
+      );
       return;
     }
-    
+
     final isOnline = await _isConnected();
     if (!isOnline) {
       return;
     }
 
     final pendingReports = await localService.getPendingReports();
-    
+
     if (pendingReports.isEmpty) {
       return;
     }
-    
+
     _isSyncing = true;
-    
+
     // Run sync in background without blocking
-    _doSync(pendingReports).then((_) {
-      _isSyncing = false;
-    }).catchError((e) {
-      print('[ReportRepository] Sync error: $e');
-      _isSyncing = false;
-    });
+    _doSync(pendingReports)
+        .then((_) {
+          _isSyncing = false;
+        })
+        .catchError((e) {
+          print('[ReportRepository] Sync error: $e');
+          _isSyncing = false;
+        });
   }
 
   Future<void> _doSync(List<Report> pendingReports) async {
     int successCount = 0;
-    
+
     final reportsToSync = pendingReports.reversed.toList();
 
     for (final report in reportsToSync) {
@@ -189,7 +195,7 @@ class ReportRepository {
         ).timeout(const Duration(seconds: 10));
 
         await localService.removeReport(report.id);
-        
+
         successCount++;
       } on SocketException {
         break;
@@ -202,7 +208,7 @@ class ReportRepository {
   }
 
   Future<List<Report>> getPendingReports() => localService.getPendingReports();
-  
+
   Future<List<Report>> getAllReports({bool forceRefresh = false}) async {
     // Return cached data if available and fresh (< 5 minutes old)
     if (!forceRefresh && _cachedReports != null && _lastFetch != null) {
@@ -211,19 +217,19 @@ class ReportRepository {
         return _cachedReports!;
       }
     }
-    
+
     final isOnline = await _isConnected();
-    
+
     if (isOnline) {
       try {
         // Fetch from REST API
         final serverReports = await ReportingService.getUserReports();
-        
+
         // Save to local database
         for (final report in serverReports) {
           await localService.saveReport(report);
         }
-        
+
         _cachedReports = serverReports;
         _lastFetch = DateTime.now();
         return serverReports;
@@ -232,7 +238,7 @@ class ReportRepository {
         // Fallback to local if server fails
       }
     }
-    
+
     // Load from local database (offline or server failed)
     final reports = await localService.getAllReports();
     _cachedReports = reports;
