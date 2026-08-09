@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../config/app_config.dart';
 import '../data/repository/profile_repository.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
@@ -99,26 +98,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
     return fallback;
   }
 
-  String? _profilePhotoUrl() {
-    final nestedUser = _profile?['user'];
-    final candidates = <dynamic>[
-      _profile?['photoUrl'],
-      _profile?['profile_picture'],
-      _profile?['profilePicture'],
-      if (nestedUser is Map) nestedUser['profile_picture'],
-    ];
-
-    for (final candidate in candidates) {
-      final value = candidate?.toString().trim() ?? '';
-      if (value.isEmpty) continue;
-
-      final uri = Uri.tryParse(value);
-      if (uri != null && uri.hasScheme) return value;
-      return Uri.parse(AppConfig.baseUrl).resolve(value).toString();
-    }
-    return null;
-  }
-
   Future<void> _openEditProfile() async {
     await Navigator.pushNamed(context, '/edit-profile');
     if (mounted) await _fetchProfile();
@@ -177,14 +156,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   children: [
                     _ProfileHero(
                       name: _profileValue([
-                        'name',
                         'username',
+                        'name',
                       ], fallback: user.username),
                       email: _profileValue([
                         'email',
                       ], fallback: loc.profileNoData),
-                      photoUrl: _profilePhotoUrl(),
                       onEdit: _openEditProfile,
+                      usernameLabel: loc.usernameLabel,
+                      emailLabel: loc.emailInput,
+                      editLabel: loc.editProfileTitle,
                     ),
                     const SizedBox(height: 24),
                     _SectionTitle(
@@ -253,136 +234,66 @@ class _ProfileHero extends StatelessWidget {
   const _ProfileHero({
     required this.name,
     required this.email,
-    required this.photoUrl,
     required this.onEdit,
+    required this.usernameLabel,
+    required this.emailLabel,
+    required this.editLabel,
   });
 
   final String name;
   final String email;
-  final String? photoUrl;
   final VoidCallback onEdit;
+  final String usernameLabel;
+  final String emailLabel;
+  final String editLabel;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : AppConstants.navy;
+
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppConstants.primaryGreen,
-            AppConstants.primaryGreenDark,
-            AppConstants.navy,
-          ],
+        color: isDark ? AppConstants.darkCard : Colors.white,
+        border: Border.all(
+          color: isDark ? AppConstants.darkBorder : AppConstants.border,
         ),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
-            color: AppConstants.primaryGreen.withValues(alpha: 0.24),
-            blurRadius: 26,
-            offset: const Offset(0, 12),
+            color: AppConstants.navy.withValues(alpha: isDark ? 0.12 : 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Stack(
         children: [
-          const Positioned(
-            top: -62,
-            right: -55,
-            child: _DecorativeCircle(size: 180),
-          ),
-          const Positioned(
-            bottom: -72,
-            left: -54,
-            child: _DecorativeCircle(size: 150),
-          ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(22, 25, 22, 24),
+            padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
             child: Column(
               children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      width: 112,
-                      height: 112,
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.75),
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.22),
-                            blurRadius: 18,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '$usernameLabel: ',
+                        style: const TextStyle(fontWeight: FontWeight.w800),
                       ),
-                      child: ClipOval(
-                        child:
-                            photoUrl == null
-                                ? Image.asset(
-                                  'assets/images/profile-avatar-v2.jpg',
-                                  fit: BoxFit.cover,
-                                )
-                                : Image.network(
-                                  photoUrl!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder:
-                                      (
-                                        context,
-                                        error,
-                                        stackTrace,
-                                      ) => Image.asset(
-                                        'assets/images/profile-avatar-v2.jpg',
-                                        fit: BoxFit.cover,
-                                      ),
-                                ),
-                      ),
-                    ),
-                    Positioned(
-                      right: -3,
-                      bottom: 3,
-                      child: Material(
-                        color: Colors.white,
-                        shape: const CircleBorder(),
-                        elevation: 5,
-                        child: InkWell(
-                          onTap: onEdit,
-                          customBorder: const CircleBorder(),
-                          child: const SizedBox(
-                            width: 38,
-                            height: 38,
-                            child: Icon(
-                              Icons.edit_rounded,
-                              size: 18,
-                              color: AppConstants.primaryGreen,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 17),
-                Text(
-                  name,
+                      TextSpan(text: name),
+                    ],
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 7),
+                const SizedBox(height: 9),
                 Container(
                   constraints: const BoxConstraints(maxWidth: 290),
                   padding: const EdgeInsets.symmetric(
@@ -390,10 +301,16 @@ class _ProfileHero extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
+                    color:
+                        isDark
+                            ? AppConstants.darkCardAlt
+                            : AppConstants.primaryGreenSoft,
                     borderRadius: BorderRadius.circular(99),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.16),
+                      color:
+                          isDark
+                              ? AppConstants.darkBorder
+                              : AppConstants.border,
                     ),
                   ),
                   child: Row(
@@ -402,16 +319,26 @@ class _ProfileHero extends StatelessWidget {
                       const Icon(
                         Icons.mail_outline_rounded,
                         size: 16,
-                        color: AppConstants.accentMint,
+                        color: AppConstants.primaryGreen,
                       ),
                       const SizedBox(width: 7),
                       Flexible(
-                        child: Text(
-                          email,
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '$emailLabel: ',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              TextSpan(text: email),
+                            ],
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.88),
+                            color: textColor,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
@@ -420,33 +347,30 @@ class _ProfileHero extends StatelessWidget {
                     ],
                   ),
                 ),
+                const SizedBox(height: 17),
+                SizedBox(
+                  width: 172,
+                  height: 44,
+                  child: FilledButton.icon(
+                    onPressed: onEdit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppConstants.primaryGreen,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                    ),
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: Text(
+                      editLabel,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _DecorativeCircle extends StatelessWidget {
-  const _DecorativeCircle({required this.size});
-
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.08),
-            width: 25,
-          ),
-        ),
       ),
     );
   }
@@ -613,7 +537,7 @@ class _ProfileLoadingView extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
       children: [
         Container(
-          height: 254,
+          height: 174,
           decoration: BoxDecoration(
             color: surface,
             borderRadius: BorderRadius.circular(28),
@@ -622,15 +546,6 @@ class _ProfileLoadingView extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 104,
-                  height: 104,
-                  decoration: BoxDecoration(
-                    color: shimmer,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(height: 18),
                 Container(
                   width: 128,
                   height: 15,

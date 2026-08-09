@@ -16,13 +16,15 @@ class ProfileService {
     print('ProfileService: Fetching profile from $profileUri');
 
     try {
-      final response = await http.get(
-        profileUri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .get(
+            profileUri,
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
 
       print('ProfileService: Response Status Code: ${response.statusCode}');
       print('ProfileService: Response Body: ${response.body}');
@@ -42,5 +44,56 @@ class ProfileService {
       print('ProfileService: Error fetching profile');
       throw Exception('An unexpected error occurred');
     }
+  }
+
+  Future<Map<String, dynamic>> updateProfile({
+    required String token,
+    required String username,
+    required String email,
+  }) async {
+    if (token.isEmpty) {
+      throw Exception('Please log in to update your profile.');
+    }
+
+    final response = await http
+        .patch(
+          Uri.parse('$_baseUrl$_profileEndpoint'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'username': username.trim(),
+            'email': email.trim(),
+          }),
+        )
+        .timeout(const Duration(seconds: 15));
+
+    final dynamic decoded =
+        response.body.isEmpty ? <String, dynamic>{} : jsonDecode(response.body);
+
+    if (response.statusCode == 200 && decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      await AuthService.logout();
+      throw Exception('Authentication error: Please log in again.');
+    }
+
+    if (decoded is Map<String, dynamic>) {
+      final messages = <String>[];
+      for (final entry in decoded.entries) {
+        final value = entry.value;
+        if (value is List) {
+          messages.addAll(value.map((item) => item.toString()));
+        } else {
+          messages.add(value.toString());
+        }
+      }
+      if (messages.isNotEmpty) throw Exception(messages.join(' '));
+    }
+
+    throw Exception('Failed to update profile. Please try again.');
   }
 }

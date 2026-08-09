@@ -2,7 +2,6 @@ import 'package:kinondoni_openspace_app/data/local/rofile_local_data_source.dart
 import 'package:kinondoni_openspace_app/service/auth_service.dart';
 import '../../service/ProfileService.dart';
 
-
 class ProfileRepository {
   /// Fetch profile:
   /// 1. Try online
@@ -27,5 +26,23 @@ class ProfileRepository {
       }
       throw Exception("No profile data available (offline cache empty).");
     }
+  }
+
+  static Future<Map<String, dynamic>> updateProfile({
+    required String username,
+    required String email,
+  }) async {
+    final token = await AuthService.getToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Not authenticated');
+    }
+
+    final profile = await ProfileService().updateProfile(
+      token: token,
+      username: username,
+      email: email,
+    );
+    await ProfileLocalDataSource.cacheProfile(profile);
+    return profile;
   }
 }
