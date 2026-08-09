@@ -380,6 +380,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportSubmittedMessage => 'Report submitted successfully!';
 
   @override
+  String get reportSuccessTitle => 'Report received';
+
+  @override
+  String get reportSuccessMessage => 'Thank you. Your report was sent successfully and our team will review it shortly.';
+
+  @override
+  String get reportQueuedTitle => 'Report saved safely';
+
+  @override
+  String get reportQueuedMessage => 'Your report is saved on this device and will be sent automatically when the connection is stable.';
+
+  @override
+  String get reportFailedTitle => 'Report not sent';
+
+  @override
+  String get reportFailedMessage => 'We couldn\'t submit your report right now. Your form is still here, so you can check it and try again.';
+
+  @override
+  String get reportReferenceLabel => 'Report reference';
+
+  @override
+  String get reportDoneButton => 'Done';
+
+  @override
+  String get reportTryAgainButton => 'Review form';
+
+  @override
+  String get reportFormSectionTitle => 'Tell us what happened';
+
+  @override
+  String get reportContactOptionalTitle => 'Contact details (optional)';
+
+  @override
+  String get reportDescriptionRequired => 'Please describe the issue before submitting.';
+
+  @override
   String get bookingPageTitle => 'Book Community Space';
 
   @override

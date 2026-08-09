@@ -833,6 +833,78 @@ abstract class AppLocalizations {
   /// **'Report submitted successfully!'**
   String get reportSubmittedMessage;
 
+  /// No description provided for @reportSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report received'**
+  String get reportSuccessTitle;
+
+  /// No description provided for @reportSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you. Your report was sent successfully and our team will review it shortly.'**
+  String get reportSuccessMessage;
+
+  /// No description provided for @reportQueuedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report saved safely'**
+  String get reportQueuedTitle;
+
+  /// No description provided for @reportQueuedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your report is saved on this device and will be sent automatically when the connection is stable.'**
+  String get reportQueuedMessage;
+
+  /// No description provided for @reportFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report not sent'**
+  String get reportFailedTitle;
+
+  /// No description provided for @reportFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t submit your report right now. Your form is still here, so you can check it and try again.'**
+  String get reportFailedMessage;
+
+  /// No description provided for @reportReferenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Report reference'**
+  String get reportReferenceLabel;
+
+  /// No description provided for @reportDoneButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get reportDoneButton;
+
+  /// No description provided for @reportTryAgainButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Review form'**
+  String get reportTryAgainButton;
+
+  /// No description provided for @reportFormSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what happened'**
+  String get reportFormSectionTitle;
+
+  /// No description provided for @reportContactOptionalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact details (optional)'**
+  String get reportContactOptionalTitle;
+
+  /// No description provided for @reportDescriptionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please describe the issue before submitting.'**
+  String get reportDescriptionRequired;
+
   /// No description provided for @bookingPageTitle.
   ///
   /// In en, this message translates to:

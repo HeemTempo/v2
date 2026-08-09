@@ -302,14 +302,10 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     // We don't await this because we want to start geocoding concurrently
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      backgroundColor:
-          Theme.of(context).brightness == Brightness.dark
-              ? Colors.grey[850]
-              : Colors.white,
+      backgroundColor: Colors.transparent,
+      barrierColor: AppConstants.navy.withValues(alpha: 0.58),
       isScrollControlled: true,
+      useSafeArea: true,
       builder: (context) {
         return ValueListenableBuilder<String?>(
           valueListenable: _selectedAreaNameNotifier,
@@ -547,179 +543,421 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   Widget _buildBottomSheetWithContent(String? areaName) {
     final isOpenSpace = _selectedSpace != null && _selectedSpace!.id.isNotEmpty;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black87;
+    final localizations = AppLocalizations.of(context)!;
+    final surfaceColor = isDark ? AppConstants.darkCard : AppConstants.white;
+    final textColor = isDark ? AppConstants.darkText : AppConstants.navy;
+    final secondaryTextColor =
+        isDark ? AppConstants.darkTextSecondary : AppConstants.muted;
+    final borderColor = isDark ? AppConstants.darkBorder : AppConstants.border;
+    final selectedSpace = _selectedSpace;
+    final isAvailable = selectedSpace?.isAvailable ?? false;
+    final statusColor =
+        isAvailable ? AppConstants.primaryGreen : AppConstants.danger;
+    final statusText =
+        selectedSpace?.status.trim().isNotEmpty == true
+            ? _formatStatus(selectedSpace!.status)
+            : localizations.statusUnknown;
+    final title =
+        isOpenSpace
+            ? selectedSpace!.name
+            : areaName ?? localizations.unknownArea;
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Grabber handle
-          Container(
-            width: 40,
-            height: 5,
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.grey[400],
-              borderRadius: BorderRadius.circular(2.5),
+    return SafeArea(
+      top: false,
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.84,
+        ),
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.32 : 0.18),
+              blurRadius: 32,
+              offset: const Offset(0, -8),
             ),
+          ],
+        ),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            8,
+            20,
+            20 + MediaQuery.paddingOf(context).bottom,
           ),
-          Align(
-            alignment: Alignment.topRight,
-            child: IconButton(
-              icon: Icon(
-                Icons.close,
-                size: 20,
-                color: isDark ? Colors.white70 : Colors.black54,
-              ),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-          // Title
-          if (isOpenSpace)
-            Text(
-              _selectedSpace!.name,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: textColor,
-              ),
-              textAlign: TextAlign.center,
-            )
-          else if (areaName != null)
-            Text(
-              areaName,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: textColor,
-              ),
-              textAlign: TextAlign.center,
-            )
-          else
-            const Center(
-              child: SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          const SizedBox(height: 12),
-
-          // Details for OpenSpace or normal point
-          _buildDetailRow(
-            AppLocalizations.of(context)!.districtLabel,
-            _selectedSpace?.district ?? "N/A",
-          ),
-          _buildDetailRow(
-            AppLocalizations.of(context)!.streetLabel,
-            _selectedSpace?.street ?? "N/A",
-          ),
-          if (isOpenSpace)
-            _buildDetailRow(
-              AppLocalizations.of(context)!.status,
-              _selectedSpace!.status,
-              valueColor:
-                  _selectedSpace!.isAvailable
-                      ? AppConstants.primaryGreen
-                      : AppConstants.danger,
-            ),
-
-          const SizedBox(height: 16),
-          // Action Buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ElevatedButton.icon(
-                onPressed:
-                    _selectedPosition != null
-                        ? () {
-                          Navigator.pop(context);
-                          _getDirections(_selectedPosition!);
-                        }
-                        : null,
-                icon: const Icon(Icons.directions, size: 18),
-                label: Text(
-                  AppLocalizations.of(context)!.getDirectionsButton,
-                  style: const TextStyle(fontSize: 13),
+              SizedBox(
+                height: 42,
+                child: Stack(
+                  alignment: Alignment.topCenter,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 5,
+                      margin: const EdgeInsets.only(top: 4),
+                      decoration: BoxDecoration(
+                        color:
+                            isDark
+                                ? AppConstants.darkTextSecondary.withValues(
+                                  alpha: 0.45,
+                                )
+                                : AppConstants.border,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                    Positioned(
+                      right: -6,
+                      top: 0,
+                      child: IconButton(
+                        tooltip: localizations.cancelButton,
+                        onPressed: () => Navigator.pop(context),
+                        style: IconButton.styleFrom(
+                          backgroundColor:
+                              isDark
+                                  ? AppConstants.darkCardAlt
+                                  : AppConstants.pageBackground,
+                          foregroundColor: secondaryTextColor,
+                        ),
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                      ),
+                    ),
+                  ],
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppConstants.primaryGreen,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
+              ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      color: AppConstants.primaryGreenSoft,
+                      borderRadius: BorderRadius.circular(17),
+                    ),
+                    child: const Icon(
+                      Icons.park_rounded,
+                      color: AppConstants.primaryGreen,
+                      size: 28,
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          localizations.openSpaceDetails.toUpperCase(),
+                          style: TextStyle(
+                            color: AppConstants.primaryGreen,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        if (!isOpenSpace && areaName == null)
+                          const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2.4),
+                          )
+                        else
+                          Text(
+                            title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 22,
+                              height: 1.16,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.4,
+                            ),
+                          ),
+                        if (isOpenSpace) ...[
+                          const SizedBox(height: 9),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: statusColor.withValues(alpha: 0.11),
+                                borderRadius: BorderRadius.circular(99),
+                                border: Border.all(
+                                  color: statusColor.withValues(alpha: 0.22),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: BoxDecoration(
+                                      color: statusColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    statusText,
+                                    style: TextStyle(
+                                      color: statusColor,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 22),
+              Container(
+                decoration: BoxDecoration(
+                  color:
+                      isDark
+                          ? AppConstants.darkCardAlt
+                          : AppConstants.pageBackground,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Column(
+                  children: [
+                    _buildSheetDetailRow(
+                      icon: Icons.location_city_rounded,
+                      label: localizations.districtLabel,
+                      value: selectedSpace?.district ?? 'N/A',
+                      textColor: textColor,
+                      secondaryTextColor: secondaryTextColor,
+                    ),
+                    Divider(height: 1, indent: 54, color: borderColor),
+                    _buildSheetDetailRow(
+                      icon: Icons.signpost_rounded,
+                      label: localizations.streetLabel,
+                      value: selectedSpace?.street ?? 'N/A',
+                      textColor: textColor,
+                      secondaryTextColor: secondaryTextColor,
+                    ),
+                  ],
                 ),
               ),
               if (isOpenSpace) ...[
-                ElevatedButton.icon(
-                  onPressed:
-                      _selectedSpace!.isAvailable
-                          ? () {
-                            Navigator.pop(context);
-                            _bookSpace();
-                          }
-                          : null,
-                  icon: const Icon(Icons.event_available, size: 18),
-                  label: Text(
-                    AppLocalizations.of(context)!.bookNowButton,
-                    style: const TextStyle(fontSize: 13),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(13),
+                  decoration: BoxDecoration(
+                    color: AppConstants.danger.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(15),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.primaryGreen,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppConstants.danger.withValues(alpha: 0.13),
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        child: const Icon(
+                          Icons.campaign_rounded,
+                          color: AppConstants.danger,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 11),
+                      Expanded(
+                        child: Text(
+                          localizations.reportIssueSubtitle,
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: 12,
+                            height: 1.35,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                ElevatedButton.icon(
+                const SizedBox(height: 16),
+                FilledButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
                     _reportSpace();
                   },
-                  icon: const Icon(Icons.report_problem, size: 18),
-                  label: Text(
-                    AppLocalizations.of(context)!.reportButton,
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                  style: ElevatedButton.styleFrom(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(54),
                     backgroundColor: AppConstants.danger,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    elevation: 0,
+                  ),
+                  icon: const Icon(Icons.report_problem_rounded, size: 21),
+                  label: Text(
+                    localizations.reportIssue,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
+                const SizedBox(height: 11),
               ],
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed:
+                          _selectedPosition != null
+                              ? () {
+                                Navigator.pop(context);
+                                _getDirections(_selectedPosition!);
+                              }
+                              : null,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(52),
+                        foregroundColor:
+                            isDark ? Colors.white : AppConstants.navy,
+                        side: BorderSide(color: borderColor),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      icon: const Icon(Icons.directions_rounded, size: 19),
+                      label: Text(
+                        localizations.getDirectionsButton,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (isOpenSpace) ...[
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        onPressed:
+                            isAvailable
+                                ? () {
+                                  Navigator.pop(context);
+                                  _bookSpace();
+                                }
+                                : null,
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(52),
+                          backgroundColor:
+                              isDark
+                                  ? AppConstants.primaryGreen.withValues(
+                                    alpha: 0.22,
+                                  )
+                                  : AppConstants.primaryGreenSoft,
+                          foregroundColor:
+                              isDark
+                                  ? AppConstants.accentMint
+                                  : AppConstants.primaryGreenDark,
+                          disabledBackgroundColor:
+                              isDark
+                                  ? AppConstants.darkCardAlt
+                                  : AppConstants.pageBackground,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.event_available_rounded,
+                          size: 19,
+                        ),
+                        label: Text(
+                          localizations.bookNowButton,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              AppLocalizations.of(context)!.cancelButton,
-              style: const TextStyle(
-                color: AppConstants.danger,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+        ),
+      ),
+    );
+  }
+
+  String _formatStatus(String status) {
+    final normalized = status.trim();
+    if (normalized.isEmpty) return normalized;
+    return '${normalized[0].toUpperCase()}${normalized.substring(1).toLowerCase()}';
+  }
+
+  Widget _buildSheetDetailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color textColor,
+    required Color secondaryTextColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: AppConstants.primaryGreen.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: AppConstants.primaryGreen, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: secondaryTextColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value.trim().isEmpty ? 'N/A' : value,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 13,
+                    height: 1.25,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
         ],
       ),
     );
@@ -1434,33 +1672,6 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value, {Color? valueColor}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            "$label: ",
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: isDark ? Colors.grey[400] : Colors.black54,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              color: valueColor ?? (isDark ? Colors.white : Colors.black87),
-            ),
-          ),
-        ],
       ),
     );
   }

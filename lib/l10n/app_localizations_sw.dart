@@ -380,6 +380,42 @@ class AppLocalizationsSw extends AppLocalizations {
   String get reportSubmittedMessage => 'Ripoti imetumwa kwa mafanikio!';
 
   @override
+  String get reportSuccessTitle => 'Ripoti imepokelewa';
+
+  @override
+  String get reportSuccessMessage => 'Asante. Ripoti yako imetumwa kwa mafanikio na timu yetu itaipitia hivi karibuni.';
+
+  @override
+  String get reportQueuedTitle => 'Ripoti imehifadhiwa salama';
+
+  @override
+  String get reportQueuedMessage => 'Ripoti yako imehifadhiwa kwenye kifaa hiki na itatumwa kiotomatiki muunganisho utakapokuwa thabiti.';
+
+  @override
+  String get reportFailedTitle => 'Ripoti haijatumwa';
+
+  @override
+  String get reportFailedMessage => 'Hatukuweza kutuma ripoti yako sasa. Fomu yako bado ipo ili uweze kuikagua na kujaribu tena.';
+
+  @override
+  String get reportReferenceLabel => 'Namba ya kumbukumbu';
+
+  @override
+  String get reportDoneButton => 'Imekamilika';
+
+  @override
+  String get reportTryAgainButton => 'Kagua fomu';
+
+  @override
+  String get reportFormSectionTitle => 'Tuambie kilichotokea';
+
+  @override
+  String get reportContactOptionalTitle => 'Mawasiliano (si lazima)';
+
+  @override
+  String get reportDescriptionRequired => 'Tafadhali eleza tatizo kabla ya kutuma.';
+
+  @override
   String get bookingPageTitle => 'Hifadhi Nafasi ya Jamii';
 
   @override

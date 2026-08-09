@@ -142,6 +142,18 @@
   "submitReportButton": "Submit Report",
   "submittingLabel": "Submitting...",
   "reportSubmittedMessage": "Report submitted successfully!",
+  "reportSuccessTitle": "Report received",
+  "reportSuccessMessage": "Thank you. Your report was sent successfully and our team will review it shortly.",
+  "reportQueuedTitle": "Report saved safely",
+  "reportQueuedMessage": "Your report is saved on this device and will be sent automatically when the connection is stable.",
+  "reportFailedTitle": "Report not sent",
+  "reportFailedMessage": "We couldn't submit your report right now. Your form is still here, so you can check it and try again.",
+  "reportReferenceLabel": "Report reference",
+  "reportDoneButton": "Done",
+  "reportTryAgainButton": "Review form",
+  "reportFormSectionTitle": "Tell us what happened",
+  "reportContactOptionalTitle": "Contact details (optional)",
+  "reportDescriptionRequired": "Please describe the issue before submitting.",
 
 
 
