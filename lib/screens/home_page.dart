@@ -17,10 +17,21 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
+  MapLaunchIntent _mapLaunchIntent = MapLaunchIntent.browse;
 
   void _onTabTapped(int index) {
     setState(() {
       _currentIndex = index;
+      if (index == 1) {
+        _mapLaunchIntent = MapLaunchIntent.browse;
+      }
+    });
+  }
+
+  void _openMap(MapLaunchIntent intent) {
+    setState(() {
+      _mapLaunchIntent = intent;
+      _currentIndex = 1;
     });
   }
 
@@ -31,8 +42,8 @@ class _HomePageState extends State<HomePage> {
 
     // Define the pages for the IndexedStack
     final List<Widget> pages = [
-      HomeTab(onTabChange: _onTabTapped),
-      const MapScreen(showBottomNav: false),
+      HomeTab(onOpenMap: _openMap),
+      MapScreen(showBottomNav: false, launchIntent: _mapLaunchIntent),
       isAnonymous
           ? const GuestProfilePage()
           : const UserProfilePage(showBottomNav: false),

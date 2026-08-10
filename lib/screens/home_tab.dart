@@ -9,12 +9,13 @@ import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
 import '../service/openspace_service.dart';
 import '../utils/constants.dart';
+import 'map_screen.dart';
 import 'side_bar.dart';
 
 class HomeTab extends StatefulWidget {
-  const HomeTab({super.key, required this.onTabChange});
+  const HomeTab({super.key, required this.onOpenMap});
 
-  final ValueChanged<int> onTabChange;
+  final ValueChanged<MapLaunchIntent> onOpenMap;
 
   @override
   State<HomeTab> createState() => _HomeTabState();
@@ -153,7 +154,7 @@ class _HomeTabState extends State<HomeTab> {
               title: loc.reportIssue,
               subtitle: loc.reportIssueSubtitle,
               color: AppConstants.danger,
-              onTap: () => widget.onTabChange(1),
+              onTap: () => widget.onOpenMap(MapLaunchIntent.report),
             ),
             const SizedBox(height: 12),
             _ActionTile(
@@ -161,7 +162,7 @@ class _HomeTabState extends State<HomeTab> {
               title: loc.bookSpace,
               subtitle: loc.bookSpaceSubtitle,
               color: AppConstants.primaryGreen,
-              onTap: () => widget.onTabChange(1),
+              onTap: () => widget.onOpenMap(MapLaunchIntent.booking),
             ),
             const SizedBox(height: 24),
             _SectionHeading(title: loc.quickStats),

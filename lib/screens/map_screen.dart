@@ -22,9 +22,16 @@ import '../providers/user_provider.dart';
 import '../widget/custom_navigation_bar.dart';
 import '../l10n/app_localizations.dart';
 
+enum MapLaunchIntent { browse, report, booking }
+
 class MapScreen extends StatefulWidget {
   final bool showBottomNav;
-  const MapScreen({super.key, this.showBottomNav = true});
+  final MapLaunchIntent launchIntent;
+  const MapScreen({
+    super.key,
+    this.showBottomNav = true,
+    this.launchIntent = MapLaunchIntent.browse,
+  });
 
   @override
   MapScreenState createState() => MapScreenState();
@@ -338,6 +345,34 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     }
   }
 
+  Future<void> _handleLocationSelection(
+    LatLng position, {
+    OpenSpaceMarker? openSpace,
+  }) async {
+    if (!mounted) return;
+
+    if (openSpace == null || widget.launchIntent == MapLaunchIntent.browse) {
+      await _showLocationPopup(position, openSpace: openSpace);
+      return;
+    }
+
+    setState(() {
+      _selectedSpace = openSpace;
+      _selectedPosition = position;
+    });
+
+    switch (widget.launchIntent) {
+      case MapLaunchIntent.booking:
+        _bookSpace();
+        break;
+      case MapLaunchIntent.report:
+        _reportSpace();
+        break;
+      case MapLaunchIntent.browse:
+        break;
+    }
+  }
+
   void _closePopup() {
     if (mounted) {
       setState(() {
@@ -561,6 +596,10 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         isOpenSpace
             ? selectedSpace!.name
             : areaName ?? localizations.unknownArea;
+    final showReportAction =
+        isOpenSpace && widget.launchIntent != MapLaunchIntent.booking;
+    final showBookingAction =
+        isOpenSpace && widget.launchIntent != MapLaunchIntent.report;
 
     return SafeArea(
       top: false,
@@ -754,7 +793,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   ],
                 ),
               ),
-              if (isOpenSpace) ...[
+              if (showReportAction) ...[
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(13),
@@ -849,7 +888,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                       ),
                     ),
                   ),
-                  if (isOpenSpace) ...[
+                  if (showBookingAction) ...[
                     const SizedBox(width: 10),
                     Expanded(
                       child: FilledButton.tonalIcon(
@@ -1030,7 +1069,10 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
                 final clickedSpace = _findOpenSpaceAt(point);
 
-                await _showLocationPopup(point, openSpace: clickedSpace);
+                await _handleLocationSelection(
+                  point,
+                  openSpace: clickedSpace,
+                );
               },
             ),
             children: [
@@ -1110,7 +1152,7 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                             height: 48,
                             child: GestureDetector(
                               onTap:
-                                  () => _showLocationPopup(
+                                  () => _handleLocationSelection(
                                     space.point,
                                     openSpace: space,
                                   ),
