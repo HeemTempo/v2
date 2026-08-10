@@ -577,6 +577,8 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   Widget _buildBottomSheetWithContent(String? areaName) {
     final isOpenSpace = _selectedSpace != null && _selectedSpace!.id.isNotEmpty;
+    final isAnonymous =
+        Provider.of<UserProvider>(context, listen: false).user.isAnonymous;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final localizations = AppLocalizations.of(context)!;
     final surfaceColor = isDark ? AppConstants.darkCard : AppConstants.white;
@@ -599,7 +601,9 @@ class MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     final showReportAction =
         isOpenSpace && widget.launchIntent != MapLaunchIntent.booking;
     final showBookingAction =
-        isOpenSpace && widget.launchIntent != MapLaunchIntent.report;
+        isOpenSpace &&
+        !isAnonymous &&
+        widget.launchIntent != MapLaunchIntent.report;
 
     return SafeArea(
       top: false,

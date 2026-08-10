@@ -102,8 +102,8 @@ class GuestProfilePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 _BenefitRow(
-                  icon: Icons.calendar_month_outlined,
-                  title: loc.bookSpace,
+                  icon: Icons.park_outlined,
+                  title: loc.openSpaces,
                   color: AppConstants.primaryGreen,
                 ),
                 const SizedBox(height: 14),
