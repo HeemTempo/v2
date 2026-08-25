@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -15,7 +17,7 @@ class BookingPage extends StatefulWidget {
   const BookingPage({super.key, required this.spaceId, this.spaceName});
 
   @override
-  _BookingPageState createState() => _BookingPageState();
+  State<BookingPage> createState() => _BookingPageState();
 }
 
 class _BookingPageState extends State<BookingPage> {
@@ -137,18 +139,7 @@ class _BookingPageState extends State<BookingPage> {
       if (!mounted) return;
 
       if (success) {
-        QuickAlert.show(
-          context: context,
-          type: QuickAlertType.success,
-          title: 'Booking Submitted!',
-          text:
-              'Your booking has been successfully submitted! Our team will review your request shortly.',
-          confirmBtnText: 'Great!',
-          onConfirmBtnTap: () {
-            Navigator.of(context).pop(); // Close alert
-            Navigator.of(context).pop(); // Close booking page
-          },
-        );
+        await _showBookingSuccessDialog();
       }
     } catch (e) {
       if (!mounted) return;
@@ -158,6 +149,42 @@ class _BookingPageState extends State<BookingPage> {
         title: 'Booking Error',
         text: e.toString(),
       );
+    }
+  }
+
+  Future<void> _showBookingSuccessDialog() async {
+    final confirmed = await showGeneralDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: 'Booking submitted',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 320),
+      pageBuilder:
+          (dialogContext, animation, secondaryAnimation) => PopScope(
+            canPop: false,
+            child: _BookingSuccessDialog(
+              onConfirm: () => Navigator.of(dialogContext).pop(true),
+            ),
+          ),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final entrance = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+          reverseCurve: Curves.easeInCubic,
+        );
+
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.82, end: 1).animate(entrance),
+            child: child,
+          ),
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      Navigator.of(context).pop();
     }
   }
 
@@ -482,4 +509,179 @@ class _BookingPageState extends State<BookingPage> {
     _activitiesController.dispose();
     super.dispose();
   }
+}
+
+class _BookingSuccessDialog extends StatelessWidget {
+  const _BookingSuccessDialog({required this.onConfirm});
+
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: theme.colorScheme.surface,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 30, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const _AnimatedSuccessTick(),
+              const SizedBox(height: 22),
+              Text(
+                'Booking Submitted!',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Your booking has been successfully submitted! Our team will review your request shortly.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 26),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: onConfirm,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppConstants.primaryGreen,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Great!',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimatedSuccessTick extends StatefulWidget {
+  const _AnimatedSuccessTick();
+
+  @override
+  State<_AnimatedSuccessTick> createState() => _AnimatedSuccessTickState();
+}
+
+class _AnimatedSuccessTickState extends State<_AnimatedSuccessTick>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _scale = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0, 0.62, curve: Curves.elasticOut),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Booking successful',
+      image: true,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder:
+            (context, child) => Transform.scale(
+              scale: 0.72 + (_scale.value * 0.28),
+              child: CustomPaint(
+                key: const ValueKey('animated-booking-success-tick'),
+                size: const Size.square(96),
+                painter: _SuccessTickPainter(_controller.value),
+              ),
+            ),
+      ),
+    );
+  }
+}
+
+class _SuccessTickPainter extends CustomPainter {
+  const _SuccessTickPainter(this.progress);
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final radius = size.shortestSide / 2 - 5;
+    final green = AppConstants.primaryGreen;
+    final circleProgress = Curves.easeOutCubic.transform(
+      (progress / 0.58).clamp(0.0, 1.0),
+    );
+    final tickProgress = Curves.easeOutCubic.transform(
+      ((progress - 0.42) / 0.48).clamp(0.0, 1.0),
+    );
+
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()..color = green.withValues(alpha: 0.12),
+    );
+
+    final stroke =
+        Paint()
+          ..color = green
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 6
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -math.pi / 2,
+      math.pi * 2 * circleProgress,
+      false,
+      stroke,
+    );
+
+    final tick =
+        Path()
+          ..moveTo(size.width * 0.28, size.height * 0.52)
+          ..lineTo(size.width * 0.44, size.height * 0.68)
+          ..lineTo(size.width * 0.73, size.height * 0.37);
+    final metric = tick.computeMetrics().first;
+    canvas.drawPath(
+      metric.extractPath(0, metric.length * tickProgress),
+      stroke,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SuccessTickPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
