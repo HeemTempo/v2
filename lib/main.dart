@@ -469,10 +469,10 @@ class MyApp extends StatelessWidget {
                 }
 
                 // Handle /reset-password route
-                if (settings.name != null &&
-                    settings.name!.startsWith('/reset-password')) {
-                  final uri = Uri.parse(settings.name!);
-                  if (uri.pathSegments.length == 3 &&
+                if (settings.name != null) {
+                  final uri = Uri.tryParse(settings.name!);
+                  if (uri != null &&
+                      uri.pathSegments.length == 3 &&
                       uri.pathSegments[0] == 'reset-password') {
                     final uid = uri.pathSegments[1];
                     final token = uri.pathSegments[2];

@@ -133,7 +133,7 @@ class _HomeTabState extends State<HomeTab> {
         actions: [
           IconButton(
             tooltip: loc.emergencyContacts,
-            onPressed: () => _showEmergencyDialog(loc, isDark),
+            onPressed: () => _showEmergencyDialog(loc),
             icon: const Icon(Icons.phone_in_talk_outlined),
           ),
           const SizedBox(width: 8),
@@ -324,29 +324,35 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  void _showEmergencyDialog(AppLocalizations loc, bool isDark) {
-    showDialog<void>(
+  void _showEmergencyDialog(AppLocalizations loc) {
+    showGeneralDialog<void>(
       context: context,
-      builder:
-          (dialogContext) => AlertDialog(
-            backgroundColor: isDark ? AppConstants.darkCard : Colors.white,
-            title: Text(loc.emergencyContacts),
-            contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _EmergencyContact(title: loc.police, number: '112'),
-                _EmergencyContact(title: loc.fire, number: '114'),
-                _EmergencyContact(title: loc.ambulance, number: '115'),
-              ],
+      barrierDismissible: true,
+      barrierLabel: loc.close,
+      barrierColor: Colors.black.withValues(alpha: 0.62),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder:
+          (dialogContext, animation, secondaryAnimation) => SafeArea(
+            child: _EmergencyContactsDialog(
+              loc: loc,
+              onClose: () => Navigator.pop(dialogContext),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: Text(loc.close),
-              ),
-            ],
           ),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final entrance = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+          reverseCurve: Curves.easeInCubic,
+        );
+
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.88, end: 1).animate(entrance),
+            child: child,
+          ),
+        );
+      },
     );
   }
 }
@@ -568,39 +574,264 @@ class _StatItem extends StatelessWidget {
   }
 }
 
-class _EmergencyContact extends StatelessWidget {
-  const _EmergencyContact({required this.title, required this.number});
+class _EmergencyContactsDialog extends StatelessWidget {
+  const _EmergencyContactsDialog({required this.loc, required this.onClose});
 
-  final String title;
-  final String number;
+  final AppLocalizations loc;
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      leading: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: AppConstants.danger.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(13),
-        ),
-        child: const Icon(
-          Icons.phone_outlined,
-          color: AppConstants.danger,
-          size: 21,
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final surface = isDark ? AppConstants.darkCard : Colors.white;
+
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+      backgroundColor: surface,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(22, 18, 14, 22),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFE5484D), Color(0xFFB4232C)],
+                ),
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    right: -28,
+                    bottom: -48,
+                    child: Container(
+                      width: 130,
+                      height: 130,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.08),
+                      ),
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.22),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.emergency_rounded,
+                              color: Colors.white,
+                              size: 27,
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            tooltip: loc.close,
+                            onPressed: onClose,
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.white.withValues(
+                                alpha: 0.14,
+                              ),
+                              foregroundColor: Colors.white,
+                            ),
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        loc.emergencyContacts,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        '${loc.police} • ${loc.fire} • ${loc.ambulance}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.82),
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
+              child: Column(
+                children: [
+                  _EmergencyContact(
+                    title: loc.police,
+                    number: '112',
+                    icon: Icons.local_police_rounded,
+                    accent: const Color(0xFF2563EB),
+                  ),
+                  const SizedBox(height: 10),
+                  _EmergencyContact(
+                    title: loc.fire,
+                    number: '114',
+                    icon: Icons.local_fire_department_rounded,
+                    accent: const Color(0xFFF97316),
+                  ),
+                  const SizedBox(height: 10),
+                  _EmergencyContact(
+                    title: loc.ambulance,
+                    number: '115',
+                    icon: Icons.medical_services_rounded,
+                    accent: AppConstants.primaryGreen,
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: onClose,
+                  style: TextButton.styleFrom(
+                    foregroundColor:
+                        isDark ? Colors.white70 : AppConstants.muted,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    loc.close,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(number),
-      trailing: const Icon(
-        Icons.call_rounded,
-        color: AppConstants.primaryGreen,
+    );
+  }
+}
+
+class _EmergencyContact extends StatelessWidget {
+  const _EmergencyContact({
+    required this.title,
+    required this.number,
+    required this.icon,
+    required this.accent,
+  });
+
+  final String title;
+  final String number;
+  final IconData icon;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Material(
+      color:
+          isDark
+              ? AppConstants.darkBackground.withValues(alpha: 0.72)
+              : accent.withValues(alpha: 0.045),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: () async {
+          final uri = Uri(scheme: 'tel', path: number);
+          if (await canLaunchUrl(uri)) await launchUrl(uri);
+        },
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color:
+                  isDark
+                      ? AppConstants.darkBorder
+                      : accent.withValues(alpha: 0.14),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: isDark ? 0.18 : 0.11),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Icon(icon, color: accent, size: 24),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: isDark ? Colors.white : AppConstants.navy,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      number,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: accent,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppConstants.primaryGreen,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppConstants.primaryGreen.withValues(alpha: 0.22),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.call_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      onTap: () async {
-        final uri = Uri(scheme: 'tel', path: number);
-        if (await canLaunchUrl(uri)) await launchUrl(uri);
-      },
     );
   }
 }

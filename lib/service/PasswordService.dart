@@ -1,41 +1,65 @@
 import 'dart:convert';
 import 'dart:async';
+
 import 'package:http/http.dart' as http;
+
 import '../config/app_config.dart';
 
+class PasswordServiceException implements Exception {
+  const PasswordServiceException(this.message, {this.statusCode});
+
+  final String message;
+  final int? statusCode;
+
+  @override
+  String toString() => message;
+}
+
 class PasswordService {
-  final String _baseUrl = '${AppConfig.baseUrl}api/v1';
+  PasswordService({
+    http.Client? client,
+    String? baseUrl,
+    this.requestTimeout = const Duration(seconds: 15),
+  }) : _client = client ?? http.Client(),
+       _baseUrl = (baseUrl ?? '${AppConfig.baseUrl}api/v1').replaceFirst(
+         RegExp(r'/+$'),
+         '',
+       );
+
+  final http.Client _client;
+  final String _baseUrl;
+  final Duration requestTimeout;
 
   Future<String> requestPasswordReset(String email) async {
     final Uri url = Uri.parse('$_baseUrl/password-reset/');
 
     try {
-      print('AuthService: Requesting password reset for email: $email');
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email}),
+      final response = await _client
+          .post(
+            url,
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({'email': email.trim(), 'client': 'mobile'}),
+          )
+          .timeout(requestTimeout);
+
+      return _messageFromResponse(
+        response,
+        fallback: 'Unable to request a password reset right now.',
       );
-
-      print('AuthService: Password reset request response status: ${response.statusCode}');
-      final responseBody = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && responseBody['message'] != null) {
-        return responseBody['message'];
-      } else if (responseBody['error'] != null) {
-        throw Exception(responseBody['error']);
-      } else {
-        throw Exception('Failed to request password reset. Status: ${response.statusCode}');
-      }
-    } on TimeoutException catch (_) {
-      print('AuthService: Request password reset timed out.');
-      throw Exception('The request timed out. Please try again.');
-    } catch (e) {
-      print('AuthService: Error requesting password reset - $e');
-      if (e is Exception && e.toString().contains("timed out")) {
-        rethrow;
-      }
-      throw Exception('An error occurred');
+    } on PasswordServiceException {
+      rethrow;
+    } on TimeoutException {
+      throw const PasswordServiceException(
+        'The request timed out. Please try again.',
+      );
+    } on http.ClientException {
+      throw const PasswordServiceException(
+        'Unable to connect to the server. Check your internet connection.',
+      );
+    } catch (_) {
+      throw const PasswordServiceException(
+        'An unexpected error occurred. Please try again.',
+      );
     }
   }
 
@@ -47,36 +71,68 @@ class PasswordService {
     final Uri url = Uri.parse('$_baseUrl/password-reset-confirm/');
 
     try {
-      print('AuthService: Confirming password reset with uid: $uid');
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'uid': uid,
-          'token': token,
-          'password': newPassword,
-        }),
+      final response = await _client
+          .post(
+            url,
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'uid': uid,
+              'token': token,
+              'password': newPassword,
+            }),
+          )
+          .timeout(requestTimeout);
+
+      return _messageFromResponse(
+        response,
+        fallback: 'Unable to reset the password right now.',
       );
-
-      print('AuthService: Confirm password reset response status: ${response.statusCode}');
-      final responseBody = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && responseBody['message'] != null) {
-        return responseBody['message'];
-      } else if (responseBody['error'] != null) {
-        throw Exception(responseBody['error']);
-      } else {
-        throw Exception('Failed to confirm password reset');
-      }
-    } on TimeoutException catch (_) {
-      print('AuthService: Confirm password reset timed out.');
-      throw Exception('The request timed out. Please try again.');
-    } catch (e) {
-      print('AuthService: Error confirming password reset - $e');
-      if (e is Exception && e.toString().contains("timed out")) {
-        rethrow;
-      }
-      throw Exception('An error occurred');
+    } on PasswordServiceException {
+      rethrow;
+    } on TimeoutException {
+      throw const PasswordServiceException(
+        'The request timed out. Please try again.',
+      );
+    } on http.ClientException {
+      throw const PasswordServiceException(
+        'Unable to connect to the server. Check your internet connection.',
+      );
+    } catch (_) {
+      throw const PasswordServiceException(
+        'An unexpected error occurred. Please try again.',
+      );
     }
+  }
+
+  String _messageFromResponse(
+    http.Response response, {
+    required String fallback,
+  }) {
+    Map<String, dynamic> body = const {};
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) body = decoded;
+    } on FormatException {
+      // The status-aware fallback below handles proxy or malformed responses.
+    }
+
+    final isSuccess = response.statusCode >= 200 && response.statusCode < 300;
+    final message = body['message'];
+    if (isSuccess && message is String && message.trim().isNotEmpty) {
+      return message.trim();
+    }
+
+    final error = body['error'];
+    if (error is String && error.trim().isNotEmpty) {
+      throw PasswordServiceException(
+        error.trim(),
+        statusCode: response.statusCode,
+      );
+    }
+
+    throw PasswordServiceException(
+      '$fallback (Status ${response.statusCode})',
+      statusCode: response.statusCode,
+    );
   }
 }

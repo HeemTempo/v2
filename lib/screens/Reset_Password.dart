@@ -3,16 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:kinondoni_openspace_app/service/PasswordService.dart';
 import 'package:quickalert/quickalert.dart';
 
-
 class ResetPasswordPage extends StatefulWidget {
   final String uid;
   final String token;
 
-  const ResetPasswordPage({
-    super.key,
-    required this.uid,
-    required this.token,
-  });
+  const ResetPasswordPage({super.key, required this.uid, required this.token});
 
   @override
   State<ResetPasswordPage> createState() => _ResetPasswordPageState();
@@ -21,13 +16,13 @@ class ResetPasswordPage extends StatefulWidget {
 class _ResetPasswordPageState extends State<ResetPasswordPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final PasswordService _authService = PasswordService();
   bool _isLoading = false;
   String? _errorMessage;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-
 
   Future<void> _submitNewPassword() async {
     if (_formKey.currentState!.validate()) {
@@ -42,7 +37,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           token: widget.token,
           newPassword: _passwordController.text,
         );
-        
+
         if (mounted) {
           QuickAlert.show(
             context: context,
@@ -51,18 +46,24 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             text: "$message You can now log in with your new password.",
             confirmBtnText: 'Go to Login',
             onConfirmBtnTap: () {
-              Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil('/login', (route) => false);
             },
           );
         }
       } catch (e) {
-        setState(() {
-          _errorMessage = e.toString().replaceFirst('Exception: ', '');
-        });
+        if (mounted) {
+          setState(() {
+            _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          });
+        }
       } finally {
-        setState(() {
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
@@ -76,7 +77,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text('Reset Password', style: TextStyle(color: isDark ? Colors.white : Colors.white)),
+        title: Text(
+          'Reset Password',
+          style: TextStyle(color: isDark ? Colors.white : Colors.white),
+        ),
         backgroundColor: Colors.blueAccent,
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
@@ -127,7 +131,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 style: theme.textTheme.bodyLarge,
                 decoration: InputDecoration(
                   labelText: 'New Password',
-                  labelStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+                  labelStyle: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black54,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -135,17 +141,30 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: accentColor, width: 2),
                   ),
-                  prefixIcon: Icon(Icons.lock_outline_rounded, color: accentColor),
+                  prefixIcon: Icon(
+                    Icons.lock_outline_rounded,
+                    color: accentColor,
+                  ),
                   suffixIcon: IconButton(
-                    icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed:
+                        () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                   ),
                   filled: true,
                   fillColor: isDark ? theme.cardColor : Colors.grey[50],
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'Please enter a new password';
-                  if (value.length < 8) return 'Password must be at least 8 characters long';
+                  if (value == null || value.isEmpty)
+                    return 'Please enter a new password';
+                  if (value.length < 8)
+                    return 'Password must be at least 8 characters long';
                   return null;
                 },
               ),
@@ -156,7 +175,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 style: theme.textTheme.bodyLarge,
                 decoration: InputDecoration(
                   labelText: 'Confirm New Password',
-                  labelStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+                  labelStyle: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black54,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -166,15 +187,27 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   ),
                   prefixIcon: Icon(Icons.lock_rounded, color: accentColor),
                   suffixIcon: IconButton(
-                    icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
-                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                    icon: Icon(
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed:
+                        () => setState(
+                          () =>
+                              _obscureConfirmPassword =
+                                  !_obscureConfirmPassword,
+                        ),
                   ),
                   filled: true,
                   fillColor: isDark ? theme.cardColor : Colors.grey[50],
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'Please confirm your new password';
-                  if (value != _passwordController.text) return 'Passwords do not match';
+                  if (value == null || value.isEmpty)
+                    return 'Please confirm your new password';
+                  if (value != _passwordController.text)
+                    return 'Passwords do not match';
                   return null;
                 },
               ),
@@ -190,10 +223,18 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       backgroundColor: Colors.blueAccent,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       elevation: 2,
                     ),
-                    child: const Text('Set New Password', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Set New Password',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               const SizedBox(height: 24),
@@ -207,7 +248,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   ),
                   child: Text(
                     _errorMessage!,
-                    style: TextStyle(color: theme.colorScheme.error, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: theme.colorScheme.error,
+                      fontWeight: FontWeight.bold,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
