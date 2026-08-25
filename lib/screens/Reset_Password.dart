@@ -161,10 +161,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   fillColor: isDark ? theme.cardColor : Colors.grey[50],
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Please enter a new password';
-                  if (value.length < 8)
+                  }
+                  if (value.length < 8) {
                     return 'Password must be at least 8 characters long';
+                  }
                   return null;
                 },
               ),
@@ -204,10 +206,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   fillColor: isDark ? theme.cardColor : Colors.grey[50],
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Please confirm your new password';
-                  if (value != _passwordController.text)
+                  }
+                  if (value != _passwordController.text) {
                     return 'Passwords do not match';
+                  }
                   return null;
                 },
               ),
