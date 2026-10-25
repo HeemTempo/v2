@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -28,10 +30,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.kinondoni.openspace.app"
@@ -45,12 +43,42 @@ android {
         multiDexEnabled = true
     }
 
+    val signingProperties = Properties()
+    val signingPropertiesFile = rootProject.file("key.properties")
+    if (signingPropertiesFile.exists()) {
+        signingPropertiesFile.inputStream().use { signingProperties.load(it) }
+    }
+
+    // Release signing metadata is kept in the ignored android/key.properties file.
+    val releaseStoreFile = signingProperties.getProperty("storeFile")
+    val releaseStorePassword = signingProperties.getProperty("storePassword")
+    val releaseKeyAlias = signingProperties.getProperty("keyAlias")
+    val releaseKeyPassword = signingProperties.getProperty("keyPassword")
+
+    signingConfigs {
+        if (!releaseStoreFile.isNullOrBlank() &&
+            !releaseStorePassword.isNullOrBlank() &&
+            !releaseKeyAlias.isNullOrBlank() &&
+            !releaseKeyPassword.isNullOrBlank()) {
+            create("release") {
+                storeFile = file(releaseStoreFile)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (signingConfigs.findByName("release") != null) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 
@@ -59,6 +87,12 @@ android {
             force("androidx.activity:activity:1.9.3")
             force("androidx.activity:activity-ktx:1.9.3")
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 

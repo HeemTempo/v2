@@ -46,61 +46,22 @@ class ReportRepository {
     double? latitude,
     double? longitude,
   }) async {
-    final isOnline = await _isConnected();
+    // Reports are submitted directly to the online API. Do not initialize or
+    // fall back to SQLite when the app is configured for online-only use.
+    final response = await ReportingService.createReport(
+      description: description,
+      email: email,
+      phone: phone,
+      file: file,
+      spaceName: spaceName,
+      district: district,
+      street: street,
+      userId: userId,
+      latitude: latitude,
+      longitude: longitude,
+    );
 
-    if (!isOnline) {
-      // Offline: save locally with pending status
-      return await _saveOfflineReport(
-        description: description,
-        email: email,
-        phone: phone,
-        file: file,
-        spaceName: spaceName,
-        district: district,
-        street: street,
-        userId: userId,
-        latitude: latitude,
-        longitude: longitude,
-      );
-    }
-
-    // Try online submission
-    try {
-      final response = await ReportingService.createReport(
-        description: description,
-        email: email,
-        phone: phone,
-        file: file,
-        spaceName: spaceName,
-        district: district,
-        street: street,
-        userId: userId,
-        latitude: latitude,
-        longitude: longitude,
-      );
-
-      final report = Report.fromRestJson(response);
-
-      // Save synced report locally
-      await localService.saveReport(report.copyWith(status: 'submitted'));
-      return report;
-    } catch (e) {
-      print('Online submission failed: $e. Saving offline.');
-
-      // Fallback to offline if network request fails
-      return await _saveOfflineReport(
-        description: description,
-        email: email,
-        phone: phone,
-        file: file,
-        spaceName: spaceName,
-        district: district,
-        street: street,
-        userId: userId,
-        latitude: latitude,
-        longitude: longitude,
-      );
-    }
+    return Report.fromRestJson(response);
   }
 
   /// Save report offline with pending status
@@ -143,35 +104,8 @@ class ReportRepository {
 
   /// Sync all pending reports to backend
   Future<void> syncPendingReports() async {
-    if (_isSyncing) {
-      print(
-        'ReportRepository: Sync already in progress (static lock). Skipping.',
-      );
-      return;
-    }
-
-    final isOnline = await _isConnected();
-    if (!isOnline) {
-      return;
-    }
-
-    final pendingReports = await localService.getPendingReports();
-
-    if (pendingReports.isEmpty) {
-      return;
-    }
-
-    _isSyncing = true;
-
-    // Run sync in background without blocking
-    _doSync(pendingReports)
-        .then((_) {
-          _isSyncing = false;
-        })
-        .catchError((e) {
-          print('[ReportRepository] Sync error: $e');
-          _isSyncing = false;
-        });
+    // Online-only mode has no pending local reports to synchronize.
+    return;
   }
 
   Future<void> _doSync(List<Report> pendingReports) async {
@@ -207,7 +141,7 @@ class ReportRepository {
     }
   }
 
-  Future<List<Report>> getPendingReports() => localService.getPendingReports();
+  Future<List<Report>> getPendingReports() async => <Report>[];
 
   Future<List<Report>> getAllReports({bool forceRefresh = false}) async {
     // Return cached data if available and fresh (< 5 minutes old)
@@ -218,29 +152,9 @@ class ReportRepository {
       }
     }
 
-    final isOnline = await _isConnected();
-
-    if (isOnline) {
-      try {
-        // Fetch from REST API
-        final serverReports = await ReportingService.getUserReports();
-
-        // Save to local database
-        for (final report in serverReports) {
-          await localService.saveReport(report);
-        }
-
-        _cachedReports = serverReports;
-        _lastFetch = DateTime.now();
-        return serverReports;
-      } catch (e) {
-        print('Failed to fetch from server: $e. Loading from local DB.');
-        // Fallback to local if server fails
-      }
-    }
-
-    // Load from local database (offline or server failed)
-    final reports = await localService.getAllReports();
+    // Reports are fetched directly from the online API. There is no local DB
+    // fallback in the online-only application.
+    final reports = await ReportingService.getUserReports();
     _cachedReports = reports;
     _lastFetch = DateTime.now();
     return reports;

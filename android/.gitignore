@@ -12,3 +12,7 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Local release signing metadata
+**/kinondoni-release.keystore
+key.properties

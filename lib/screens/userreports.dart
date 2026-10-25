@@ -3,8 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../model/Report.dart';
 import '../service/userreports.dart';
-import '../data/repository/report_repository.dart';
-import '../data/local/report_local.dart';
 import '../core/network/connectivity_service.dart';
 import '../utils/constants.dart';
 
@@ -31,50 +29,20 @@ class _UserReportsPageState extends State<UserReportsPage> {
       return await _fetchUserReportsInternal().timeout(
         const Duration(seconds: 8),
         onTimeout: () async {
-          print('⚠️ Fetch timeout after 8s - returning local data only');
-          return _fetchLocalReportsOnly();
+          print('⚠️ Fetch timeout after 8s');
+          return <Report>[];
         },
       );
     } catch (e) {
       print('❌ Error in _fetchUserReports: $e');
-      // Return local data if anything fails
-      return _fetchLocalReportsOnly();
-    }
-  }
-
-  Future<List<Report>> _fetchLocalReportsOnly() async {
-    try {
-      final reportRepo = ReportRepository(localService: ReportLocal());
-      final localReports = await reportRepo.getAllReports();
-      localReports.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      print('📦 Loaded ${localReports.length} local reports only');
-      return localReports;
-    } catch (e) {
-      print('❌ Error fetching local reports: $e');
-      return [];
+      return <Report>[];
     }
   }
 
   Future<List<Report>> _fetchUserReportsInternal() async {
-    final reportRepo = ReportRepository(localService: ReportLocal());
     List<Report> allReports = [];
     
-    // 1. Get Pending/Offline Reports - simplified to avoid blocking
-    try {
-       final pending = await reportRepo.getPendingReports().timeout(
-         const Duration(seconds: 2),
-         onTimeout: () {
-           print('⚠️ Pending reports fetch timeout');
-           return <Report>[];
-         },
-       );
-       allReports.addAll(pending);
-       print('📝 Loaded ${pending.length} pending reports');
-    } catch (e) {
-       print('⚠️ Error fetching pending reports: $e');
-    }
-
-    // 2. Get Online/Submitted Reports
+    // Fetch submitted reports from the online API only.
     
     // Check connectivity first to avoid long timeout if offline
     final isOnline = await context.read<ConnectivityService>().checkConnectivity();
@@ -85,23 +53,17 @@ class _UserReportsPageState extends State<UserReportsPage> {
         final onlineReports = await ReportService().fetchUserReports().timeout(
           const Duration(seconds: 5),
           onTimeout: () {
-            print('⚠️ API timeout after 5s - using local data');
+            print('⚠️ API timeout after 5s');
             return <Report>[];
           },
         );
         print('✅ Fetched ${onlineReports.length} reports from API');
         allReports.addAll(onlineReports);
       } catch (e) {
-        print('⚠️ API error: $e - using local data');
-        // Fall back to local data if API fails
-        final localReports = await reportRepo.getAllReports();
-        _mergeLocalReports(allReports, localReports);
+        print('⚠️ API error: $e');
       }
     } else {
-       // Device is offline - load local data immediately
-       print('📴 Device offline, loading local reports immediately');
-       final localReports = await reportRepo.getAllReports();
-       _mergeLocalReports(allReports, localReports);
+       print('📴 Device is offline');
     }
 
     // Sort by Date DESC
@@ -110,20 +72,6 @@ class _UserReportsPageState extends State<UserReportsPage> {
     return allReports;
   }
   
-  void _mergeLocalReports(List<Report> allReports, List<Report> localReports) {
-      // Avoid duplicates if we already have pending reports
-      if (allReports.isEmpty) {
-        allReports.addAll(localReports);
-      } else {
-        final existingIds = allReports.map((r) => r.id).toSet();
-        for (var r in localReports) {
-           if (!existingIds.contains(r.id)) {
-             allReports.add(r);
-           }
-        }
-      }
-  }
-
   String formatDate(DateTime date) {
     return DateFormat('MMM dd, yyyy • HH:mm').format(date);
   }
